@@ -1,18 +1,17 @@
 cmake . -Bbuild -G "Visual Studio 18 2026" -A Win32 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cmake --build build --config Release
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
-cmake . -Bbuild64 -G "Visual Studio 18 2026"  -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+cmake . -Bbuild64 -G "Visual Studio 18 2026" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cmake --build build64 --config Release --target PIMETextService
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
-cmake . -Bbuild_arm64 -G "Visual Studio 18 2026"  -A ARM64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+cmake . -Bbuild_arm64 -G "Visual Studio 18 2026" -A ARM64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cmake --build build_arm64 --config Release --target PIMETextService
-if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
-
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 
 echo "Start building McBopomofo"
 cd McBopomofoWeb
@@ -67,4 +66,24 @@ cmd /C npm run build
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 cd ..\..\..
 
+echo "Start building emojime"
+cd node\input_methods\emojime
+cmd /C npm install
+cmd /C npm run build
+cd ..\..\..
+
+echo "Start building PIME Installer"
+cd installer
+..\python\python3\python.exe stage_payload.py
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+..\python\python3\python.exe generate_harvest_wxs.py
+if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+    set "Platform="
+    dotnet build PIME_Core\PIME_Core.wixproj -c Release
+    if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+    
+    echo "Creating single multilingual MSI..."
+    cmd /C build_multilingual.bat
+    if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
+    cd ..
 

@@ -16,12 +16,15 @@ Contributions using AI coding tools are welcomed! However, to ensure code qualit
 # Development
 
 ## Tool Requirements
-*   [CMake](https://cmake.org/) >= 4.2 (the `Visual Studio 18 2026` generator was added in 4.2)
+*   [CMake](https://cmake.org/) >= 4.2 (the `Visual Studio 18 2026` generator was added in 4.2; bundled with Visual Studio 2026 or available via `winget install Kitware.CMake`)
 *   [Visual Studio 2026](https://visualstudio.microsoft.com/vs) with the "Desktop development with C++" workload
+    *   **MSVC C++ ARM64/ARM64EC build tools** (Required component in Visual Studio Installer for building the ARM64X forwarder DLL)
+    *   **Windows 10/11 SDK**
 *   [Rust Toolchain](https://rustup.rs/) (Stable channel with `i686-pc-windows-msvc` target)
 *   [git](https://git-scm.com/)
 *   [Node.js](https://nodejs.org/) with npm (builds the bundled JavaScript input methods)
-*   [NSIS](https://nsis.sourceforge.io/) 3.x (only needed to build the installer)
+*   [.NET SDK](https://dotnet.microsoft.com/download) (Required for WiX v4)
+*   [WiX Toolset v4](https://wixtoolset.org/) (Install via `dotnet tool install --global wix --version 4.0.6`)
 
 ## How to Build
 *   Get source from GitHub.
@@ -38,7 +41,6 @@ Contributions using AI coding tools are welcomed! However, to ensure code qualit
 *   Use `build.bat` to build everything. It builds the launcher, the x86, x64 and ARM64 text service DLLs, and bundles the JavaScript input methods.
 
 *   To build by hand, use the same generator and policy flag as `build.bat`:
-
         cmake . -Bbuild -G "Visual Studio 18 2026" -A Win32 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         cmake --build build --config Release
 
@@ -46,15 +48,16 @@ Contributions using AI coding tools are welcomed! However, to ensure code qualit
         cmake . -Bbuild64 -G "Visual Studio 18 2026" -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         cmake --build build64 --config Release --target PIMETextService
 
-        # For ARM64 Text Service (Required for native ARM64 apps)
+        # For ARM64 Text Service (Required for ARM64/ARM64X apps)
         cmake . -Bbuild_arm64 -G "Visual Studio 18 2026" -A ARM64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         cmake --build build_arm64 --config Release --target PIMETextService
 
-*   `build.bat` also generates the JavaScript input methods that the installer packages. After it has run, build the installer:
+*   `build.bat` also generates the JavaScript input methods that the installer packages. To build the installer, ensure the WiX Toolset v4 CLI is installed (`dotnet tool install --global wix --version 4.0.6`). Then run `build.bat` or:
 
-        makensis installer\installer.nsi
+        dotnet build installer/PIME_WiX.sln -c Release
+        installer\build_multilingual.bat
 
-    The generated installer is `installer\PIME-<version>-setup.exe`. The manual CMake commands above build only the C++ binaries, so they are not enough on their own.
+    The generated multilingual MSI package will be created at `installer/bin/PIME_Core_Multilingual.msi`. The manual CMake commands above build only the C++ binaries, so they are not enough on their own.
 
 ## TSF References
 *   [Text Services Framework](http://msdn.microsoft.com/en-us/library/windows/desktop/ms629032%28v=vs.85%29.aspx)
