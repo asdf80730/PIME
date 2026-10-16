@@ -55,4 +55,3 @@ if(CMAKE_CXX_COMPILER_ARCHITECTURE_ID MATCHES "ARM64")
         COMMENT "Linking ARM64X forwarder DLL"
     )
 endif()
-
