@@ -3515,6 +3515,7 @@ class LoadHCinTable:
         if DEBUG_MODE:
             self.cbTS.debug.setStartTimer("LoadHCinTable")
         try:
+
             with io.open(jsonPath, 'r', encoding='utf8') as fs:
                 return HCin(fs, self.cbTS.imeDirName)
         finally:
