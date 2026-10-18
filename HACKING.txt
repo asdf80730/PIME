@@ -106,6 +106,9 @@ Directory structure
     All input method modules implemented using node.js. If you're trying to implement your
     own input method, you should put your module in this directory.
 
+  * node/test:
+    Backend regression tests; run them with `npm test` from the node/ directory.
+
 * go-backend:
   Go implementation of the backend framework (the pime/ package plus input_methods/).
   Build it with go-backend/build.bat; go-backend/README.md documents the protocol.
