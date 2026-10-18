@@ -1,0 +1,30 @@
+# PIME
+
+A Windows text service (TSF) that forwards input to an out-of-process backend written in a
+scripting language, so input methods can be developed without touching C++.
+
+## Language
+
+**Service**:
+An input method module hosted by a backend, registered under a language-profile GUID, and
+exporting `textReducer` and `response`.
+_Avoid_: text service, IME module
+
+**Backend**:
+A process that hosts services and speaks the line protocol with the launcher; named in
+`backends.json` (`python`, `node`, `go-backend`).
+_Avoid_: server
+
+**PIMETextService**:
+The C++ TSF client DLL; the only component Windows loads into the host application.
+_Avoid_: text service, client DLL
+
+**Client**:
+One pipe connection between `PIMETextService` and `PIMELauncher`, identified to the backend by a
+freshly generated UUID.
+_Avoid_: session, connection
+
+**Init**:
+The first request on every pipe connection; carries the language-profile GUID and the request that
+resolves the GUID to a backend and a service.
+_Avoid_: handshake, login
