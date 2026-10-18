@@ -103,3 +103,6 @@ Directory structure
     All input method modules implemented using node.js. If you're trying to implement your
     own input method, you should put your module in this directory.
 
+  * node/test:
+    Backend regression tests; run them with `npm test` from the node/ directory.
+
