@@ -2,7 +2,8 @@ For those who want to hack PIME, here is a simple hacking guide.
 
 PIME has a server/client architecture.
 The client part is a text service dll file written in C++ and Windows TSF.
-The server part can be written in any scripting language (currently python and node.js).
+The server part can be written in any scripting language (currently python, node.js,
+and Go).
 The text service dll is just a thin client and is only responsible for passing
 key events to the server process, and then retrieve the composition results
 of current input from the server.
@@ -52,54 +53,71 @@ When neither /console nor /log-file is specified (normal background mode), all d
 logging is completely suppressed to avoid unnecessary I/O overhead.
 
 Directory structure
-* PIME:
+* PIMETextService:
   The main TSF text service dll written in C++.
   This will be loaded into every app process that uses PIME input methods.
   Therefore the dll must support the same CPU architecture as the app processes.
   So, you need to build both 64-bit and 32-bit versions of the dll.
   Please refer to README.md for details about how to do it with cmake.
-  
-* PIMELauncher:
-  Launches and the backend server processes on demand and monitor their status.
-  If the backend servers crash, PIMELauncher is responsible for restarting them.
-  After installation, PIMELauncher will be launched automatically upon every login.
 
-* cmake:
-  Contains some cmake rules used to override the default configurations.
+* PIMELauncher:
+  Rust middleware launched automatically upon every login.
+  Starts the backend server processes on demand, monitors their status, and
+  restarts them if they crash. It talks to PIMETextService over a Windows named
+  pipe and to the backends over stdin/stdout.
 
 * installer:
   A nice GUI windows installer written with NSIS.
   This will handle all the details of registering TSF input methods to Windows and
   write some config values to the Windows registry.
 
-* libIME:
-  A nice C++ wrapper library for TSF. If you want to implement a TSF input method,
-  consider using this library instead of do all the hard work yourself.
-  This is an independent library which can be used outside PIME.
+* libIME2 (git submodule, EasyIME/libIME2):
+  A nice C++ wrapper library for TSF, linked as the static library libIME2_static.
+  If you want to implement a TSF input method, consider using this library instead
+  of doing all the hard work yourself. It is independent of PIME.
 
-* jsoncpp:
-  Third party library used to handle json data in C++.
+* json/:
+  nlohmann/json, a header-only C++ library used to parse the IPC payloads.
 
 * backends.json:
   A list of supported backend engines and their parameters.
-  Currently only python and node.js are supported.
-  
+  Currently python, node.js, and the Go backend are supported.
+
 * python:
   The python backend of PIME
 
   * python/python3:
-    The embedable version of python 3.5 32-bit.
-    We force the use of this version to avoid any potential conflicts with 
+    The embeddable version of python 3.12 32-bit (python312.dll).
+    We force the use of this version to avoid any potential conflicts with
     existing python installations.
 
   * python/input_methods:
     All input method modules implemented using Python 3. If you're trying to implement your
     own input method, you should put your module in this directory.
 
-* node
-  node.js backend of PIME, including node.js 6.3 binaries.
+  * python/cinbase, python/opencc, python/libchewing:
+    Shared helpers: .cin table parsing, OpenCC conversion, and libchewing bindings.
+
+* node:
+  node.js backend of PIME, including a bundled 32-bit node.exe.
+  The "engines" field in node/package.json records the minimum supported Node version.
 
   * node/input_methods:
     All input method modules implemented using node.js. If you're trying to implement your
     own input method, you should put your module in this directory.
+
+* go-backend:
+  Go implementation of the backend framework (the pime/ package plus input_methods/).
+  Build it with go-backend/build.bat; go-backend/README.md documents the protocol.
+
+* tests:
+  Backend tests. test_backend_resilience.py is cross-platform and runs in CI via
+  `python -m unittest discover -s tests -p "test_*.py"`. chewing_test.py drives the
+  Windows desktop through windll, so run it manually.
+
+* McBopomofoWeb, McFoximWeb, McTabimWeb (git submodules):
+  Web-based input methods from OpenVanilla, packaged into the node backend.
+
+Directories listed in .gitmodules must be populated with `git submodule update --init`
+before building.
 
