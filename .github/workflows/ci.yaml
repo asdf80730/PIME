@@ -9,6 +9,11 @@ on:
   push:
     branches: ['**']
     tags: ['v*']
+    # Docs and agent notes cannot change the build output. Tag pushes ignore
+    # these filters, so release builds are unaffected.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   pull_request:
 
 # The called workflow's job requests contents: write (GitHub Release) and
