@@ -18,15 +18,14 @@
 //
 
 #include "PIMETextService.h"
-#include <assert.h>
+#include "PIMEClient.h"
+#include <msctf.h>
+#include <windows.h>
+#include <cassert>
+#include <algorithm>
 #include <string>
-#include <libIME2/src/ComPtr.h>
-#include <libIME2/src/Utils.h>
+#include "libIME2/src/Utils.h"
 #include <libIME2/src/LangBarButton.h>
-#include "PIMEImeModule.h"
-#include "resource.h"
-#include <Shellapi.h>
-#include <sys/stat.h>
 
 using namespace std;
 
@@ -34,26 +33,20 @@ namespace PIME {
 
 TextService::TextService(ImeModule* module):
 	Ime::TextService(module),
-	client_(nullptr),
-	messageWindow_(nullptr),
-	messageTimerId_(0),
+	showingCandidates_(false),
+	popupMenu_(NULL),
 	validCandidateListElementId_(false),
 	candidateListElementId_(0),
-	candidateWindow_(nullptr),
-	showingCandidates_(false),
-	updateFont_(false),
-	candPerRow_(10),
-	selKeys_(L"1234567890"),
+	messageTimerId_(0),
+	font_(NULL),
+	candPerRow_(9),
 	candUseCursor_(false),
-	candFontSize_(12) {
+	candFontSize_(12),
+	updateFont_(true),
+	currentLangProfile_{ 0 } {
 
 	// font for candidate and mesasge windows
-	font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-	LOGFONT lf;
-	GetObject(font_, sizeof(lf), &lf);
-	lf.lfHeight = candFontHeight(); // FIXME: make this configurable
-	lf.lfWeight = FW_NORMAL;
-	font_ = CreateFontIndirect(&lf);
+	font_ = (HFONT)::GetStockObject(DEFAULT_GUI_FONT);
 }
 
 TextService::~TextService(void) {
@@ -73,6 +66,16 @@ TextService::~TextService(void) {
 
 	if(font_)
 		::DeleteObject(font_);
+
+	{
+		std::lock_guard<std::mutex> lock(iconCacheMutex_);
+		for (auto& pair : iconCache_) {
+			if (pair.second) {
+				::DestroyIcon(pair.second);
+			}
+		}
+		iconCache_.clear();
+	}
 }
 
 // virtual
@@ -142,58 +145,32 @@ bool TextService::onCommand(UINT id, CommandType type) {
 	return client_->onCommand(id, type);
 }
 
-
-// called when a language bar button needs a menu
 // virtual
 bool TextService::onMenu(LangBarButton* btn, ITfMenu* pMenu) {
-	if (client_ != nullptr) {
-		return client_->onMenu(btn, pMenu);
-	}
-	return false;
+	if(!client_)
+		return false;
+	return client_->onMenu(btn, pMenu);
 }
 
-// called when a language bar button needs a menu
 // virtual
 HMENU TextService::onMenu(LangBarButton* btn) {
-	if (client_ != nullptr) {
-		return client_->onMenu(btn);
-	}
-	return NULL;
+	if(!client_)
+		return NULL;
+	return client_->onMenu(btn);
 }
-
 
 // virtual
 void TextService::onCompartmentChanged(const GUID& key) {
-	Ime::TextService::onCompartmentChanged(key);
 	if(client_)
 		client_->onCompartmentChanged(key);
 }
 
-// called when the keyboard is opened or closed
 // virtual
 void TextService::onKeyboardStatusChanged(bool opened) {
-	Ime::TextService::onKeyboardStatusChanged(opened);
 	if(client_)
 		client_->onKeyboardStatusChanged(opened);
-	if(opened) { // keyboard is opened
-	}
-	else { // keyboard is closed
-		if(isComposing()) {
-			// end current composition if needed
-			if(auto context = currentContext()) {
-				endComposition(context);
-			}
-		}
-		if(showingCandidates()) // disable candidate window if it's opened
-			hideCandidates();
-		hideMessage(); // hide message window, if there's any
-	}
 }
 
-// called just before current composition is terminated for doing cleanup.
-// if forced is true, the composition is terminated by others, such as
-// the input focus is grabbed by another application.
-// if forced is false, the composition is terminated gracefully by endComposition().
 // virtual
 void TextService::onCompositionTerminated(bool forced) {
 	// we do special handling here for forced composition termination.
@@ -429,6 +406,21 @@ void TextService::closeClient() {
 		hideMessage();
 		hideCandidates();
 	}
+}
+
+HICON TextService::getCachedIcon(const std::wstring& iconFile) {
+	if (iconFile.empty())
+		return NULL;
+	std::lock_guard<std::mutex> lock(iconCacheMutex_);
+	auto it = iconCache_.find(iconFile);
+	if (it != iconCache_.end()) {
+		return it->second;
+	}
+	HICON icon = (HICON)::LoadImageW(NULL, iconFile.c_str(), IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR | LR_LOADFROMFILE);
+	if (icon) {
+		iconCache_[iconFile] = icon;
+	}
+	return icon;
 }
 
 } // namespace PIME

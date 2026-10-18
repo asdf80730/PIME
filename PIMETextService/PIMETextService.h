@@ -29,6 +29,8 @@
 #include <sys/types.h>
 #include "PIMEClient.h"
 #include <memory>
+#include <mutex>
+#include <unordered_map>
 
 
 namespace PIME {
@@ -135,6 +137,8 @@ public:
     void updateMessageWindow(Ime::EditSession* session);
 	void hideMessage();
 
+	HICON getCachedIcon(const std::wstring& iconFile);
+
 private:
 	virtual ~TextService(void);  // COM object should only be deleted using Release()
 
@@ -168,6 +172,9 @@ private:
 
 	std::unique_ptr<Client> client_; // connection client
 	GUID currentLangProfile_;
+
+	std::unordered_map<std::wstring, HICON> iconCache_;
+	std::mutex iconCacheMutex_;
 };
 
 }
