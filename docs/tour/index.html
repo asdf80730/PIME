@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' text-anchor='middle' fill='white'%3EP%3C/text%3E%3C/svg%3E">
+<title>PIME 專案導覽</title>
+<style>
+  :root {
+    --bg: #fbfbfa;
+    --surface: #ffffff;
+    --surface-2: #f3f4f2;
+    --text: #1c1f1d;
+    --muted: #5c635e;
+    --border: #d9ddd8;
+    --accent: #0f766e;
+    --accent-soft: #d7ece8;
+    --warn: #92400e;
+    --warn-soft: #fdf1dc;
+    --ok: #166534;
+    --ok-soft: #dcf3e3;
+    --code-bg: #f1f3f0;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.04);
+    --mono: ui-monospace, "SFMono-Regular", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141715;
+      --surface: #1b1f1c;
+      --surface-2: #232825;
+      --text: #e7eae6;
+      --muted: #a1aaa3;
+      --border: #333a35;
+      --accent: #5eead4;
+      --accent-soft: #173b36;
+      --warn: #fbbf24;
+      --warn-soft: #3a2c12;
+      --ok: #86efac;
+      --ok-soft: #123322;
+      --code-bg: #202522;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); line-height: 1.72; font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  code, .mono { font-family: var(--mono); font-size: .88em; }
+  code { background: var(--code-bg); padding: .12em .38em; border-radius: 4px; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 10px; overflow-x: auto; border: 1px solid var(--border); }
+  pre code { background: none; padding: 0; }
+
+  .layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 48px; max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+  nav.toc { position: sticky; top: 0; align-self: start; height: 100vh; padding: 40px 0 24px; overflow-y: auto; }
+  nav.toc .brand { font-weight: 700; letter-spacing: .02em; margin-bottom: 4px; }
+  nav.toc .brand span { color: var(--muted); font-weight: 500; font-size: .82rem; display: block; letter-spacing: 0; }
+  nav.toc ol { list-style: none; padding: 0; margin: 22px 0 0; border-left: 1px solid var(--border); }
+  nav.toc li { margin: 0; }
+  nav.toc a {
+    display: block; padding: 5px 0 5px 14px; color: var(--muted);
+    text-decoration: none; font-size: .9rem; border-left: 2px solid transparent; margin-left: -1px;
+  }
+  nav.toc a:hover { color: var(--text); }
+  nav.toc a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 600; }
+
+  main { padding: 40px 0 96px; min-width: 0; }
+  header.hero { padding: 8px 0 36px; border-bottom: 1px solid var(--border); margin-bottom: 44px; }
+  .kicker { font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: clamp(2rem, 4vw, 2.9rem); line-height: 1.18; margin: .35em 0 .3em; letter-spacing: -.02em; }
+  .lede { font-size: 1.08rem; color: var(--muted); max-width: 62ch; margin: 0; }
+  .meta { margin-top: 18px; font-size: .82rem; color: var(--muted); display: flex; gap: 18px; flex-wrap: wrap; }
+
+  section { margin: 0 0 64px; scroll-margin-top: 24px; }
+  h2 { font-size: 1.42rem; margin: 0 0 6px; letter-spacing: -.01em; }
+  h2 .num { color: var(--accent); font-family: var(--mono); font-size: .8em; margin-right: .5em; }
+  h3 { font-size: 1.02rem; margin: 26px 0 8px; }
+  p { margin: 0 0 14px; max-width: 74ch; }
+  .sub { color: var(--muted); font-size: .92rem; margin: -2px 0 22px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 24px 0 8px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat b { display: block; font-size: 1.45rem; line-height: 1.2; letter-spacing: -.02em; }
+  .stat span { color: var(--muted); font-size: .82rem; }
+
+  .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); overflow-x: auto; }
+  .diagram svg { display: block; width: 100%; height: auto; min-width: 720px; }
+  .diagram-note { margin: 10px 2px 0; font-size: .86rem; color: var(--muted); }
+  @media (max-width: 860px) { .diagram { position: relative; } .diagram::after { content: "← 可左右滑動 →"; position: sticky; left: 0; display: block; font-size: .75rem; color: var(--muted); margin-top: 6px; } }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 18px 0 6px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); }
+  .card h3 { margin: 0 0 6px; font-size: .98rem; }
+  .card p { margin: 0; font-size: .9rem; color: var(--muted); }
+  .card .tag { display: inline-block; font-family: var(--mono); font-size: .72rem; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 1px 8px; margin-bottom: 8px; }
+
+  ol.steps { counter-reset: step; list-style: none; padding: 0; margin: 20px 0 0; }
+  ol.steps li { position: relative; padding: 0 0 22px 46px; border-left: 2px solid var(--border); margin-left: 16px; }
+  ol.steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  ol.steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: -17px; top: -2px; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--accent); color: var(--accent);
+    font-family: var(--mono); font-size: .85rem; font-weight: 700;
+    display: grid; place-items: center;
+  }
+  ol.steps b { display: block; margin-bottom: 2px; }
+  ol.steps p { margin: 0; color: var(--muted); font-size: .93rem; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th { background: var(--surface-2); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+
+  .chip { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+  .chip.ok { color: var(--ok); background: var(--ok-soft); }
+  .chip.open { color: var(--warn); background: var(--warn-soft); }
+  .chip.local { color: var(--muted); background: var(--surface-2); }
+
+  .note { border-left: 3px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; box-shadow: var(--shadow); }
+  .note.warn { border-left-color: var(--warn); }
+  .note p { margin: 0; font-size: .92rem; }
+  .note .label { font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; display: block; margin-bottom: 3px; }
+
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin: 26px 0 0; flex-wrap: wrap; }
+  .tabs button {
+    appearance: none; border: none; background: none; color: var(--muted); font: inherit; font-size: .9rem;
+    padding: 9px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .tabpanel { padding: 18px 2px 0; }
+  .tabpanel[hidden] { display: none; }
+
+  .filemap { font-family: var(--mono); font-size: .86rem; line-height: 1.9; }
+  .filemap div { display: grid; grid-template-columns: minmax(190px, 240px) 1fr; gap: 16px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+  .filemap div:last-child { border-bottom: none; }
+  .filemap .p { color: var(--accent); }
+  .filemap .d { color: var(--muted); font-family: var(--sans); font-size: .86rem; }
+
+  dl.gloss dt { font-weight: 700; margin-top: 14px; }
+  dl.gloss dd { margin: 2px 0 0; color: var(--muted); font-size: .93rem; }
+
+  footer { border-top: 1px solid var(--border); padding-top: 22px; color: var(--muted); font-size: .84rem; }
+  footer ul { padding-left: 18px; margin: 8px 0 0; }
+
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; gap: 0; padding: 0 20px; }
+    nav.toc { position: static; height: auto; padding: 24px 0 0; }
+    nav.toc ol { display: flex; flex-wrap: wrap; gap: 2px 4px; border-left: none; margin-top: 12px; }
+    nav.toc a { border-left: none; border-bottom: 2px solid transparent; padding: 4px 10px; }
+    nav.toc a.active { border-left: none; border-bottom-color: var(--accent); }
+    main { padding-top: 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc" aria-label="目錄">
+  <div class="brand">PIME 專案導覽<span>Windows TSF + 外部後端</span></div>
+  <ol>
+    <li><a href="#overview">概觀</a></li>
+    <li><a href="#architecture">架構</a></li>
+    <li><a href="#journey">一個按鍵的旅程</a></li>
+    <li><a href="#protocol">訊息格式</a></li>
+    <li><a href="#backends">三個後端</a></li>
+    <li><a href="#build">建置與測試</a></li>
+    <li><a href="#status">目前狀態</a></li>
+    <li><a href="#files">檔案地圖</a></li>
+    <li><a href="#glossary">名詞</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <div class="kicker">專案導覽</div>
+  <h1>PIME：把輸入法邏輯搬到行程外</h1>
+  <p class="lede">一個 Windows 文字服務 DLL，只負責把按鍵轉發給常駐的啟動器，再由啟動器交給 Python、Node 或 Go 寫的後端。改輸入法不必碰 C++，也不必重新註冊 DLL。</p>
+  <div class="meta">
+    <span>整理自 <code>README.md</code>、<code>HACKING.txt</code>、<code>GLOSSARY.md</code>、<code>docs/research/</code></span>
+    <span>上游比對點 <code>EasyIME/PIME@24e4dff</code></span>
+    <span>2026-10-18</span>
+  </div>
+</header>
+
+<section id="overview">
+  <h2><span class="num">01</span>概觀</h2>
+  <p class="sub">先建立一個心智模型：Windows 載入什麼、什麼東西常駐、什麼東西可以換。</p>
+
+  <p>Windows 的 TSF（Text Services Framework）要求輸入法以 <b>in-process DLL</b> 的形式被載入每一個使用它的應用程式。這件事決定了整個設計：C++ 的部分必須極薄、必須同時有 32/64 位元（現在還有 ARM64）版本，而且一旦改動就得重新註冊。PIME 的做法是把「怎麼組字」全部推到另一個行程，DLL 只做三件事：收按鍵、送 JSON、把回覆套用到組字視窗。</p>
+
+  <div class="stats">
+    <div class="stat"><b>3</b><span>內建後端：Python、Node、Go</span></div>
+    <div class="stat"><b>2</b><span>段 IPC：named pipe、stdin/stdout</span></div>
+    <div class="stat"><b>15 s</b><span>後端無回應的 watchdog 上限</span></div>
+    <div class="stat"><b>3 種架構</b><span>x86 / x64 / ARM64 各一份 DLL</span></div>
+  </div>
+
+  <div class="note">
+    <span class="label">為什麼需要 launcher</span>
+    <p>DLL 活在別人的行程裡，不能自己管理後端的生死。於是有一個常駐的 <code>PIMELauncher.exe</code>：它建立 named pipe 等待 DLL 連線、按需啟動後端、監控 stdout、卡住就殺掉重啟。DLL 完全不知道後端是 Python 還是 Go。</p>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2><span class="num">02</span>架構</h2>
+  <p class="sub">四種角色，兩段通道。箭頭兩端都是 JSON，一行一個物件。</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 940 208" role="img" aria-label="PIME 架構：應用程式內的 TSF DLL 經 named pipe 連到 launcher，再經 stdin/stdout 連到後端">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.4" opacity=".55">
+        <rect x="18" y="72" width="176" height="86" rx="12"/>
+        <rect x="266" y="72" width="190" height="86" rx="12"/>
+        <rect x="528" y="72" width="176" height="86" rx="12"/>
+        <rect x="776" y="72" width="146" height="86" rx="12"/>
+      </g>
+      <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="13" fill="currentColor">
+        <text x="106" y="108" text-anchor="middle" font-weight="700">App + TSF</text>
+        <text x="106" y="128" text-anchor="middle" opacity=".65">Notepad / Word</text>
+        <text x="361" y="108" text-anchor="middle" font-weight="700">PIMETextService.dll</text>
+        <text x="361" y="128" text-anchor="middle" opacity=".65">C++ · in-process</text>
+        <text x="616" y="108" text-anchor="middle" font-weight="700">PIMELauncher.exe</text>
+        <text x="616" y="128" text-anchor="middle" opacity=".65">Rust · 常駐</text>
+        <text x="849" y="108" text-anchor="middle" font-weight="700">Backend</text>
+        <text x="849" y="128" text-anchor="middle" opacity=".65">python / node / go</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.6" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" opacity=".8">
+        <line x1="196" y1="115" x2="264" y2="115"/>
+        <line x1="458" y1="115" x2="526" y2="115"/>
+        <line x1="706" y1="115" x2="774" y2="115"/>
+      </g>
+      <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="currentColor" opacity=".7" text-anchor="middle">
+        <text x="230" y="102">TSF API</text>
+        <text x="492" y="102">pipe</text>
+        <text x="740" y="102">stdio</text>
+      </g>
+      <g font-family="system-ui, sans-serif" font-size="11.5" fill="currentColor" opacity=".55" text-anchor="middle">
+        <text x="106" y="186">每個 app 各一份</text>
+        <text x="361" y="186">只有一份 · 依 app 架構</text>
+        <text x="616" y="186">每個使用者一份</text>
+        <text x="849" y="186">每個 backend 一個行程</text>
+      </g>
+    </svg>
+  </div>
+  <p class="diagram-note">TSF → launcher：純 JSON，一行一個。launcher → backend：<code>&lt;client_id&gt;|&lt;JSON&gt;</code>。backend → launcher：<code>PIME_MSG|&lt;client_id&gt;|&lt;JSON&gt;</code>。</p>
+
+  <div class="cards">
+    <div class="card">
+      <span class="tag">C++ / TSF</span>
+      <h3>PIMETextService</h3>
+      <p>唯一被 Windows 載入宿主行程的部分。收按鍵、維護組字狀態、透過 pipe 發請求；回覆的 seqNum 不對就關線重設。必須跟宿主 app 同架構。</p>
+    </div>
+    <div class="card">
+      <span class="tag">C++ / static lib</span>
+      <h3>libIME2</h3>
+      <p>TSF 的封裝層（submodule，EasyIME/libIME2），把 COM/TSF 的樣板工作收起來，與 PIME 本身無關，可以單獨拿去寫別的輸入法。</p>
+    </div>
+    <div class="card">
+      <span class="tag">Rust / x86</span>
+      <h3>PIMELauncher</h3>
+      <p>pipe server + 路由 + 行程管理。依 <code>backends.json</code> 啟動後端，用 <code>(client_id, seqNum)</code> 記 pending，15 秒沒回就殺掉重啟。</p>
+    </div>
+    <div class="card">
+      <span class="tag">Python / Node / Go</span>
+      <h3>Backends</h3>
+      <p>真正的輸入法邏輯：<code>ime.json</code> 宣告 GUID 與模組，服務實作 <code>textReducer</code>（處理按鍵）與 <code>response</code>（產生回覆）。</p>
+    </div>
+    <div class="card">
+      <span class="tag">NSIS</span>
+      <h3>installer</h3>
+      <p>註冊 TSF、寫 registry、依架構放置 DLL。使用者看到的安裝流程都在這裡。</p>
+    </div>
+    <div class="card">
+      <span class="tag">設定</span>
+      <h3>backends.json + ime.json</h3>
+      <p><code>backends.json</code> 決定哪個語言設定用哪個後端；每個輸入法目錄的 <code>ime.json</code> 提供 GUID、顯示名稱與模組入口。</p>
+    </div>
+  </div>
+</section>
+
+<section id="journey">
+  <h2><span class="num">03</span>一個按鍵的旅程</h2>
+  <p class="sub">以「在記事本打一個注音」為例。第一次連線會多一段 init，之後每個按鍵都是同一個循環。</p>
+
+  <ol class="steps">
+    <li><b>TSF 呼叫 DLL</b><p>使用者的按鍵先經過 Windows TSF，落到 <code>PIMETextService</code> 的 key handler。此時還沒有任何跨行程通訊。</p></li>
+    <li><b>建立連線與 init</b><p>pipe 還沒開就建一條，並送出 <code>init</code>：內容是目前語言設定的 GUID。這是每條連線的第一個請求，後端靠它決定要載入哪個輸入法。</p></li>
+    <li><b>launcher 解析 GUID</b><p><code>backends.json</code> 說這個語言設定屬於哪個後端；後端還沒跑就啟動它（工作目錄、命令、參數都寫在設定裡）。之後 launcher 給這條連線一個新的 UUID。</p></li>
+    <li><b>轉發</b><p>launcher 把請求改寫成 <code>&lt;uuid&gt;|&lt;JSON&gt;</code> 寫進後端的 stdin。同一後端的所有使用者共用這條 stdin，靠 UUID 區分。</p></li>
+    <li><b>後端處理</b><p>後端找到對應的 service，呼叫 <code>textReducer</code> 更新狀態、產生組字結果，再以 <code>PIME_MSG|&lt;uuid&gt;|&lt;JSON&gt;</code> 寫到 stdout。</p></li>
+    <li><b>路由回 DLL</b><p>launcher 依 UUID 找到連線、把 payload 送去；同時用回覆裡的 <code>seqNum</code> 清掉 pending 記錄（只用來判斷後端有沒有卡住，不用來驗證內容）。</p></li>
+    <li><b>DLL 驗證 seqNum</b><p>DLL 比對回覆的 <code>seqNum</code> 與自己送出的號碼。相符才把組字結果套用到畫面上；這是最後一道防線。</p></li>
+    <li><b>失敗就重設</b><p>seqNum 不符、JSON 壞掉或逾時：回應設為 null、關閉 pipe、清掉語言列按鈕。下一次按鍵會重新連線、重新 init。</p></li>
+  </ol>
+
+  <div class="note warn">
+    <span class="label">時間常數</span>
+    <p>一般按鍵的 RPC 逾時是 2 秒；<code>init</code> 與 <code>onActivate</code> 是 15 秒（冷啟動要載入字典）。launcher 的 watchdog 也是 15 秒，但它量的是「請求送出後多久沒回覆」，而且是一秒掃一次。兩邊的 15 秒不是同一個 deadline。</p>
+  </div>
+</section>
+
+<section id="protocol">
+  <h2><span class="num">04</span>訊息格式</h2>
+  <p class="sub">全部是 UTF-8 JSON，一行一個物件。差別只在誰加前綴。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>區段</th><th>格式</th><th>範例</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>TSF → launcher</td>
+          <td>純 JSON，換行結尾</td>
+          <td><code>{"method":"filterKeyDown","seqNum":7,"charCode":65}</code></td>
+        </tr>
+        <tr>
+          <td>launcher → backend</td>
+          <td><code>&lt;client_id&gt;|&lt;JSON&gt;</code></td>
+          <td><code>3f2a…|{"method":"filterKeyDown","seqNum":7}</code></td>
+        </tr>
+        <tr>
+          <td>backend → launcher</td>
+          <td><code>PIME_MSG|&lt;client_id&gt;|&lt;JSON&gt;</code></td>
+          <td><code>PIME_MSG|3f2a…|{"success":true,"seqNum":7}</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>seqNum 的責任分工</h3>
+  <p><code>seqNum</code> 由 C++ 客戶端產生（每條連線遞增），後端必須原樣回傳。launcher 只把它當 pending 記錄的鍵：送出時插入、回覆時刪除、15 秒沒刪就殺後端。真正「號碼不對就拒絕」的判斷在 DLL 裡；因此一個亂回 seqNum 的後端會先讓 DLL 關線重設，launcher 端則可能留下過期記錄直到 watchdog 出手。</p>
+
+  <div class="note">
+    <span class="label">設計含意</span>
+    <p>launcher 是路由器，不是驗證器。它不知道每個 method 的語意，也不該知道；只要 UUID 對得上就把 bytes 送過去。這個分工讓新增 method 不必改 Rust，代價是錯誤只能由兩端各自處理。</p>
+  </div>
+</section>
+
+<section id="backends">
+  <h2><span class="num">05</span>三個後端</h2>
+  <p class="sub">同樣的協定，三種行程模型。選一個讀就好，其他兩個的差異都在「狀態放哪裡」。</p>
+
+  <div class="tabs" role="tablist" aria-label="後端比較">
+    <button role="tab" id="tab-py" aria-controls="panel-py" aria-selected="true">Python</button>
+    <button role="tab" id="tab-node" aria-controls="panel-node" aria-selected="false">Node / nime</button>
+    <button role="tab" id="tab-go" aria-controls="panel-go" aria-selected="false">Go</button>
+  </div>
+
+  <div class="tabpanel" role="tabpanel" id="panel-py" aria-labelledby="tab-py">
+    <p>最完整的參考實作。每個 client 一個 <code>Client</code> 物件，保存 service 與組字狀態；service 由 <code>serviceManager</code> 依 <code>ime.json</code> 動態載入。close 會回 <code>{"success":true,"seqNum":n}</code>；單行處理外層包了 try，壞掉的請求不會帶走整個行程。</p>
+    <pre><code>python/
+├── server.py          # 讀 stdin 逐行、分派、寫 stdout
+├── serviceManager.py  # 掃描輸入法目錄、載入模組
+├── textService.py     # service 基底類別
+└── input_methods/     # 每個輸入法一個目錄 + ime.json</code></pre>
+  </div>
+
+  <div class="tabpanel" role="tabpanel" id="panel-node" aria-labelledby="tab-node" hidden>
+    <p>用 <code>nime</code> 套件管理連線與 method 分派；<code>server.js</code> 只提供「GUID → service」的解析函式。service 只需實作 <code>textReducer</code> 與 <code>response</code>。這一層的歷史問題最多：未知 GUID 或沒先 init 的請求會讓 nime 對 null 解引用，整個行程死掉——這正是 #936／#937 的來源。</p>
+    <pre><code>node/
+├── server.js          # createServer(resolveService) + listen
+├── loadServices.js    # 讀 input_methods/*/ime.json
+├── input_methods/     # meow、emojime、McBopomofo…
+└── test/              # server.test.js（stdin/stdout 黑箱測試）</code></pre>
+  </div>
+
+  <div class="tabpanel" role="tabpanel" id="panel-go" aria-labelledby="tab-go" hidden>
+    <p>單一 <code>server.exe</code>，自己維護 clients map 與 JSON 編解碼。init 失敗、未知 method、未初始化 client 都會明確回 <code>success:false</code>；錯誤處理比其他兩個後端完整，但功能與輸入法數量較少。</p>
+    <pre><code>go-backend/
+├── server.go          # stdin 迴圈、init、method 分派、sendResponse
+└── pime/              # 舊版另一個 server 實作（不在 backends.json）</code></pre>
+  </div>
+
+  <h3>共同契約</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>行為</th><th>規則</th></tr></thead>
+      <tbody>
+        <tr><td>每行一個 JSON</td><td>不接受多行物件；stdout 只能有協定行或無害的除錯輸出（沒有 <code>PIME_MSG|</code> 前綴會被丟棄）。</td></tr>
+        <tr><td>每個請求一個回覆</td><td>即使失敗也要回，且要帶回同一個 <code>seqNum</code>；不回覆會讓 launcher 的 pending 記錄過期。</td></tr>
+        <tr><td>close 要回覆</td><td>launcher 在 client 斷線時送 <code>{"method":"close"}</code>，並期待回覆來清 pending。</td></tr>
+        <tr><td>狀態屬於 client</td><td>同一後端服務多個使用者，組字狀態不能放在全域。</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="build">
+  <h2><span class="num">06</span>建置與測試</h2>
+  <p class="sub">這個 repo 有一半只能在 Windows 上驗證；先分清哪些事情在哪裡做。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>工作</th><th>在哪裡跑</th><th>指令</th></tr></thead>
+      <tbody>
+        <tr><td>TSF DLL（x86 / x64 / ARM64）</td><td>Windows + CMake/MSVC</td><td><code>build.bat</code></td></tr>
+        <tr><td>Launcher 與其測試</td><td>Windows（<code>cargo test</code>）</td><td><code>cd PIMELauncher &amp;&amp; cargo test</code></td></tr>
+        <tr><td>Node 後端測試</td><td>任何有 Node 的機器</td><td><code>cd node &amp;&amp; npm test</code></td></tr>
+        <tr><td>Python 後端測試</td><td>任何有 Python 的機器</td><td><code>python -m unittest discover -s tests -p "test_*.py"</code></td></tr>
+        <tr><td>安裝檔</td><td>Windows + NSIS</td><td><code>makensis installer/installer.nsi</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:18px">CI（<code>.github/workflows/ci.yaml</code>）在 <code>windows-2025</code> 上把這串全部跑一次：Rust 測試、Python/Node 測試、三種架構的 DLL、NSIS 安裝檔，最後交給 SignPath 簽章。也就是說，<b>Rust 與 C++ 的編譯錯誤只有推上去才會知道</b>；本機（Linux）能跑的是 Node 測試、部分 Python 測試與讀碼。</p>
+
+  <div class="note">
+    <span class="label">除錯開關</span>
+    <p><code>PIMELauncher.exe /console</code> 開主控台看即時日誌；<code>/log-file &lt;path&gt;</code> 寫檔；<code>/quit</code> 結束常駐實例。正常背景模式只記 WARN 以上，避免日誌 I/O 影響輸入延遲。</p>
+  </div>
+</section>
+
+<section id="status">
+  <h2><span class="num">07</span>目前狀態</h2>
+  <p class="sub">2026-10-18，對照上游 <code>24e4dff</code>。維護者正在集中清理 Node 後端與 TSF 的舊問題。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Issue</th><th>主題</th><th>狀態</th><th>PR</th></tr></thead>
+      <tbody>
+        <tr><td>#936</td><td>Node 未捕捉例外會殺掉整個後端</td><td><span class="chip open">open</span></td><td>#945（PCMan，CI 綠）</td></tr>
+        <tr><td>#937</td><td>未知 GUID／未 init 的請求讓 nime 解引用 null</td><td><span class="chip open">open</span></td><td>#946（PCMan）、#955（本 fork）</td></tr>
+        <tr><td>#938</td><td>UTF-16 surrogate pair 的游標位移</td><td><span class="chip ok">已修正</span></td><td>#944</td></tr>
+        <tr><td>#939</td><td>候選字字型名稱缺 NUL 結尾</td><td><span class="chip ok">已修正</span></td><td>#947</td></tr>
+        <tr><td>#940</td><td>在 loader lock 下建構 ImeModule</td><td><span class="chip ok">已修正</span></td><td>#948</td></tr>
+        <tr><td>#941</td><td>語言列圖示快取共用</td><td><span class="chip ok">已修正</span></td><td>#949</td></tr>
+        <tr><td>#942</td><td>launcher 不回應時 UI 執行緒卡 3 × 3 秒</td><td><span class="chip open">open</span></td><td>無（需 Windows 實機驗證）</td></tr>
+        <tr><td>#943</td><td>重啟後把舊請求送給新後端</td><td><span class="chip ok">已修正</span></td><td>#950</td></tr>
+        <tr><td>#951</td><td>Node 載入 <code>ime.json</code> 的容錯</td><td><span class="chip open">open</span></td><td>#952</td></tr>
+        <tr><td>#960</td><td>候選窗不隨 Per-Monitor DPI 縮放</td><td><span class="chip open">open</span></td><td>#962</td></tr>
+        <tr><td>#961</td><td>C++ 端未保護的 JSON 例外</td><td><span class="chip open">open</span></td><td>#964</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>這個 checkout 額外帶的東西</h3>
+  <p>本地 <code>master</code> 是整合分支，除了上游同步之外還有幾項只留在本地的東西：CI 的權限修正（reusable workflow 不能提升權限）、docs-only push 不建置的路徑過濾、以及 <code>docs/research/</code> 兩份研究筆記。照 repo 的規則，這些不會進 upstream PR。</p>
+</section>
+
+<section id="files">
+  <h2><span class="num">08</span>檔案地圖</h2>
+  <p class="sub">第一次讀這個 repo 的順序：HACKING → GLOSSARY → 研究筆記 → 你關心的那一層。</p>
+
+  <div class="filemap">
+    <div><span class="p">HACKING.txt</span><span class="d">架構總覽與 launcher 除錯開關，最先讀</span></div>
+    <div><span class="p">GLOSSARY.md</span><span class="d">專案用語的定義，避免把 service 和 backend 混用</span></div>
+    <div><span class="p">docs/research/input-request-lifecycle.md</span><span class="d">一個按鍵從 TSF 到後端再回來的完整協定</span></div>
+    <div><span class="p">docs/research/launcher-reply-validation.md</span><span class="d">回覆方向：seqNum、close 分支、readBuffer、15 秒</span></div>
+    <div><span class="p">PIMETextService/</span><span class="d">C++ TSF 客戶端；PIMEClient 管 pipe 與 seqNum</span></div>
+    <div><span class="p">PIMELauncher/src/backend_manager.rs</span><span class="d">路由、pending 表、watchdog、重啟</span></div>
+    <div><span class="p">PIMELauncher/src/protocol.rs</span><span class="d">前綴解析、seqNum 抽取、時間常數</span></div>
+    <div><span class="p">python/</span><span class="d">參考後端；serviceManager 與動態載入</span></div>
+    <div><span class="p">node/</span><span class="d">nime 後端；input_methods 與黑箱測試</span></div>
+    <div><span class="p">go-backend/</span><span class="d">單一行程的 Go 後端</span></div>
+    <div><span class="p">installer/</span><span class="d">NSIS 安裝與 TSF 註冊</span></div>
+    <div><span class="p">backends.json</span><span class="d">語言設定 → 後端命令的對照表</span></div>
+    <div><span class="p">tests/</span><span class="d">Python 測試與 C++ 單元測試（Windows CI 執行）</span></div>
+  </div>
+</section>
+
+<section id="glossary">
+  <h2><span class="num">09</span>名詞</h2>
+  <p class="sub">照 <code>GLOSSARY.md</code> 的定義；混用這些詞是讀這個 repo 最常見的卡點。</p>
+
+  <dl class="gloss">
+    <dt>Service</dt>
+    <dd>由後端承載的輸入法模組，以語言設定 GUID 註冊，實作 <code>textReducer</code> 與 <code>response</code>。不要叫它 text service。</dd>
+    <dt>Backend</dt>
+    <dd>承載 service、說 line protocol 的行程（<code>python</code>、<code>node</code>、<code>go-backend</code>），名字寫在 <code>backends.json</code>。</dd>
+    <dt>PIMETextService</dt>
+    <dd>C++ TSF 客戶端 DLL，唯一被 Windows 載入宿主行程的部分。</dd>
+    <dt>Client</dt>
+    <dd>一條 pipe 連線，用新產生的 UUID 識別；不是 session，也不是使用者。</dd>
+    <dt>Init</dt>
+    <dd>每條連線的第一個請求，帶語言設定 GUID，決定後端與 service。</dd>
+    <dt>Watchdog</dt>
+    <dd>launcher 每秒掃 pending 表；任何一筆超過 15 秒沒被回覆清掉，就殺掉整個後端並在 1 秒後重啟。</dd>
+  </dl>
+</section>
+
+<footer>
+  <p>本頁是導覽，不是規格。細節與行號以這兩份研究筆記為準：</p>
+  <ul>
+    <li><code>docs/research/input-request-lifecycle.md</code> — 請求方向與 launcher 的行程管理</li>
+    <li><code>docs/research/launcher-reply-validation.md</code> — 回覆方向、seqNum、close、readBuffer</li>
+  </ul>
+  <p>Issue/PR 狀態取自 GitHub API，上游比對點 <code>EasyIME/PIME@24e4dff</code>。</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+  // Tabs
+  const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+  const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+  function selectTab(tab) {
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+  tabs.forEach(t => {
+    t.addEventListener('click', () => selectTab(t));
+    t.addEventListener('keydown', e => {
+      const i = tabs.indexOf(t);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        next.focus(); selectTab(next);
+      }
+    });
+  });
+
+  // Scrollspy: the section whose heading sits above the reading line wins.
+  const links = Array.from(document.querySelectorAll('nav.toc a'));
+  const targets = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  function markActive() {
+    let current = targets[0];
+    for (const t of targets) {
+      if (t.getBoundingClientRect().top <= 140) current = t;
+    }
+    links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + current.id));
+  }
+  let ticking = false;
+  document.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { markActive(); ticking = false; });
+  }, { passive: true });
+  markActive();
+</script>
+</body>
+</html>
