@@ -13,35 +13,52 @@
 using json = nlohmann::json;
 
 
-PIME::ImeModule* g_imeModule = NULL;
+#include <mutex>
+
+static HMODULE g_hModule = NULL;
+static PIME::ImeModule* g_imeModule = NULL;
+static std::mutex g_imeModuleMutex;
+
+static PIME::ImeModule* getImeModule() {
+	if (!g_imeModule) {
+		std::lock_guard<std::mutex> lock(g_imeModuleMutex);
+		if (!g_imeModule && g_hModule) {
+			g_imeModule = new PIME::ImeModule(g_hModule);
+		}
+	}
+	return g_imeModule;
+}
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
 	switch (ul_reason_for_call) {
 	case DLL_PROCESS_ATTACH:
 		::DisableThreadLibraryCalls(hModule); // disable DllMain calls due to new thread creation
-		//::MessageBox(0, L"X!", 0, 0);
-		g_imeModule = new PIME::ImeModule(hModule);
+		g_hModule = hModule;
 		break;
 	case DLL_PROCESS_DETACH:
-		if(g_imeModule) {
+		if (g_imeModule) {
 			g_imeModule->Release();
 			g_imeModule = NULL;
 		}
+		g_hModule = NULL;
 		break;
 	}
 	return TRUE;
 }
 
 STDAPI DllCanUnloadNow(void) {
-	return g_imeModule->canUnloadNow();
+	auto module = getImeModule();
+	return module ? module->canUnloadNow() : S_OK;
 }
 
 STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void **ppvObj) {
-	return g_imeModule->getClassObject(rclsid, riid, ppvObj);
+	auto module = getImeModule();
+	return module ? module->getClassObject(rclsid, riid, ppvObj) : E_FAIL;
 }
 
 STDAPI DllUnregisterServer(void) {
-	return g_imeModule->unregisterServer();
+	auto module = getImeModule();
+	return module ? module->unregisterServer() : E_FAIL;
 }
 
 static inline Ime::LangProfileInfo langProfileFromJson(std::wstring file, std::string& guid) {
@@ -90,9 +107,13 @@ STDAPI DllRegisterServer(void) {
 	}
 	std::vector<Ime::LangProfileInfo> langProfiles;
 	std::wstring dirPath;
-	for (const auto backendDir: g_imeModule->backendDirs()) {
+	auto module = getImeModule();
+	if (!module) {
+		return E_FAIL;
+	}
+	for (const auto backendDir: module->backendDirs()) {
 		std::string backendName = utf16ToUtf8(backendDir.c_str());
-		dirPath = g_imeModule->programDir();
+		dirPath = module->programDir();
 		dirPath += L'\\';
 		dirPath += backendDir;
 		dirPath += L"\\input_methods";
@@ -120,5 +141,5 @@ STDAPI DllRegisterServer(void) {
 			::FindClose(hFind);
 		}
 	}
-	return g_imeModule->registerServer(L"PIMETextService", langProfiles.data(), langProfiles.size());
+	return module->registerServer(L"PIMETextService", langProfiles.data(), langProfiles.size());
 }
