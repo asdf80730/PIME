@@ -11,6 +11,14 @@ on:
     tags: ['v*']
   pull_request:
 
+# The called workflow's job requests contents: write (GitHub Release) and
+# id-token: write (SignPath OIDC). A caller that omits `permissions` grants
+# contents: read + id-token: none, and GitHub rejects the whole run at startup
+# ("The nested job ... is requesting ... but is only allowed ...").
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   ci:
     if: ${{ !startsWith(github.ref, 'refs/tags/') }}
