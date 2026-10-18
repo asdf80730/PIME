@@ -16,9 +16,9 @@ not from a run.
   `extract_seq_num` is used at exactly two sites in the launcher's routing path: to insert a pending key before writing
   (`PIMELauncher/src/backend_manager.rs:381-384`) and to remove it when a reply arrives
   (`backend_manager.rs:316-319`). Routing is by `client_id` alone
-  (`backend_manager.rs:323-334`). Enforcement is in C++ (`PIMETextService/PIMEClient.cpp:751`).
+  (`backend_manager.rs:323-334`). Enforcement is in C++ (`PIMETextService/PIMEClient.cpp:745`).
 - A wrong or missing echo fails the C++ call, nulls the response, closes the pipe, and clears
-  language-bar state (`PIMEClient.cpp:751-766`, `838-864`). The launcher-side pending entry is not
+  language-bar state (`PIMEClient.cpp:745-760`, `832-858`). The launcher-side pending entry is not
   removed by the wrong echo, so unless a later reply carries the right one, the 15 s watchdog kills
   and restarts the backend (`backend_manager.rs:409-421`, `228-232`).
 - The `"method":"close"` branch (`backend_manager.rs:340-349`) only chooses a log level. Its
@@ -26,13 +26,13 @@ not from a run.
   contains the exact compact substring. Python, Node/nime and Go all reply to `close` without a `method` field, so they
   hit the `warn!` path; only `PIMELauncher/src/bin/mock_backend.rs` emits the matching shape.
 - `readBuffer_` persists between calls and is cleared only by `closeRpcConnection`
-  (`PIMEClient.cpp:718-728`, `854-864`). Any extra line the launcher forwards—duplicate, late, or
+  (`PIMEClient.cpp:712-722`, `848-858`). Any extra line the launcher forwards—duplicate, late, or
   unsolicited—can be consumed as the next reply; a subsequent `seqNum` mismatch then takes the
   close/reset path. #943 can replay stale requests into a restarted backend, but a fresh UUID per
   pipe connection (`PIMELauncher/src/pipe_server.rs:109`) keeps their replies from reaching a live
   client.
 - Both 15 s constants are real and deliberately matched: C++ uses 15 s only for `init` and
-  `onActivate` (`PIMEClient.h:82`, `PIMEClient.cpp:418`, `654`), the launcher uses 15 s for its
+  `onActivate` (`PIMEClient.h:82`, `PIMEClient.cpp:418`, `648`), the launcher uses 15 s for its
   pending-request watchdog (`PIMELauncher/src/protocol.rs:8`,
   `backend_manager.rs:409-421`). The commit that introduced the C++ constant says it was chosen
   "matching PIMELauncher's hang timeout" (`79abda2`).
@@ -61,7 +61,7 @@ The backend line is parsed once, in `forward_outputs_to_client`:
   (`:332-338`).
 - Every line sent to the backend's stdin channel is inserted into the pending map when the input
   loop dequeues it, provided it contains a numeric `seqNum` (`backend_manager.rs:381-384`). Client
-  requests always carry one (`PIMEClient.cpp:740-741`), and `ClientEntry.last_seq_num` is updated
+  requests always carry one (`PIMEClient.cpp:734-735`), and `ClientEntry.last_seq_num` is updated
   (`:386-389`). The launcher's own close notice also carries one, computed by `unregister_client`
   (`:91-104`); it goes to the same `stdin_tx` (`:143-163`), and the input loop inserts the close's
   key even though the client entry was already removed. The map is created once per backend
@@ -81,29 +81,29 @@ used for validation either.
 
 `callRpcMethod` owns the request counter and the check:
 
-- The request gets `seqNum = nextSeqNum_++` (`PIMETextService/PIMEClient.cpp:740-741`) and is
-  serialized (`:743`); `callRpcPipe` adds the newline (`:704-706`). The reply is parsed after the
-  first newline (`:747-750`).
-- The parsed reply's `seqNum` is compared with the request's (`PIMEClient.cpp:751-752`). The
+- The request gets `seqNum = nextSeqNum_++` (`PIMETextService/PIMEClient.cpp:734-735`) and is
+  serialized (`:737`); `callRpcPipe` adds the newline (`:698-700`). The reply is parsed after the
+  first newline (`:741-744`).
+- The parsed reply's `seqNum` is compared with the request's (`PIMEClient.cpp:745-746`). The
   comparison is inside the `try`; any exception (for example a missing or non-numeric `seqNum`) is
-  caught at `:754-756` and also means failure.
+  caught at `:748-750` and also means failure.
 - On a failure in the send/parse/compare path, the response is set to `nullptr`, the pipe is
-  closed, and the text-service state is reset (`PIMEClient.cpp:762-766`). `closeRpcConnection`
+  closed, and the text-service state is reset (`PIMEClient.cpp:756-760`). `closeRpcConnection`
   closes the handle and event and clears
-  `readBuffer_` (`:854-864`). `resetTextServiceState` removes and clears the language-bar buttons
-  (`:838-852`); despite the comment that "the state is unknown", that is all it resets.
+  `readBuffer_` (`:848-858`). `resetTextServiceState` removes and clears the language-bar buttons
+  (`:832-846`); despite the comment that "the state is unknown", that is all it resets.
 - Callers do not act on the response on failure: `handleRpcResponse` rejects a non-object
   (`PIMEClient.cpp:105-109`), and `filterKeyDown`/`onKeyDown` return `false`
   (`:434-444`, `:446-456`). The key is therefore not consumed by the IME.
 - There is no retry of the failed request. The next RPC re-enters `waitForRpcConnection` because
-  `shouldWaitConnection_` is still true (`PIMEClient.cpp:733-736`), which reconnects (3 × 3000 ms,
-  `:812-815`), sends `init` again, and re-sends `onActivate` if the client was activated
-  (`:817-831`). `init` failure closes the pipe and returns `false` (`:818-824`).
+  `shouldWaitConnection_` is still true (`PIMEClient.cpp:727-730`), which reconnects (3 × 3000 ms,
+  `:806-809`), sends `init` again, and re-sends `onActivate` if the client was activated
+  (`:811-825`). `init` failure closes the pipe and returns `false` (`:812-818`).
 - Nuance: `onActivate` sets `isActivated_ = true` unconditionally after the call
   (`PIMEClient.cpp:413-422`), even when the call failed and the pipe was closed. The next
-  connection then sends `onActivate` again because of that flag (`:826-831`).
+  connection then sends `onActivate` again because of that flag (`:820-825`).
 
-The response-nulling at `:763` is recent defensive work: commit `a132a8b` states that callers
+The response-nulling at `:757` is recent defensive work: commit `a132a8b` states that callers
 ignored `callRpcMethod`'s return value and previously applied the stale parsed reply through
 `updateStatus()`. That commit is the reason a mismatched reply cannot be applied today.
 
@@ -254,16 +254,16 @@ a fresh UUID keeps their replies from reaching a reconnected client.
 ### The buffering logic
 
 `callRpcPipe` checks `readBuffer_` for a newline **before** reading the pipe
-(`PIMETextService/PIMEClient.cpp:716-723`). If one exists, it returns that line and erases it from
-the buffer. Otherwise it reads up to 8192 bytes, appends them, and loops (`:725-728`). The buffer is
+(`PIMETextService/PIMEClient.cpp:710-717`). If one exists, it returns that line and erases it from
+the buffer. Otherwise it reads up to 8192 bytes, appends them, and loops (`:719-722`). The buffer is
 not cleared at the start of a call; it survives across RPC calls and is cleared only by
-`closeRpcConnection` (`:854-864`). The read is one overlapped `ReadFile` with a per-read timeout
-(`:666-700`); a timeout cancels the I/O and returns `false` (`:688-698`).
+`closeRpcConnection` (`:848-858`). The read is one overlapped `ReadFile` with a per-read timeout
+(`:660-694`); a timeout cancels the I/O and returns `false` (`:682-692`).
 
 This is correct and necessary for fragmented/coalesced pipe reads: a single 8 KiB read can contain a
 complete reply plus the start of the next one, and the excess must be kept. The consequence is that
 the class has no notion of "this line belongs to this call" beyond the `seqNum` check in
-`callRpcMethod` (`:751`).
+`callRpcMethod` (`:745`).
 
 ### Every site that writes a line to the client pipe
 
@@ -298,16 +298,16 @@ whatever pending key its `seqNum` names (`backend_manager.rs:316-319`), so it ca
 Therefore:
 
 - A second line already in `readBuffer_` (a duplicate reply, or the tail of a coalesced read) is
-  returned by the next `callRpcPipe` (`PIMEClient.cpp:718-723`) and treated as the reply to the
+  returned by the next `callRpcPipe` (`PIMEClient.cpp:712-717`) and treated as the reply to the
   *new* request.
 - A line that arrives while no call is in flight sits in the pipe buffer; the next call consumes it
   first.
 - If the consumed line is a JSON object, `callRpcMethod` compares its `seqNum` with the current
-  request (`:751`). If it differs, or is missing/non-numeric, the call fails and the
-  null/close/reset path runs (`:762-766`). `closeRpcConnection` then clears `readBuffer_`
-  (`:863`), discarding any remaining carried lines.
-- If the consumed line is not JSON at all, the parse at `:749` throws and the same failure path runs
-  (`:754-766`).
+  request (`:745`). If it differs, or is missing/non-numeric, the call fails and the
+  null/close/reset path runs (`:756-760`). `closeRpcConnection` then clears `readBuffer_`
+  (`:857`), discarding any remaining carried lines.
+- If the consumed line is not JSON at all, the parse at `:743` throws and the same failure path runs
+  (`:748-760`).
 
 Today no shipped producer emits unsolicited lines: each request line gets exactly one reply line
 (table above), and the launcher-generated close reply is sent to an already-unregistered uuid, so it
@@ -345,7 +345,7 @@ What that stale queue can and cannot do:
 
 The C++ `readBuffer_` angle is separate: a line left in `readBuffer_` from before the failure can be
 consumed by the next call, but the next call is on a reconnected pipe after `closeRpcConnection`
-cleared the buffer (`PIMEClient.cpp:854-864`). If the C++ has not yet detected the failure and calls
+cleared the buffer (`PIMEClient.cpp:848-858`). If the C++ has not yet detected the failure and calls
 again on the old pipe, the stale line can be consumed and produces the same `seqNum` mismatch path.
 Either way the stale line is not applied.
 
@@ -361,7 +361,7 @@ a reply after the launcher deadline finds the backend killed and the client disc
 | Constant | Value | Defined | Used |
 |---|---|---|---|
 | `kDefaultRpcTimeoutMs` | 2000 ms | `PIMETextService/PIMEClient.h:81` | default for all RPCs (`PIMEClient.h:85`, `:89`) |
-| `kServerStartupTimeoutMs` | 15000 ms | `PIMEClient.h:82` | `init()` (`PIMEClient.cpp:645-655`), `onActivate()` (`PIMEClient.cpp:413-422`) |
+| `kServerStartupTimeoutMs` | 15000 ms | `PIMEClient.h:82` | `init()` (`PIMEClient.cpp:639-649`), `onActivate()` (`PIMEClient.cpp:413-422`) |
 | `HANG_TIMEOUT` | 15 s | `PIMELauncher/src/protocol.rs:8` | watchdog comparison (`backend_manager.rs:411-414`), log value (`:418`) |
 | `BACKEND_WRITE_TIMEOUT` | 5 s | `protocol.rs:11` | write to backend stdin (`backend_manager.rs:395-406`) |
 
@@ -374,7 +374,7 @@ cut off while the Python backend imports dictionaries. All interactive keystroke
 
 The two deadlines are not the same kind of deadline. C++ applies its timeout to each overlapped
 read/write (`PIMEClient.cpp:688-698`); `callRpcPipe` can perform multiple reads before a newline
-(`:716-729`), so a backend that trickles bytes can exceed 15 s in total while no single read times
+(`:710-723`), so a backend that trickles bytes can exceed 15 s in total while no single read times
 out. The launcher stamps the pending entry when the request is dequeued, before writing
 (`backend_manager.rs:381-384`), and checks it every second (`:369`), so its kill happens on the
 first tick at or after 15 s.
@@ -383,14 +383,14 @@ first tick at or after 15 s.
 
 - `init` or `onActivate`: the read waits up to 15 s, then `callPipeIO` cancels the overlapped I/O
   and returns `false` (`PIMEClient.cpp:688-698`). `callRpcMethod` nulls the response, closes the
-  pipe, and resets state (`:762-766`). For `init`, `waitForRpcConnection` closes the pipe and
-  returns `false` (`:818-824`). For `onActivate`, the call fails but `isActivated_` is still set to
-  `true` (`:413-422`); the next connection re-sends `onActivate` (`:826-831`).
+  pipe, and resets state (`:756-760`). For `init`, `waitForRpcConnection` closes the pipe and
+  returns `false` (`:812-818`). For `onActivate`, the call fails but `isActivated_` is still set to
+  `true` (`:413-422`); the next connection re-sends `onActivate` (`:820-825`).
 - A keystroke RPC: the deadline is 2 s, not 15 s (`PIMEClient.h:81`). The same failure path runs,
   `filterKeyDown` returns `false` (`PIMEClient.cpp:434-444`), and the key is passed through to the
   application. The next keystroke triggers `waitForRpcConnection` (`:733-736`) and re-`init`s.
 - In both cases the failed call is not retried. The C++ pipe session is lost, the language-bar
-  buttons are removed (`:838-852`), and the user sees a missed key or a failed activation followed
+  buttons are removed (`:832-846`), and the user sees a missed key or a failed activation followed
   by a reconnect on the next event.
 
 ### Observable failure mode: launcher side
@@ -445,9 +445,9 @@ first tick at or after 15 s.
 - Windows named-pipe timing and close semantics: whether a write to a pipe whose client handle has
   just closed fails immediately or is buffered, and whether a cancelled overlapped read can still
   deliver data to the buffer. The code assumes cancellation completes before return
-  (`PIMEClient.cpp:693-697`); the actual scheduling is a Windows property.
+  (`PIMEClient.cpp:687-691`); the actual scheduling is a Windows property.
 - The visible TSF effect (composition/candidate clearing) of `resetTextServiceState`; the code only
-  clears language-bar buttons (`PIMEClient.cpp:838-852`).
+  clears language-bar buttons (`PIMEClient.cpp:832-846`).
 - Real backend stdout encoding and line buffering (`PYTHONIOENCODING` is set at
   `backend_manager.rs:282-283`; Node uses its default stream encoding; Go uses `encoding/json`).
 - Third-party or locally installed backends outside `backends.json`.
