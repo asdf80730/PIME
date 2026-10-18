@@ -229,6 +229,9 @@ impl BackendManager {
                 // Disconnect all existing clients so they are forced to reconnect and re-initialize
                 // with the new backend process instance.
                 manager_clone.disconnect_clients_for_backend(&backend_name_clone);
+                // Drain any stale requests in the queue sent by disconnected clients
+                // before the crash so they are not dispatched to the new backend process.
+                while stdin_rx.try_recv().is_ok() {}
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
         });
