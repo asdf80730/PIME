@@ -53,3 +53,7 @@ Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/a
 ### Verification
 
 The Python backend verifies locally; C++/Rust verify only through Windows CI. See `docs/agents/verification.md`.
+
+### Upstream PRs
+
+Upstream PRs carry product changes only; tests, CI wiring and agent docs stay on local `master`, and PR branches start from `origin/master`. See `docs/agents/upstream-pr.md`.
