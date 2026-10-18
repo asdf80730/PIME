@@ -12,7 +12,7 @@ Build a rust-based, constantly running background service.
   - Also monitor the backend processes.
     - If a backend crashes or is killed, restart it.
     - If a backend service hangs for more than N seconds, restart it. Can be checked by the time it received client input and the time it respond.
-    - Default N is 30 seconds, configurable.
+    - Default N is 15 seconds, the `HANG_TIMEOUT` constant in `src/protocol.rs`.
   - keep track of connected clients and their states. If the backend dies, do not disconnect client. Just silently restart backend seamlessly.
 
 - setup a windows named pipe for other programs to communicate with this service.
