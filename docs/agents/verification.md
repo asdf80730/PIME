@@ -5,45 +5,129 @@ cheapest place it actually runs.
 
 ## Local (Linux, this checkout)
 
-- **Python backend**:
+One command runs every layer below, skips toolchains the machine lacks, and
+exits nonzero on failure:
+
+```
+tests/run_local_tests.sh
+```
+
+Individual commands, if you want to narrow the loop:
+
+- **Python backend** — 46 tests (protocol loop, TextService dispatch, service
+  manager, cin counting, input-method smoke, docs pages):
 
   ```
   python3 -m unittest discover -s tests -p "test_*.py" -v
   ```
 
+  `tests/run_local_tests.sh` also runs the same suite on the shipped
+  interpreter (`python/python3/python.exe`, 3.12.9) under Wine; the Linux-only
+  IME smoke test skips itself there. Run it directly with:
+
+  ```
+  WINEDEBUG=-all wine python/python3/python.exe -m unittest discover -s tests -p "test_*.py" -v
+  ```
+
   `tests/chewing_test.py` does not match the pattern on purpose: it imports `windll`
   and drives the Windows desktop. Run it on Windows by hand.
-- **Node backend** — `cd node && npm test`: spawns `node/server.js` and speaks the
-  launcher's `<client_id>|<json>` framing over stdin/stdout, so it needs no Windows.
-  The bundled `node/node.exe` is v10.12.0; CI runs Node 21.x.
-- **Go backend** — needs Go installed: `cd go-backend && go test ./...`.
-- **C++ / Rust** — the product targets Windows. `PIMELauncher` can be built for
-  `i686-pc-windows-gnu` and its tests run under Wine (15 at the time of writing;
-  `docs/agents/wine.md`); treat that as a smoke check, not Windows. The C++ text
-  service cannot build or run here: the root `CMakeLists.txt` uses MSVC flags
-  (`/MT`, `/D_UNICODE`), TSF needs a Windows host, and running `cmake` on Linux
-  proves nothing.
-- **Docs pages** — `docs/tour/` is static and outside CI (`paths-ignore: docs/**`),
-  so this check is the guardrail: serve with `python3 -m http.server 8765 -d docs`,
-  open `http://127.0.0.1:8765/tour/` with `browser.open` (headless Chromium), and
+
+  `tests/test_input_methods_smoke.py` instantiates the real service subclasses
+  with Windows API shims, activates them, and sends key events. It covers the ten
+  cinbase services plus `meow`; `chewing`/`braille_chewing` are reported as
+  skipped when the system libchewing does not match the bundled binding, and
+  `rime` when `librime.so` is absent. It needs `libopencc-dev` (the wrapper loads
+  `libopencc.so`); without it the test skips. `libchewing3`/`librime1` are
+  optional: installing them turns the skipped checks into real ones, matching
+  the versions PIME ships. Input methods that import Windows-only modules can
+  still be syntax-checked:
+
+  ```
+  python3 -m compileall -q -x '(^|/)python3(/|$)' python
+  ```
+
+- **Node backend** — `cd node && npm test`: two scripts. `server.test.js` spawns
+  `node/server.js` and speaks the launcher's `<client_id>|<json>` framing over
+  stdin/stdout; `loadServices.test.js` discovers services from a temporary
+  `input_methods` tree (both loaders accept an optional `baseDir` for this).
+  The bundled `node/node.exe` is v22.14.0 (32-bit); CI runs Node 22.x. Wine
+  cannot run that Node build (`EBADF` while loading builtins), so the bundled
+  runtime is exercised on Windows CI instead: `server.test.js` spawns
+  `process.execPath`, which is the shipped `node.exe` there.
+- **Go backend** — `cd go-backend && go test ./...` (4 packages). `go.mod`
+  requires Go 1.21; Debian bookworm's 1.19 is too old. `tests/run_local_tests.sh`
+  looks in `PATH`, `/usr/local/go/bin`, and `/opt/go/bin`. To install:
+
+  ```
+  curl -sSLo /tmp/go.tgz https://go.dev/dl/go1.21.13.linux-amd64.tar.gz
+  sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf /tmp/go.tgz
+  export PATH=/usr/local/go/bin:$PATH
+  ```
+
+  The Linux `linux-checks` job installs Go from `go.mod` and runs this same
+  command through the script, so a missing package or registration fails PR CI.
+  The script also cross-compiles the shipped target:
+  `CGO_ENABLED=0 GOOS=windows GOARCH=386 go build ./...`.
+- **C++ pure helpers** — `PIMETextService/JsonUtils.h` and
+  `CompositionCursor.h` have no Windows dependencies, so they are testable here:
+  - `JsonUtils`: host g++ links the vendored gtest:
+    `g++ -std=c++17 -pthread -I PIMETextService -I json/single_include -I libIME2/lib/googletest-release-1.10.0/googletest/include -I libIME2/lib/googletest-release-1.10.0/googletest tests/json_utils_test.cpp libIME2/lib/googletest-release-1.10.0/googletest/src/gtest-all.cc libIME2/lib/googletest-release-1.10.0/googletest/src/gtest_main.cc -o /tmp/json_utils_test && /tmp/json_utils_test`
+    (6 tests).
+  - `CompositionCursor`: Linux `wchar_t` is 32-bit while the helper indexes a
+    Windows UTF-16 buffer, so build it for Windows and run under Wine:
+    `i686-w64-mingw32-g++ -std=c++17 -static -I PIMETextService tests/composition_cursor_test.cpp -o /tmp/composition_cursor_test.exe && wine /tmp/composition_cursor_test.exe`
+    (needs `g++-mingw-w64-i686`).
+- **Rust launcher** — cross-build for `i686-pc-windows-gnu` and run under Wine
+  (15 tests at the time of writing; `docs/agents/wine.md`). Treat that as a
+  smoke check, not Windows. The same block runs `cargo fmt --check` and
+  `cargo clippy --target i686-pc-windows-gnu --all-targets -- -D warnings`
+  when `rustfmt`/`clippy` are installed (`rustup component add rustfmt clippy`).
+- **Docs pages** — `tests/test_docs_pages.py` checks local links/assets, anchors,
+  duplicate ids, and `aria-controls`/`aria-labelledby` targets. The `Docs checks`
+  workflow runs it on pushes and PRs that touch `docs/**`; `docs/tour/`
+  is still outside the Windows workflow (`paths-ignore: docs/**`), so a changed
+  page also needs the manual pass: serve with
+  `python3 -m http.server 8765 -d docs`, open
+  `http://127.0.0.1:8765/tour/` with `browser.open` (headless Chromium), and
   check layout, console errors, and tab behaviour. Screenshot only the changed
   region. If the prelude reports "Shared browser daemon unavailable", the daemon's
   Chrome profile holds a lock from a dead PID (exit 21): remove
   `~/.omp/run/daemons/*/omp.browser.headless.profile/Singleton*` and retry.
+- **Workflow YAML** — `python3` has no PyYAML; parse with Bun instead:
+  `bun -e 'for (const f of [".github/workflows/ci.yaml", ".github/workflows/build-and-sign.yaml", ".github/workflows/docs.yaml"]) Bun.YAML.parse(await Bun.file(f).text())'`.
+- **C++ text service** — cannot build or run here: the root `CMakeLists.txt` uses
+  MSVC flags (`/MT`, `/D_UNICODE`), TSF needs a Windows host, and running `cmake`
+  on Linux proves nothing. The NSIS installer is also CI-only: Linux `makensis`
+  cannot preprocess `installer/installer.nsi` because the Windows `inetc` and
+  `StdUtils` plugins are missing. Windows CI remains the check.
 
-## CI (GitHub Actions, `windows-2025`)
+## CI (GitHub Actions)
 
-`.github/workflows/build-and-sign.yaml` runs, in order:
+`.github/workflows/ci.yaml` runs two kinds of check for non-tag refs:
 
-1. `cargo test` in `PIMELauncher/`
-2. `python -m unittest discover -s tests -p "test_*.py" -v`
-3. `npm test` in `node/`
-4. `build.bat` (x86 + x64 text service, launcher, backends)
-5. sign the built binaries, then build the NSIS installer
+- `linux-checks` (`ubuntu-latest`) checks out `libIME2`, installs Go from
+  `go-backend/go.mod` plus `libopencc-dev`, then runs
+  `tests/run_local_tests.sh`. This is the same command as local; it covers
+  Python, Node, Go (tests plus Windows/386 cross-build), and the host C++
+  `JsonUtils` test. Layers needing Wine or the bundled runtimes report `SKIP`
+  here and run in the Windows job.
+- `ci` calls `.github/workflows/build-and-sign.yaml` (`windows-2025`), which runs,
+  in order:
 
-So the feedback loop for a C++ or Rust change is: push a branch, or run the workflow
-on it, and read the `build-and-sign` job. Do not claim a C++/Rust change verified
-without a green run there.
+  1. `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, then
+     `cargo test` in `PIMELauncher/`
+  2. `python -m unittest ...` on the runner and on the bundled
+     `python\python3\python.exe`
+  3. `npm test` on Node 22.x and both Node tests on the bundled `node\node.exe`
+  4. `build.bat` (x86 + x64 text service, launcher, backends)
+  5. sign the built binaries, then build the NSIS installer
+
+`.github/workflows/docs.yaml` runs `test_docs_pages.py` on changes to `docs/**`
+or the test itself.
+
+So the feedback loop for C++/TSF, MSVC-only helpers, or installer changes is:
+push a branch, or run the workflow on it, and read the `build-and-sign` job. Do
+not claim such a change verified without a green run there.
 
 ## Ordering
 

@@ -54,7 +54,10 @@ Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/a
 
 ### Verification
 
-The Python and Node backends verify locally; the Rust launcher also runs under Wine as a smoke check. C++/Rust changes still need Windows CI. See `docs/agents/verification.md`.
+`tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled
+Python, Node, Go tests plus Windows cross-build, C++ helpers, Rust tests/fmt/clippy
+under Wine) and skips missing toolchains. C++/TSF and installer changes still need
+Windows CI. See `docs/agents/verification.md`.
 
 ### Upstream PRs
 
