@@ -184,8 +184,8 @@
   <p class="lede">一個 Windows 文字服務 DLL，只負責把按鍵轉發給常駐的啟動器，再由啟動器交給 Python、Node 或 Go 寫的後端。改輸入法不必碰 C++，也不必重新註冊 DLL。</p>
   <div class="meta">
     <span>整理自 <code>README.md</code>、<code>HACKING.txt</code>、<code>GLOSSARY.md</code>、<code>docs/research/</code></span>
-    <span>上游比對點 <code>EasyIME/PIME@24e4dff</code></span>
-    <span>2026-10-18</span>
+    <span>上游比對點 <code>EasyIME/PIME@1458cea</code></span>
+    <span>2026-10-20</span>
   </div>
 </header>
 
@@ -199,7 +199,7 @@
     <div class="stat"><b>3</b><span>內建後端：Python、Node、Go</span></div>
     <div class="stat"><b>2</b><span>段 IPC：named pipe、stdin/stdout</span></div>
     <div class="stat"><b>15 s</b><span>後端無回應的 watchdog 上限</span></div>
-    <div class="stat"><b>3 種架構</b><span>x86 / x64 / ARM64 各一份 DLL</span></div>
+    <div class="stat"><b>3 種架構</b><span>x86、x64、ARM64X（含原生 ARM64）</span></div>
   </div>
 
   <div class="note">
@@ -279,7 +279,7 @@
     <div class="card">
       <span class="tag">NSIS</span>
       <h3>installer</h3>
-      <p>註冊 TSF、寫 registry、依架構放置 DLL。使用者看到的安裝流程都在這裡。</p>
+      <p>註冊 TSF、寫 registry、依架構放置 DLL。Windows 11 ARM64 改註冊 ARM64X forwarder，讓原生與模擬的 x64 行程共用同一個 CLSID。</p>
     </div>
     <div class="card">
       <span class="tag">設定</span>
@@ -366,7 +366,7 @@
   </div>
 
   <div class="tabpanel" role="tabpanel" id="panel-node" aria-labelledby="tab-node" hidden>
-    <p>用 <code>nime</code> 套件管理連線與 method 分派；<code>server.js</code> 只提供「GUID → service」的解析函式。service 只需實作 <code>textReducer</code> 與 <code>response</code>。這一層的歷史問題最多：未知 GUID 或沒先 init 的請求會讓 nime 對 null 解引用，整個行程死掉——這正是 #936／#937 的來源。</p>
+    <p>用 vendored 的 <code>nime</code>（放在 <code>node/node_modules</code>，隨 repo 追蹤）管理連線與 method 分派；<code>server.js</code> 只提供「GUID → service」的解析函式。service 只需實作 <code>textReducer</code> 與 <code>response</code>。這一層的歷史問題最多：未知 GUID 或沒先 init 的請求會讓 nime 對 null 解引用，整個行程死掉——這正是 #936／#937 的來源。</p>
     <pre><code>node/
 ├── server.js          # createServer(resolveService) + listen
 ├── loadServices.js    # 讀 input_methods/*/ime.json
@@ -422,25 +422,31 @@
 
 <section id="status">
   <h2><span class="num">07</span>目前狀態</h2>
-  <p class="sub">2026-10-18，對照上游 <code>24e4dff</code>。維護者正在集中清理 Node 後端與 TSF 的舊問題。</p>
+  <p class="sub">2026-10-20，對照上游 <code>1458cea</code>。維護者正在集中清理 Node 後端與 TSF 的舊問題。</p>
 
   <div class="table-wrap">
     <table>
       <thead><tr><th>Issue</th><th>主題</th><th>狀態</th><th>PR</th></tr></thead>
       <tbody>
-        <tr><td>#936</td><td>Node 未捕捉例外會殺掉整個後端</td><td><span class="chip open">open</span></td><td>#945（PCMan，CI 綠）</td></tr>
-        <tr><td>#937</td><td>未知 GUID／未 init 的請求讓 nime 解引用 null</td><td><span class="chip open">open</span></td><td>#946（PCMan）、#955（本 fork）</td></tr>
+        <tr><td>#936</td><td>Node 未捕捉例外會殺掉整個後端</td><td><span class="chip open">open</span></td><td>#945、#971（皆 open）</td></tr>
+        <tr><td>#937</td><td>未知 GUID／未 init 的請求讓 nime 解引用 null</td><td><span class="chip open">open</span></td><td>#946、#955、#971（皆 open）</td></tr>
         <tr><td>#938</td><td>UTF-16 surrogate pair 的游標位移</td><td><span class="chip ok">已修正</span></td><td>#944</td></tr>
         <tr><td>#939</td><td>候選字字型名稱缺 NUL 結尾</td><td><span class="chip ok">已修正</span></td><td>#947</td></tr>
         <tr><td>#940</td><td>在 loader lock 下建構 ImeModule</td><td><span class="chip ok">已修正</span></td><td>#948</td></tr>
         <tr><td>#941</td><td>語言列圖示快取共用</td><td><span class="chip ok">已修正</span></td><td>#949</td></tr>
-        <tr><td>#942</td><td>launcher 不回應時 UI 執行緒卡 3 × 3 秒</td><td><span class="chip open">open</span></td><td>無（需 Windows 實機驗證）</td></tr>
+        <tr><td>#942</td><td>launcher 不回應時 UI 執行緒卡 3 × 3 秒</td><td><span class="chip open">open</span></td><td>#972</td></tr>
         <tr><td>#943</td><td>重啟後把舊請求送給新後端</td><td><span class="chip ok">已修正</span></td><td>#950</td></tr>
         <tr><td>#951</td><td>Node 載入 <code>ime.json</code> 的容錯</td><td><span class="chip open">open</span></td><td>#952</td></tr>
         <tr><td>#960</td><td>候選窗不隨 Per-Monitor DPI 縮放</td><td><span class="chip open">open</span></td><td>#962</td></tr>
-        <tr><td>#961</td><td>C++ 端未保護的 JSON 例外</td><td><span class="chip open">open</span></td><td>#964</td></tr>
+        <tr><td>#961</td><td>C++ 端未保護的 JSON 例外</td><td><span class="chip ok">已修正</span></td><td>#964</td></tr>
+        <tr><td>#966</td><td>installer 移除過時的 VCRedist 檢查</td><td><span class="chip open">open</span></td><td>無</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="note">
+    <span class="label">上游動態（10/18–10/19）</span>
+    <p>合併了 #964（#961）、#967／#969（installer 重構，刪掉 md5dll）、#965（ARM64X forwarder）；AppVeyor 改成從 GitHub Releases 下載 CMake。新開的 PR 是 #970（Python 錯誤回覆測試）、#971（直接 patch vendored <code>nime</code>，補 #936／#937）與 #972（#942）；新 issue 是 #966（installer 移除 VCRedist 下載）。</p>
   </div>
 
   <h3>這個 checkout 額外帶的東西</h3>
@@ -494,7 +500,7 @@
     <li><code>docs/research/input-request-lifecycle.md</code> — 請求方向與 launcher 的行程管理</li>
     <li><code>docs/research/launcher-reply-validation.md</code> — 回覆方向、seqNum、close、readBuffer</li>
   </ul>
-  <p>Issue/PR 狀態取自 GitHub API，上游比對點 <code>EasyIME/PIME@24e4dff</code>。</p>
+  <p>Issue/PR 狀態取自 GitHub API，上游比對點 <code>EasyIME/PIME@1458cea</code>。</p>
 </footer>
 
 </main>
