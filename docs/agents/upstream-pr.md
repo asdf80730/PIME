@@ -6,8 +6,9 @@ A PR to `EasyIME/PIME` carries the product change only. The local harness stays 
   `docs/agents/`, `GLOSSARY.md`, research notes, and CI steps that run local test suites.
 - Ship the smallest diff that fixes the issue. Regression tests, CI wiring and HACKING
   entries stay on local `master` unless the maintainer asks for them in the PR.
-- Verify before pushing: `cd node && npm test`, the Python suite, and a YAML parse of
-  `.github/workflows/build-and-sign.yaml`.
+- Verify before pushing: `cd node && npm test`, the Python suite, and a YAML parse:
+  `bun -e 'Bun.YAML.parse(await Bun.file(".github/workflows/build-and-sign.yaml").text())'`
+  (`python3` has no PyYAML; Bun's parser throws on invalid YAML).
 - Commit messages follow `AGENTS.md` §2, including the AI declaration.
 - Push the branch to the `fork` remote. The personal access token cannot create,
   comment on, edit, or close issues/PRs on `EasyIME/PIME` (`403 Resource not
