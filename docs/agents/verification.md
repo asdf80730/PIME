@@ -17,9 +17,11 @@ cheapest place it actually runs.
   launcher's `<client_id>|<json>` framing over stdin/stdout, so it needs no Windows.
   The bundled `node/node.exe` is v10.12.0; CI runs Node 21.x.
 - **Go backend** — needs Go installed: `cd go-backend && go test ./...`.
-- **C++ / Rust** — cannot build here. The root `CMakeLists.txt` uses MSVC flags
-  (`/MT`, `/D_UNICODE`) and `PIMELauncher` is built only for x86 against Windows
-  named pipes. Running `cmake` on Linux proves nothing; don't.
+- **C++ / Rust** — the product targets Windows. `PIMELauncher` can be built for
+  `i686-pc-windows-gnu` and its 15 tests run under Wine (`docs/agents/wine.md`);
+  treat that as a smoke check, not Windows. The C++ text service cannot build or
+  run here: the root `CMakeLists.txt` uses MSVC flags (`/MT`, `/D_UNICODE`), TSF
+  needs a Windows host, and running `cmake` on Linux proves nothing.
 - **Docs pages** — `docs/tour/` is static and outside CI (`paths-ignore: docs/**`),
   so this check is the guardrail: serve with `python3 -m http.server 8765 -d docs`,
   open `http://127.0.0.1:8765/tour/` with `browser.open` (headless Chromium), and
