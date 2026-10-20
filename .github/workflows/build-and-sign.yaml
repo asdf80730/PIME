@@ -31,15 +31,26 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Use Node.js 21.x
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v6
         with:
-          node-version: 21.x
+          node-version: 22.x
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: i686-pc-windows-msvc
+          components: rustfmt, clippy
+
+      - name: Check Rust formatting
+        run: |
+          cd PIMELauncher
+          cargo fmt --check
+
+      - name: Run Rust clippy
+        run: |
+          cd PIMELauncher
+          cargo clippy --all-targets -- -D warnings
 
       - name: Run Rust tests
         run: |
@@ -51,11 +62,23 @@ jobs:
       - name: Run Python backend tests
         run: python -m unittest discover -s tests -p "test_*.py" -v
 
+      # Exercise the interpreter the installer ships, not the runner's.
+      - name: Run Python backend tests on bundled python.exe
+        run: .\python\python3\python.exe -m unittest discover -s tests -p "test_*.py" -v
+
       # Drives node/server.js over stdin/stdout, the same framing the launcher
       # uses; no Windows API involved.
       - name: Run Node backend tests
         working-directory: node
         run: npm test
+
+      # server.test.js spawns process.execPath, so this exercises the runtime
+      # the installer ships rather than the runner's Node.
+      - name: Run Node backend tests on bundled node.exe
+        working-directory: node
+        run: |
+          .\node.exe test\server.test.js
+          .\node.exe test\loadServices.test.js
 
       - name: Install NSIS
         uses: repolevedavaj/install-nsis@v1.2.0
