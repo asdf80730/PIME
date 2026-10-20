@@ -19,6 +19,7 @@
 
 #include "PIMEClient.h"
 #include "CompositionCursor.h"
+#include "JsonUtils.h"
 #include "libIME2/src/Utils.h"
 #include <algorithm>
 #include <nlohmann/json.hpp>
@@ -36,22 +37,6 @@ using namespace std;
 using json = nlohmann::json;
 
 namespace PIME {
-
-// Like json::value(), but returns defaultValue instead of throwing when obj is not
-// an object or the key holds a different type. Exceptions must not escape TSF callbacks.
-template <typename T>
-static T jsonValueOr(const json& obj, const char* key, const T& defaultValue) {
-	auto it = obj.find(key);
-	if (it == obj.end()) {
-		return defaultValue;
-	}
-	try {
-		return it->get<T>();
-	}
-	catch (const json::exception&) {
-		return defaultValue;
-	}
-}
 
 static std::string uuidToString(const UUID& uuid) {
 	std::string result;
@@ -83,7 +68,6 @@ Client::Client(TextService* service, REFIID langProfileGuid):
 Client::~Client(void) {
 	closeRpcConnection();
 	resetTextServiceState();
-	LangBarButton::clearIconCache();
 }
 
 // pack a keyEvent object into a json value
@@ -108,7 +92,7 @@ bool Client::handleRpcResponse(json& msg, Ime::EditSession* session) {
 		return false;
 	}
 	try {
-		bool success = jsonValueOr(msg, "success", false);
+		bool success = jsonValueOr<bool>(msg, "success", false);
 		if (success) {
 			updateStatus(msg, session);
 		}
@@ -282,10 +266,12 @@ void Client::updateLanguageButtons(json& msg) {
 		// FIXME: handle windows-mode-icon
 		for (auto& btn : changeButtonVal) {
 			if (btn.is_object()) {
-				string id = btn["id"].get<string>();
-				auto map_it = buttons_.find(id);
-				if (map_it != buttons_.end()) {
-					map_it->second->updateFromJson(btn);
+				string id = jsonValueOr<string>(btn, "id", "");
+				if (!id.empty()) {
+					auto map_it = buttons_.find(id);
+					if (map_it != buttons_.end()) {
+						map_it->second->updateFromJson(btn);
+					}
 				}
 			}
 		}
@@ -298,10 +284,11 @@ void Client::updatePreservedKeys(json& msg) {
 		// preserved keys
 		for (auto& key : addPreservedKeyVal) {
 			if (key.is_object()) {
-				UINT keyCode = key["keyCode"].get<unsigned int>();
-				UINT modifiers = key["modifiers"].get<unsigned int>();
+				UINT keyCode = jsonValueOr<UINT>(key, "keyCode", 0u);
+				UINT modifiers = jsonValueOr<UINT>(key, "modifiers", 0u);
+				std::string guidStr = jsonValueOr<std::string>(key, "guid", "");
 				UUID guid = { 0 };
-				if (uuidFromString(key["guid"].get<string>().c_str(), guid)) {
+				if (!guidStr.empty() && uuidFromString(guidStr.c_str(), guid)) {
 					textService_->addPreservedKey(keyCode, modifiers, guid);
 				}
 			}
@@ -386,7 +373,9 @@ void Client::updateCandidateList(json& msg, Ime::EditSession* session) {
 		vector<wstring>& candidates = textService_->candidates_;
 		candidates.clear();
 		for (const auto& candidate : candidateListVal) {
-			candidates.emplace_back(utf8ToUtf16(candidate.get<string>().c_str()));
+			if (candidate.is_string()) {
+				candidates.emplace_back(utf8ToUtf16(candidate.get<string>().c_str()));
+			}
 		}
 		textService_->updateCandidates(session);
 		if (showCandidatesVal.is_boolean() && !showCandidatesVal.get<bool>()) {
@@ -421,7 +410,6 @@ void Client::onDeactivate() {
 	callRpcMethod(req, ret);
 	if (handleRpcResponse(ret)) {
 	}
-	LangBarButton::clearIconCache();
 	isActivated_ = false;
 }
 
@@ -432,7 +420,7 @@ bool Client::filterKeyDown(Ime::KeyEvent& keyEvent) {
 	json ret;
 	callRpcMethod(req, ret);
 	if (handleRpcResponse(ret)) {
-		return jsonValueOr(ret, "return", false);
+		return jsonValueOr<bool>(ret, "return", false);
 	}
 	return false;
 }
@@ -444,7 +432,7 @@ bool Client::onKeyDown(Ime::KeyEvent& keyEvent, Ime::EditSession* session) {
 	json ret;
 	callRpcMethod(req, ret);
 	if (handleRpcResponse(ret, session)) {
-		return jsonValueOr(ret, "return", false);
+		return jsonValueOr<bool>(ret, "return", false);
 	}
 	return false;
 }
@@ -456,7 +444,7 @@ bool Client::filterKeyUp(Ime::KeyEvent& keyEvent) {
 	json ret;
 	callRpcMethod(req, ret);
 	if (handleRpcResponse(ret)) {
-		return jsonValueOr(ret, "return", false);
+		return jsonValueOr<bool>(ret, "return", false);
 	}
 	return false;
 }
@@ -468,7 +456,7 @@ bool Client::onKeyUp(Ime::KeyEvent& keyEvent, Ime::EditSession* session) {
 	json ret;
 	callRpcMethod(req, ret);
 	if (handleRpcResponse(ret, session)) {
-		return jsonValueOr(ret, "return", false);
+		return jsonValueOr<bool>(ret, "return", false);
 	}
 	return false;
 }
@@ -482,7 +470,7 @@ bool Client::onPreservedKey(const GUID& guid) {
 		json ret;
 		callRpcMethod(req, ret);
 		if (handleRpcResponse(ret)) {
-			return jsonValueOr(ret, "return", false);
+			return jsonValueOr<bool>(ret, "return", false);
 		}
 	}
 	return false;
@@ -496,7 +484,7 @@ bool Client::onCommand(UINT id, Ime::TextService::CommandType type) {
 	json ret;
 	callRpcMethod(req, ret);
 	if (handleRpcResponse(ret)) {
-		return jsonValueOr(ret, "return", false);
+		return jsonValueOr<bool>(ret, "return", false);
 	}
 	return false;
 }
@@ -517,7 +505,7 @@ static bool menuFromJson(ITfMenu* pMenu, json& menuInfo) {
 		for (auto& item : menuInfo) {
 			if (!item.is_object())
 				continue;
-			UINT id = jsonValueOr(item, "id", 0u);
+			UINT id = jsonValueOr<UINT>(item, "id", 0u);
 			std::wstring text = utf8ToUtf16(jsonValueOr<std::string>(item, "text", "").c_str());
 
 			DWORD flags = 0;
@@ -526,9 +514,9 @@ static bool menuFromJson(ITfMenu* pMenu, json& menuInfo) {
 			if (id == 0 && text.empty())
 				flags = TF_LBMENUF_SEPARATOR;
 			else {
-				if (jsonValueOr(item, "checked", false))
+				if (jsonValueOr<bool>(item, "checked", false))
 					flags |= TF_LBMENUF_CHECKED;
-				if (!jsonValueOr(item, "enabled", true))
+				if (!jsonValueOr<bool>(item, "enabled", true))
 					flags |= TF_LBMENUF_GRAYED;
 
 				if (item.contains("submenu") && item["submenu"].is_array()) {
@@ -563,16 +551,16 @@ static HMENU menuFromJson(json& menuInfo) {
 		for (auto& item : menuInfo) {
 			if (!item.is_object())
 				continue;
-			UINT id = jsonValueOr(item, "id", 0u);
+			UINT id = jsonValueOr<UINT>(item, "id", 0u);
 			std::wstring text = utf8ToUtf16(jsonValueOr<std::string>(item, "text", "").c_str());
 
 			UINT flags = MF_STRING;
 			if (id == 0 && text.empty())
 				flags = MF_SEPARATOR;
 			else {
-				if (jsonValueOr(item, "checked", false))
+				if (jsonValueOr<bool>(item, "checked", false))
 					flags |= MF_CHECKED;
-				if (!jsonValueOr(item, "enabled", true))
+				if (!jsonValueOr<bool>(item, "enabled", true))
 					flags |= MF_GRAYED;
 
 				if (item.contains("submenu") && item["submenu"].is_array()) {
@@ -714,6 +702,11 @@ bool Client::callRpcPipe(HANDLE pipe, const std::string& serializedRequest, std:
 			serializedReply = readBuffer_.substr(0, pos); // exclude the newline for easier parsing
 			readBuffer_.erase(0, pos + 1);
 			return true;
+		}
+
+		if (readBuffer_.size() >= kMaxIpcMessageLength) {
+			readBuffer_.clear();
+			return false;
 		}
 
 		if (!callPipeIO(true, buf, sizeof(buf), &rlen, timeoutMs) || rlen == 0) {

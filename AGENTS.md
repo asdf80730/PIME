@@ -5,16 +5,17 @@ Welcome to the PIME repository! To maintain high code quality and consistency, a
 ## 1. Initial Context Gathering
 - **Read `HACKING.txt` First**: Before proposing architectural changes, adding new features, or modifying IPC logic, you must read the `HACKING.txt` file at the root of the repository. It contains critical information about the C++ client (TSF) and the Python/Node.js backend server architecture.
 
-## 2. Modularity and Commits
+## 2. Modularity, Commits, and Pull Requests
 - **CRITICAL - Small, Incremental Changes**: This is the single most important rule. AI agents often generate unreviewable volumes of code. You MUST keep changes strictly scoped, small, and modular. Do not bundle multiple unrelated features, bug fixes, or refactors into a single commit. If a feature, bugfix, or refactor involves many modules, prefer doing it incrementally in smaller git commits, step by step, where each commit handles an independent part. Huge, monolithic PRs will be strictly rejected during code review.
 - **Isolate Renames and Moves**: For API renames or file moves/renames, keep them in their own dedicated commit. Never mix renames or moves with new feature implementations or bug fixes.
 - **Separate Features and Fixes**: Never mix bug fixes and new feature implementations. They must be handled in separate commits and separate Pull Requests.
-- **Commit Style**: Format your commit messages as follows:
-  - Headline: Concisely describe what it does. Include the bug number if available.
-  - A blank line.
-  - Body (WHAT): Describe what the commit does using concise bullet points instead of a lengthy paragraph.
-  - Body (WHY): Concisely explain *why* this change is needed. This is the most important part.
-  - AI Declaration: If the commit is mostly AI-generated or involves significant AI assistance, clearly declare this at the end of the commit message (e.g., "Generated with assistance from Antigravity/Cursor", preferably including the model version if known).
+- **Commit & PR Message Style**: Apply the same concise style to both git commit messages and GitHub Pull Requests:
+  - **Headline / Title**: The first line / PR title is a concise headline describing what it does. Include the bug/issue number if available.
+  - **Blank Line**: (For commits) Follow the headline with a blank line.
+  - **Body (Elaboration)**: If the headline/title cannot fully describe what it does, elaborate briefly in the body, using concise bullet points if needed. Avoid verbose boilerplate.
+  - **Rationale (Most Important)**: Most importantly, explain *why* the change or fix is needed (if applicable; explain the motivation, context, or root cause).
+  - Do NOT literally include labels or section headers like "WHAT:" or "WHY:" in the message.
+  - **AI Declaration**: If the commit or PR is mostly AI-generated or involves significant AI assistance, clearly declare this at the end of the message (e.g., "Generated with assistance from Antigravity/Cursor", preferably including the model version if known).
 
 ## 3. Coding Style & Language Guidelines
 
@@ -28,7 +29,7 @@ Welcome to the PIME repository! To maintain high code quality and consistency, a
 Please stick to the existing coding style for each language in this repository:
 - **C++**: Follow standard C++ memory management (use smart pointers where applicable). Respect the repository's formatting (check for `.clang-format`).
 - **Rust**: Write idiomatic Rust. Always use `cargo fmt` and check against `cargo clippy`. Prefer robust error handling with `Result` over `unwrap()`.
-- **Python**: For historical reasons, older Python APIs do not follow PEP 8. Keep the legacy naming conventions when interacting with existing code, but stick to PEP 8 in new code where possible.
+- **Python**: For historical reasons, older Python APIs do not follow PEP 8. Keep the legacy naming conventions when interacting with existing code, but stick to PEP 8 in new code where possible. Prefer EAFP (Easier to Ask for Forgiveness than Permission) to write idiomatic, pythonic code rather than defensive checks (unlike C++).
 - **Node.js**: Follow modern ES6+ syntax and adhere to the existing stylistic patterns in the `node/` directory.
 
 ## 4. Common Best Practices

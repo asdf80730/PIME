@@ -81,6 +81,7 @@ jobs:
             build/PIMETextService/Release/PIMETextService.dll
             build64/PIMETextService/Release/PIMETextService.dll
             build_arm64/PIMETextService/Release/PIMETextService.dll
+            build_arm64/PIMETextService/Release/PIMETextService_arm64.dll
 
       # ---------------------------------------------------------------
       # Sign binaries with the specified signing policy.
@@ -108,6 +109,7 @@ jobs:
           copy signed-binaries\build\PIMETextService\Release\PIMETextService.dll build\PIMETextService\Release\PIMETextService.dll
           copy signed-binaries\build64\PIMETextService\Release\PIMETextService.dll build64\PIMETextService\Release\PIMETextService.dll
           copy signed-binaries\build_arm64\PIMETextService\Release\PIMETextService.dll build_arm64\PIMETextService\Release\PIMETextService.dll
+          copy signed-binaries\build_arm64\PIMETextService\Release\PIMETextService_arm64.dll build_arm64\PIMETextService\Release\PIMETextService_arm64.dll
 
       # ---------------------------------------------------------------
       # Build installer with signed binaries.

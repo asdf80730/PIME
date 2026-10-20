@@ -26,7 +26,7 @@ if __name__ == "__main__":
 sys.path.append(os.path.dirname(__file__))    
 
 
-from serviceManager import textServiceMgr
+from serviceManager import TextServiceManager
 
 
 def append_error_log(message):
@@ -53,7 +53,7 @@ class Client(object):
         self.isUiLess = msg["isUiLess"]
         self.isConsole = msg["isConsole"]
         # create the text service
-        self.service = textServiceMgr.createService(self, self.guid)
+        self.service = self.server.createService(self, self.guid)
         return (self.service is not None)
 
     def handleRequest(self, msg): # msg is a json object
@@ -75,10 +75,28 @@ class Client(object):
 
 
 class Server(object):
-    def __init__(self):
+    """IPC backend server managing client sessions and text service dispatching."""
+
+    def __init__(self, base_dir: str):
+        """Initializes the server and loads text services from base_dir/input_methods.
+
+        Args:
+            base_dir: The base package directory on sys.path containing the
+                'input_methods' package. Cannot be None.
+        """
         self.clients = {}
+        self.serviceMgr = TextServiceManager()
+        try:
+            self.serviceMgr.load(base_dir)
+        except Exception as e:
+            append_error_log(f"ERROR: Failed to load text services from {base_dir}: {e}\n{traceback.format_exc()}")
+
+    def createService(self, client, guid):
+        """Creates a text service instance for the client associated with guid."""
+        return self.serviceMgr.createService(client, guid)
 
     def run(self):
+        """Runs the main request/reply loop reading from stdin and writing to stdout."""
         while True:
             line = ""
             client_id = ""
@@ -140,6 +158,7 @@ class Server(object):
                 continue
 
     def remove_client(self, client_id):
+        """Cleans up and removes an active client session by its ID."""
         print("client disconnected:", client_id, file=sys.stderr)
         try:
             del self.clients[client_id]
@@ -148,7 +167,8 @@ class Server(object):
 
 
 def main():
-    server = Server()
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    server = Server(current_dir)
     server.run()
 
 
