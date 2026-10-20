@@ -4,16 +4,19 @@ let fs   = require('fs');
 let path = require('path');
 
 
-function loadServices() {
-  let imeDir = fs.readdirSync(path.join(process.cwd(), 'input_methods'));
+// `baseDir` defaults to the process working directory, which is what the
+// backend uses at runtime. Tests pass a fixture directory instead.
+function loadServices(baseDir) {
+  baseDir = baseDir || process.cwd();
+  let imeDir = fs.readdirSync(path.join(baseDir, 'input_methods'));
   let services = [];
 
   imeDir.forEach((dir) => {
 
-    if (fs.lstatSync(path.join(process.cwd(), 'input_methods', dir)).isDirectory()) {
-      let configFile = fs.readFileSync(path.join(process.cwd(), 'input_methods', dir, 'ime.json'), 'utf8');
+    if (fs.lstatSync(path.join(baseDir, 'input_methods', dir)).isDirectory()) {
+      let configFile = fs.readFileSync(path.join(baseDir, 'input_methods', dir, 'ime.json'), 'utf8');
       let config = JSON.parse(configFile);
-      let textService = require(`./input_methods/${dir}/${config.moduleName}`);
+      let textService = require(path.join(baseDir, 'input_methods', dir, config.moduleName));
 
       config['textService'] = textService;
 
@@ -24,18 +27,19 @@ function loadServices() {
   return services;
 }
 
-function loadServiceById(id) {
-  let imeDir = fs.readdirSync(path.join(process.cwd(), 'input_methods'));
+function loadServiceById(id, baseDir) {
+  baseDir = baseDir || process.cwd();
+  let imeDir = fs.readdirSync(path.join(baseDir, 'input_methods'));
   let service = null;
 
   imeDir.forEach((dir) => {
 
-    if (fs.lstatSync(path.join(process.cwd(), 'input_methods', dir)).isDirectory()) {
-      let configFile = fs.readFileSync(path.join(process.cwd(), 'input_methods', dir, 'ime.json'), 'utf8');
+    if (fs.lstatSync(path.join(baseDir, 'input_methods', dir)).isDirectory()) {
+      let configFile = fs.readFileSync(path.join(baseDir, 'input_methods', dir, 'ime.json'), 'utf8');
       let config = JSON.parse(configFile);
 
       if (config['guid'].toLowerCase() === id.toLowerCase()) {
-        service = require(`./input_methods/${dir}/${config.moduleName}`);
+        service = require(path.join(baseDir, 'input_methods', dir, config.moduleName));
       }
     }
   });
