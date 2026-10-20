@@ -20,6 +20,13 @@ cheapest place it actually runs.
 - **C++ / Rust** — cannot build here. The root `CMakeLists.txt` uses MSVC flags
   (`/MT`, `/D_UNICODE`) and `PIMELauncher` is built only for x86 against Windows
   named pipes. Running `cmake` on Linux proves nothing; don't.
+- **Docs pages** — `docs/tour/` is static: serve it with
+  `python3 -m http.server 8765 -d docs`, then open
+  `http://127.0.0.1:8765/tour/` with `browser.open` (headless Chromium) to check
+  layout, console errors, and tab behaviour. Screenshot only the changed region.
+  If the browser prelude reports "Shared browser daemon unavailable", inspect
+  `~/.omp/run/daemons/*/omp.browser.headless.profile/Singleton*`: a lock left by
+  a dead Chrome PID (exit 21) persists until those symlinks are removed.
 
 ## CI (GitHub Actions, `windows-2025`)
 

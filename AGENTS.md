@@ -4,6 +4,7 @@ Welcome to the PIME repository! To maintain high code quality and consistency, a
 
 ## 1. Initial Context Gathering
 - **Read `HACKING.txt` First**: Before proposing architectural changes, adding new features, or modifying IPC logic, you must read the `HACKING.txt` file at the root of the repository. It contains critical information about the C++ client (TSF) and the Python/Node.js backend server architecture.
+- **Guided Overview**: `docs/tour/index.html` (zh-Hant) covers the architecture, one keypress lifecycle, wire formats, backend comparison, and glossary. Its status tables are dated snapshots; verify against source before quoting them.
 
 ## 2. Modularity, Commits, and Pull Requests
 - **CRITICAL - Small, Incremental Changes**: This is the single most important rule. AI agents often generate unreviewable volumes of code. You MUST keep changes strictly scoped, small, and modular. Do not bundle multiple unrelated features, bug fixes, or refactors into a single commit. If a feature, bugfix, or refactor involves many modules, prefer doing it incrementally in smaller git commits, step by step, where each commit handles an independent part. Huge, monolithic PRs will be strictly rejected during code review.
