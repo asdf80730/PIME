@@ -54,7 +54,7 @@ Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/a
 
 ### Verification
 
-The Python and Node backends verify locally; C++/Rust verify only through Windows CI. See `docs/agents/verification.md`.
+The Python and Node backends verify locally; the Rust launcher also runs under Wine as a smoke check. C++/Rust changes still need Windows CI. See `docs/agents/verification.md`.
 
 ### Upstream PRs
 

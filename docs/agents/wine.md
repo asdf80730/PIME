@@ -2,7 +2,8 @@
 
 `windows-2025` CI is the authoritative Windows check. This recipe is a local
 pre-check: it cross-compiles `PIMELauncher` for `i686-pc-windows-gnu` and runs its
-15 tests under Wine 8. It does not touch the C++ text service.
+tests under Wine 8 (15 at the time of writing). It does not touch the C++ text
+service.
 
 ## Setup (Debian bookworm, root)
 
@@ -10,7 +11,8 @@ pre-check: it cross-compiles `PIMELauncher` for `i686-pc-windows-gnu` and runs i
 dpkg --add-architecture i386
 apt-get update
 apt-get install -y --no-install-recommends \
-  wine wine64 wine32:i386 gcc-mingw-w64-i686 binutils-mingw-w64-i686 build-essential
+  wine wine64 wine32:i386 gcc-mingw-w64-i686 binutils-mingw-w64-i686 \
+  build-essential ca-certificates curl
 
 curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
 /root/.cargo/bin/rustup target add i686-pc-windows-gnu
@@ -51,7 +53,12 @@ BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved) {
 i686-w64-mingw32-gcc -shared -O2 -Wl,--kill-at \
   -o /tmp/bcryptprimitives.dll /tmp/bcryptprimitives.c -lbcrypt
 cp /tmp/bcryptprimitives.dll ~/.wine/drive_c/windows/syswow64/
+i686-w64-mingw32-objdump -p ~/.wine/drive_c/windows/syswow64/bcryptprimitives.dll \
+  | grep -E 'ProcessPrng|SystemPrng'
 ```
+
+Both names must appear without an `@8` suffix; a decorated name means the build
+missed `--kill-at` and the exe will bind to Wine's unimplemented stub instead.
 
 ## Run
 
@@ -62,10 +69,10 @@ WINEDLLOVERRIDES="bcryptprimitives=n;mscoree=;mshtml=" \
 /root/.cargo/bin/cargo test --target i686-pc-windows-gnu
 ```
 
-Done when all 15 pass: 12 unit tests in `src/lib.rs`, 1 in `src/main.rs`, and the
-2 integration tests. The integration test spawns `mock_backend.exe`; the shim in
-`syswow64` is what lets that child start. `cargo clean` is safe — the shim lives
-in the Wine prefix, not the target directory.
+Done when every test passes (15 at the time of writing: 12 in `src/lib.rs`, 1 in
+`src/main.rs`, and 2 integration). The integration test spawns `mock_backend.exe`;
+the shim in `syswow64` is what lets that child start. `cargo clean` is safe — the
+shim lives in the Wine prefix, not the target directory.
 
 ## Limits
 
