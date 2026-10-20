@@ -36,7 +36,7 @@ cheapest place it actually runs.
 2. `python -m unittest discover -s tests -p "test_*.py" -v`
 3. `npm test` in `node/`
 4. `build.bat` (x86 + x64 text service, launcher, backends)
-5. NSIS packaging and signing
+5. sign the built binaries, then build the NSIS installer
 
 So the feedback loop for a C++ or Rust change is: push a branch, or run the workflow
 on it, and read the `build-and-sign` job. Do not claim a C++/Rust change verified

@@ -54,7 +54,7 @@ Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/a
 
 ### Verification
 
-The Python backend verifies locally; C++/Rust verify only through Windows CI. See `docs/agents/verification.md`.
+The Python and Node backends verify locally; C++/Rust verify only through Windows CI. See `docs/agents/verification.md`.
 
 ### Upstream PRs
 
