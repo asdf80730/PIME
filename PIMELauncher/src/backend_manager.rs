@@ -109,7 +109,10 @@ impl BackendManager {
         let mut state = self.state.lock().unwrap();
         state.clients.retain(|client_id, entry| {
             if entry.backend_name == backend_name {
-                info!("Forcibly disconnected client {} because backend {} crashed.", client_id, backend_name);
+                info!(
+                    "Forcibly disconnected client {} because backend {} crashed.",
+                    client_id, backend_name
+                );
                 false
             } else {
                 true
@@ -187,8 +190,10 @@ impl BackendManager {
                 let stdout = child_process.stdout.take().unwrap();
                 let stderr = child_process.stderr.take().unwrap();
 
-                let pending_requests =
-                    Arc::new(Mutex::new(HashMap::<(String, i64), tokio::time::Instant>::new()));
+                let pending_requests = Arc::new(Mutex::new(HashMap::<
+                    (String, i64),
+                    tokio::time::Instant,
+                >::new()));
                 let pending_requests_clone = pending_requests.clone();
 
                 let manager_for_reader = manager_clone.clone();

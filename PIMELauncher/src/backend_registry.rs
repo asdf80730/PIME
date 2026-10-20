@@ -29,6 +29,12 @@ pub struct BackendRegistry {
     pub top_dir: std::path::PathBuf,
 }
 
+impl Default for BackendRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BackendRegistry {
     /// Creates a new empty registry.
     pub fn new() -> Self {
