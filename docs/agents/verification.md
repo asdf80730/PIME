@@ -3,6 +3,15 @@
 This checkout is Linux; the product is Windows-only. Verify each layer in the
 cheapest place it actually runs.
 
+## Sandbox facts
+
+- **YAML**: `python3` has no PyYAML. The Bun parse command is in the Workflow
+  YAML bullet under Local below.
+- **Windows interop**: `cmd.exe` is not reachable from this WSL install. Run
+  Windows binaries with Wine (`docs/agents/wine.md`), not through `/mnt/c`.
+- **Go**: `gofmt` is not on `PATH`; use `go fmt` / `go test` through the Go
+  toolchain when it is installed.
+
 ## Local (Linux, this checkout)
 
 One command runs every layer below, skips toolchains the machine lacks, and
