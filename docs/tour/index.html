@@ -90,6 +90,7 @@
   .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); overflow-x: auto; }
   .diagram svg { display: block; width: 100%; height: auto; min-width: 720px; }
   .diagram-note { margin: 10px 2px 0; font-size: .86rem; color: var(--muted); }
+  #confidence td:last-child, #confidence th:last-child { white-space: nowrap; }
   @media (max-width: 860px) { .diagram { position: relative; } .diagram::after { content: "← 可左右滑動 →"; position: sticky; left: 0; display: block; font-size: .75rem; color: var(--muted); margin-top: 6px; } }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 18px 0 6px; }
@@ -174,6 +175,7 @@
     <li><a href="#status">目前狀態</a></li>
     <li><a href="#files">檔案地圖</a></li>
     <li><a href="#glossary">名詞</a></li>
+    <li><a href="#confidence">理解邊界</a></li>
   </ol>
 </nav>
 
@@ -184,7 +186,7 @@
   <p class="lede">一個 Windows 文字服務 DLL，只負責把按鍵轉發給常駐的啟動器，再由啟動器交給 Python、Node 或 Go 寫的後端。改輸入法不必碰 C++，也不必重新註冊 DLL。</p>
   <div class="meta">
     <span>整理自 <code>README.md</code>、<code>HACKING.txt</code>、<code>GLOSSARY.md</code>、<code>docs/research/</code></span>
-    <span>上游比對點 <code>EasyIME/PIME@1458cea</code></span>
+    <span>上游 <code>EasyIME/PIME@1458cea</code>，已合併進本地 <code>master</code></span>
     <span>2026-10-20</span>
   </div>
 </header>
@@ -485,13 +487,42 @@
     <dd>承載 service、說 line protocol 的行程（<code>python</code>、<code>node</code>、<code>go-backend</code>），名字寫在 <code>backends.json</code>。</dd>
     <dt>PIMETextService</dt>
     <dd>C++ TSF 客戶端 DLL，唯一被 Windows 載入宿主行程的部分。</dd>
+    <dt>TSF</dt>
+    <dd>Text Services Framework：Windows 的文字服務框架。它規定輸入法必須是 in-process DLL，所以 DLL 必須按宿主 app 的架構建置。</dd>
+    <dt>Launcher</dt>
+    <dd><code>PIMELauncher.exe</code>：每個使用者一份的常駐行程，持有 pipe server、啟動並監控後端。不要叫它 server。</dd>
     <dt>Client</dt>
     <dd>一條 pipe 連線，用新產生的 UUID 識別；不是 session，也不是使用者。</dd>
     <dt>Init</dt>
     <dd>每條連線的第一個請求，帶語言設定 GUID，決定後端與 service。</dd>
+    <dt>seqNum</dt>
+    <dd>C++ 客戶端為每條連線遞增的序號；後端必須原樣回傳。launcher 只用它清 pending，DLL 用它拒絕過期或錯置的回覆。</dd>
     <dt>Watchdog</dt>
     <dd>launcher 每秒掃 pending 表；任何一筆超過 15 秒沒被回覆清掉，就殺掉整個後端並在 1 秒後重啟。</dd>
   </dl>
+</section>
+
+<section id="confidence">
+  <h2><span class="num">10</span>理解邊界</h2>
+  <p class="sub">這是導覽，不是規格。以下說明每一段知識是怎麼來的，以及哪些地方仍是空白。</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>部分</th><th>依據</th><th>強度</th></tr></thead>
+      <tbody>
+        <tr><td>管線協定、seqNum、逾時</td><td>逐行讀 <code>PIMEClient.cpp</code>、<code>protocol.rs</code>、<code>backend_manager.rs</code>，與 <code>docs/research/</code> 兩份筆記交叉比對</td><td>高</td></tr>
+        <tr><td>三個後端的錯誤處理</td><td>讀 <code>python/server.py</code>、<code>node/server.js</code>、<code>go-backend/server.go</code>；Python 的 16 個測試與 Node 黑箱測試在本機實際跑過</td><td>高</td></tr>
+        <tr><td>路由與 watchdog</td><td>讀 <code>backend_manager.rs</code>／<code>backend_registry.rs</code>；Rust 測試只在上游 Windows CI 執行，本機沒有 <code>cargo</code></td><td>中</td></tr>
+        <tr><td>安裝檔與 ARM64X</td><td>讀 <code>installer.nsi</code>／<code>macros.nsh</code> 與 #965 的 commit message；沒有在 Windows 上實際安裝</td><td>中</td></tr>
+        <tr><td>Windows 上的實際輸入</td><td>此環境無法執行 TSF、COM 或具名管道，只能靠原始碼與 issue 描述</td><td>未驗證</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <span class="label">沒把握的地方</span>
+    <p>候選窗 DPI（#960）、launcher 無回應時 UI 卡住（#942）、ARM64X 在 Windows 11 on ARM 的實際載入行為，都沒有實機重現。這一頁描述的是「程式碼怎麼寫」，不是「裝起來一定這樣跑」。</p>
+  </div>
 </section>
 
 <footer>
