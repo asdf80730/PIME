@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "cross-env debug=nime:* node server.js",
-    "test": "node test/server.test.js"
+    "test": "node test/server.test.js && node test/loadServices.test.js"
   },
   "repository": {
     "type": "git",
