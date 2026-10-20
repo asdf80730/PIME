@@ -4,6 +4,11 @@
 #include <iostream>
 #include <string>
 
+// The expectations below count UTF-16 code units. A host build on Linux uses
+// 32-bit wchar_t, so fail at compile time with a clear message instead.
+static_assert(sizeof(wchar_t) == 2,
+	"compositionCursorToUtf16Position assumes UTF-16 wchar_t; build for Windows/Wine");
+
 int main() {
 	const auto expectPosition = [](const std::wstring& compositionString, int compositionCursor, int expected) {
 		const int actual = PIME::compositionCursorToUtf16Position(compositionString, compositionCursor);
