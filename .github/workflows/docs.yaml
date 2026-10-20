@@ -1,0 +1,26 @@
+# Static checks for the hand-written HTML under docs/.
+# Kept separate from ci.yaml: that workflow ignores docs-only changes, so a
+# guardrail living there would never run when a page breaks.
+
+name: Docs checks
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'tests/test_docs_pages.py'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'tests/test_docs_pages.py'
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check local links and ARIA references
+        run: python3 -m unittest discover -s tests -p 'test_docs_pages.py' -v
