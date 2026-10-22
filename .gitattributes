@@ -1,1 +1,5 @@
 *.nsi text
+# Vendored NSIS plugin: keep its CRLF bytes as-is. The blobs predate `*.nsi text`,
+# so the attribute makes every checkout of a branch that touches installer/inetc
+# report 15 dirty files until the next `git add` renormalizes them.
+installer/inetc/** -text
