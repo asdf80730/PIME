@@ -3,10 +3,11 @@
 #
 # Generated with assistance from DeepSeek V4.1 Flash.
 #
-# Runs every layer that can run without Windows: the host and bundled Python
-# backends, Node, the pure-C++ helpers (host build + Wine for UTF-16 semantics),
-# the Go backend (Linux tests + Windows cross-build), and the Rust launcher
-# (tests under Wine, plus fmt/clippy) when the toolchain exists.
+# Runs every layer that can run without Windows: the GitHub workflow and
+# issue-form YAML, the host and bundled Python backends, Node, the pure-C++
+# helpers (host build + Wine for UTF-16 semantics), the Go backend (Linux tests
+# + Windows cross-build), and the Rust launcher (tests under Wine, plus
+# fmt/clippy) when the toolchain exists.
 # Windows-only layers stay in .github/workflows/build-and-sign.yaml.
 
 set -u
@@ -39,6 +40,18 @@ python_syntax() {
     # Bundled runtime under python/python3 is a shipped dependency; checking it
     # only adds noise and time.
     python3 -m compileall -q -x '(^|/)python3(/|$)' python
+}
+
+yaml_parse() {
+    # python3 has no PyYAML, and GitHub only reports a broken workflow or issue
+    # form after a push (forms are parsed when rendered from the default branch),
+    # so parse every hand-written YAML with Bun before it gets that far.
+    local files=()
+    mapfile -t files < <(find .github -type f \( -name '*.yml' -o -name '*.yaml' \) -print
+                         printf '%s\n' appveyor.yml)
+    bun -e 'for (const f of process.argv.slice(1)) Bun.YAML.parse(await Bun.file(f).text())' \
+        "${files[@]}" &&
+        printf 'parsed %d files\n' "${#files[@]}"
 }
 
 python_tests() {
@@ -108,6 +121,12 @@ rust_lint() {
 }
 
 printf 'PIME local verification (root: %s)\n' "$ROOT"
+
+if command -v bun >/dev/null 2>&1; then
+    step 'GitHub YAML parses' yaml_parse
+else
+    skip 'GitHub YAML parses' 'bun missing (Bun.YAML.parse is the only parser here)'
+fi
 
 if command -v python3 >/dev/null 2>&1; then
     step 'Python syntax (all input methods)' python_syntax
