@@ -108,8 +108,9 @@ Individual commands, if you want to narrow the loop:
 - **C++ text service** — cannot build or run here: the root `CMakeLists.txt` uses
   MSVC flags (`/MT`, `/D_UNICODE`), TSF needs a Windows host, and running `cmake`
   on Linux proves nothing. The NSIS installer is also CI-only: Linux `makensis`
-  cannot preprocess `installer/installer.nsi` because the Windows `inetc` and
-  `StdUtils` plugins are missing. Windows CI remains the check. The installer
+  cannot preprocess `installer/installer.nsi` because the installer loads
+  vendored Windows-only NSIS plugins (for example `StdUtils`) that Linux
+  `makensis` cannot use. Windows CI remains the check. The installer
   also packages the JavaScript input methods that `build.bat` generates
   (`node/input_methods/McBopomofo`, `McFoxim`, `McTabim`, and `emojime/dist`),
   so `makensis` needs `build.bat`'s output even on Windows.
