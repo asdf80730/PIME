@@ -10,7 +10,10 @@ A PR to `EasyIME/PIME` carries the product change only. The local harness stays 
   `bun -e 'Bun.YAML.parse(await Bun.file(".github/workflows/build-and-sign.yaml").text())'`
   (`python3` has no PyYAML; Bun's parser throws on invalid YAML).
 - Commit messages follow `AGENTS.md` §2, including the AI declaration.
-- Push the branch to the `fork` remote. The personal access token cannot create,
-  comment on, edit, or close issues/PRs on `EasyIME/PIME` (`403 Resource not
-  accessible by personal access token`); do those in the browser, or export a
-  `public_repo` token. Creating the PR itself uses the browser compare URL.
+- Deliver: push the branch to `fork`, write the PR body to
+  `.scratch/pr-<number>-body.md`, then open the browser compare URL and paste the
+  body. The fine-grained token returns 403 for `gh pr create` and `gh pr edit`,
+  so those commands are not the delivery path; export a `public_repo` token if
+  you need them.
+- Done means: branch pushed, body file written, compare URL printed:
+  `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
