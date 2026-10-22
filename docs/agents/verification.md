@@ -5,8 +5,8 @@ cheapest place it actually runs.
 
 ## Sandbox facts
 
-- **YAML**: `python3` has no PyYAML. The Bun parse command is in the Workflow
-  YAML bullet under Local below.
+- **YAML**: `python3` has no PyYAML. The Bun parse command is the `GitHub YAML
+  parses` step under Local below.
 - **Windows interop**: `cmd.exe` is not reachable from this WSL install. Run
   Windows binaries with Wine (`docs/agents/wine.md`), not through `/mnt/c`.
 - **Go**: `gofmt` is not on `PATH`; use `go fmt` / `go test` through the Go
@@ -103,8 +103,13 @@ Individual commands, if you want to narrow the loop:
   region. If the prelude reports "Shared browser daemon unavailable", the daemon's
   Chrome profile holds a lock from a dead PID (exit 21): remove
   `~/.omp/run/daemons/*/omp.browser.headless.profile/Singleton*` and retry.
-- **Workflow YAML** — `python3` has no PyYAML; parse with Bun instead:
-  `bun -e 'for (const f of [".github/workflows/ci.yaml", ".github/workflows/build-and-sign.yaml", ".github/workflows/docs.yaml"]) Bun.YAML.parse(await Bun.file(f).text())'`.
+- **GitHub YAML (workflows, issue forms, AppVeyor)** — `tests/run_local_tests.sh`
+  parses every file under `.github/` plus `appveyor.yml` with Bun
+  (`Bun.YAML.parse`), because `python3` has no PyYAML and GitHub reports a broken
+  workflow only after a push. An issue form has a second gate GitHub applies when
+  it renders the form from the default branch: an `id` with a space, or a `body`
+  item without `attributes.value`, parses fine and still renders nothing. Validate
+  a new form against SchemaStore's `github-issue-forms.json` before pushing.
 - **C++ text service** — cannot build or run here: the root `CMakeLists.txt` uses
   MSVC flags (`/MT`, `/D_UNICODE`), TSF needs a Windows host, and running `cmake`
   on Linux proves nothing. The NSIS installer is also CI-only: Linux `makensis`
@@ -120,11 +125,11 @@ Individual commands, if you want to narrow the loop:
 `.github/workflows/ci.yaml` runs two kinds of check for non-tag refs:
 
 - `linux-checks` (`ubuntu-latest`) checks out `libIME2`, installs Go from
-  `go-backend/go.mod` plus `libopencc-dev`, then runs
-  `tests/run_local_tests.sh`. This is the same command as local; it covers
-  Python, Node, Go (tests plus Windows/386 cross-build), and the host C++
-  `JsonUtils` test. Layers needing Wine or the bundled runtimes report `SKIP`
-  here and run in the Windows job.
+  `go-backend/go.mod`, adds Bun for the YAML parse, installs `libopencc-dev`,
+  then runs `tests/run_local_tests.sh`. This is the same command as local; it
+  covers the GitHub YAML parse, Python, Node, Go (tests plus Windows/386
+  cross-build), and the host C++ `JsonUtils` test. Layers needing Wine or the
+  bundled runtimes report `SKIP` here and run in the Windows job.
 - `ci` calls `.github/workflows/build-and-sign.yaml` (`windows-2025`), which runs,
   in order:
 

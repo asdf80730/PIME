@@ -4,16 +4,17 @@ A PR to `EasyIME/PIME` carries the product change only. The local harness stays 
 
 - Branch from `origin/master`. Local `master` is the integration branch; it also carries
   `docs/agents/`, `GLOSSARY.md`, research notes, and CI steps that run local test suites.
+  The PR branch carries none of `docs/`, `tests/` or `AGENTS.md`, so read those and run the
+  checks on `master` before branching, then switch back after pushing.
 - Ship the smallest diff that fixes the issue. Regression tests, CI wiring and HACKING
   entries stay on local `master` unless the maintainer asks for them in the PR.
-- Verify before pushing: `cd node && npm test`, the Python suite, and a YAML parse:
-  `bun -e 'Bun.YAML.parse(await Bun.file(".github/workflows/build-and-sign.yaml").text())'`
-  (`python3` has no PyYAML; Bun's parser throws on invalid YAML).
+- Verify on `master`: `tests/run_local_tests.sh` runs the Python, Node, C++ helper, Go and
+  Rust layers plus the GitHub YAML parse, skipping toolchains this machine lacks. Use the
+  narrow command in `docs/agents/verification.md` when that loop is too slow.
 - Commit messages follow `AGENTS.md` §2, including the AI declaration.
 - Deliver: push the branch to `fork`, write the PR body to
   `.scratch/pr-<number>-body.md`, then open the browser compare URL and paste the
-  body. The fine-grained token returns 403 for `gh pr create` and `gh pr edit`,
-  so those commands are not the delivery path; export a `public_repo` token if
-  you need them.
+  body. The fine-grained token cannot write: `addComment`, label, close, `gh pr create`
+  and `gh pr edit` all return 403, so the delivery is the compare URL plus a body file.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
