@@ -35,10 +35,11 @@ class ReadmeBuildContractTests(unittest.TestCase):
                 self.assertIn(generator, self.readme)
 
     def test_cmake_policy_flag_matches_build_bat(self):
-        flag = "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-        expected = self.build_bat.count(flag)
-        self.assertGreater(expected, 0)
-        self.assertEqual(self.readme.count(flag), expected)
+        flags = set(re.findall(r"-DCMAKE_POLICY_VERSION_MINIMUM=\S+", self.build_bat))
+        self.assertTrue(flags, "build.bat has no CMake policy flag")
+        for flag in sorted(flags):
+            with self.subTest(flag=flag):
+                self.assertEqual(self.readme.count(flag), self.build_bat.count(flag))
 
     def test_build_directories_are_documented(self):
         directories = set(re.findall(r"-B(build\w*)", self.build_bat))
@@ -48,8 +49,20 @@ class ReadmeBuildContractTests(unittest.TestCase):
                 self.assertIn(f"-B{directory}", self.readme)
 
     def test_installer_command_matches_ci(self):
-        self.assertIn(r"makensis installer\installer.nsi", self.readme)
-        self.assertIn(r"installer\installer.nsi", read(APPVEYOR))
+        match = re.search(r"([\w.\\-]*installer\.nsi)", read(APPVEYOR))
+        self.assertIsNotNone(match, "appveyor script has no installer script")
+        script = match.group(1)
+        self.assertIn(f"makensis {script}", self.readme)
+
+    def test_install_section_uses_the_installer(self):
+        install = self.readme.split("# Install", 1)[1].split("# Uninstall", 1)[0]
+        self.assertIn("setup.exe", install)
+        self.assertNotIn("Copy `PIMETextService.dll`", install)
+
+    def test_uninstall_section_uses_the_uninstaller(self):
+        uninstall = self.readme.split("# Uninstall", 1)[1]
+        self.assertIn("Uninstall.exe", uninstall)
+        self.assertNotIn("regsvr32 /u", uninstall)
 
     def test_stale_build_instructions_are_gone(self):
         for stale in ("Visual Studio 16 2019", "pywin32"):
