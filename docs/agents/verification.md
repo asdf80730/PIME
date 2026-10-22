@@ -23,8 +23,9 @@ tests/run_local_tests.sh
 
 Individual commands, if you want to narrow the loop:
 
-- **Python backend** — 46 tests (protocol loop, TextService dispatch, service
-  manager, cin counting, input-method smoke, docs pages):
+- **Python backend** — the full `tests/` suite (protocol loop, TextService
+  dispatch, service manager, cin counting, input-method smoke, docs pages,
+  README build contract):
 
   ```
   python3 -m unittest discover -s tests -p "test_*.py" -v
