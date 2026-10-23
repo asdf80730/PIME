@@ -126,7 +126,6 @@ class ServerResilienceTests(unittest.TestCase):
         server = server_mod.Server(PYTHON_DIR)
 
         class FailingClient:
-            # The error path in server.run() resets the service's pending reply.
             service = None
 
             def handleRequest(self, msg):
@@ -140,10 +139,9 @@ class ServerResilienceTests(unittest.TestCase):
                 contextlib.redirect_stderr(io.StringIO()):
             server.run()
 
-        replies = [line for line in stdout.getvalue().splitlines()
-                   if line.startswith("PIME_MSG|client-1|")]
+        replies = [line for line in stdout.getvalue().splitlines() if line.startswith("PIME_MSG|client-1|")]
         self.assertEqual(len(replies), 1)
-        self.assertFalse(json.loads(replies[0].split("|", 2)[2])["success"])
+        self.assertEqual(json.loads(replies[0][len("PIME_MSG|client-1|"):]), {"success": False})
 
     def test_server_ignores_malformed_request_line(self):
         server_mod = self.import_server()
