@@ -32,7 +32,7 @@ Individual commands, if you want to narrow the loop:
   ```
 
   `tests/run_local_tests.sh` also runs the same suite on the shipped
-  interpreter (`python/python3/python.exe`, 3.12.9) under Wine; the Linux-only
+  interpreter (`python/python3/python.exe`, 3.15.1) under Wine; the Linux-only
   IME smoke test skips itself there. Run it directly with:
 
   ```
@@ -60,7 +60,7 @@ Individual commands, if you want to narrow the loop:
   `node/server.js` and speaks the launcher's `<client_id>|<json>` framing over
   stdin/stdout; `loadServices.test.js` discovers services from a temporary
   `input_methods` tree (both loaders accept an optional `baseDir` for this).
-  The bundled `node/node.exe` is v22.14.0 (32-bit); CI runs Node 22.x. Wine
+  The bundled `node/node.exe` is v22.23.4 (32-bit); CI runs Node 22.x. Wine
   cannot run that Node build (`EBADF` while loading builtins), so the bundled
   runtime is exercised on Windows CI instead: `server.test.js` spawns
   `process.execPath`, which is the shipped `node.exe` there.
