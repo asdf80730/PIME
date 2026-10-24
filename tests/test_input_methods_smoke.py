@@ -9,16 +9,22 @@ reported as skipped rather than failed.
 # Generated with assistance from DeepSeek V4.1 Flash.
 
 import ctypes
+import errno
 import json
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PYTHON_DIR = os.path.join(ROOT, "python")
 RUNNER = os.path.join(ROOT, "tests", "ime_smoke_runner.py")
+
+# The runner is a script next to this test, not part of the product package.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ime_smoke_runner  # noqa: E402 - located after ROOT is known
 
 # Every service that must run: the cinbase family plus the standalone meow
 # service. chewing/rime/braille are discovered too, but their native bindings
@@ -71,6 +77,36 @@ class InputMethodSmokeTests(unittest.TestCase):
         exercised = {name for name, row in results.items() if row["status"] == "ok"}
         self.assertTrue(EXPECTED_SERVICES <= exercised,
                         f"not exercised: {sorted(EXPECTED_SERVICES - exercised)}")
+
+
+class ImportRetryTests(unittest.TestCase):
+    """The runner retries only the importer's own EBADF, never a real failure."""
+
+    def test_ebadf_from_the_importer_is_retried(self):
+        calls = []
+
+        def import_module(name):
+            calls.append(name)
+            if len(calls) == 1:
+                raise OSError(errno.EBADF, "Bad file descriptor", name)
+            return object()
+
+        with mock.patch.object(ime_smoke_runner.importlib, "import_module", import_module):
+            module = ime_smoke_runner.import_service("input_methods.meow.ime_meow")
+        self.assertIsNotNone(module)
+        self.assertEqual(calls, ["input_methods.meow.ime_meow"] * 2)
+
+    def test_a_non_ebadf_oserror_is_not_retried(self):
+        calls = []
+
+        def import_module(name):
+            calls.append(name)
+            raise OSError(errno.EACCES, "Permission denied", name)
+
+        with mock.patch.object(ime_smoke_runner.importlib, "import_module", import_module):
+            with self.assertRaises(OSError):
+                ime_smoke_runner.import_service("input_methods.meow.ime_meow")
+        self.assertEqual(len(calls), 1)
 
 
 if __name__ == "__main__":

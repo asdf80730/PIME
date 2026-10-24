@@ -9,6 +9,7 @@ services' own prints cannot corrupt the report.
 # Generated with assistance from DeepSeek V4.1 Flash.
 
 import ctypes
+import errno
 import importlib
 import json
 import sys
@@ -96,8 +97,23 @@ def key_event(method, char_code):
     return event
 
 
+def import_service(module_name, attempts=2):
+    """Import a service module, retrying the importer's own EBADF.
+
+    This checkout has failed ``os.listdir`` inside importlib with EBADF; the
+    path in the error is the package directory, and no service code has run
+    yet, so one retry cannot hide a product failure.
+    """
+    for attempt in range(attempts):
+        try:
+            return importlib.import_module(module_name)
+        except OSError as error:
+            if attempt + 1 == attempts or error.errno != errno.EBADF:
+                raise
+
+
 def run_service(module_name):
-    module = importlib.import_module(module_name)
+    module = import_service(module_name)
     service = service_class(module)(FakeClient())
 
     reply = service.handleRequest({"method": "onActivate", "isKeyboardOpen": True, "seqNum": 1})
