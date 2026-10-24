@@ -4,10 +4,10 @@
 # Generated with assistance from DeepSeek V4.1 Flash.
 #
 # Runs every layer that can run without Windows: the GitHub workflow and
-# issue-form YAML, the host and bundled Python backends, Node, the pure-C++
-# helpers (host build + Wine for UTF-16 semantics), the Go backend (Linux tests
-# + Windows cross-build), and the Rust launcher (tests under Wine, plus
-# fmt/clippy) when the toolchain exists.
+# issue-form YAML, the pasted PR bodies, the host and bundled Python backends,
+# Node, the pure-C++ helpers (host build + Wine for UTF-16 semantics), the Go
+# backend (Linux tests + Windows cross-build), and the Rust launcher (tests under
+# Wine, plus fmt/clippy) when the toolchain exists.
 # Windows-only layers stay in .github/workflows/build-and-sign.yaml.
 
 set -u
@@ -52,6 +52,25 @@ yaml_parse() {
     bun -e 'for (const f of process.argv.slice(1)) Bun.YAML.parse(await Bun.file(f).text())' \
         "${files[@]}" &&
         printf 'parsed %d files\n' "${#files[@]}"
+}
+
+pr_bodies() {
+    # AGENTS.md §2 puts the AI declaration at the end of the message, and the
+    # body is pasted by hand: a missing last line makes the human add it.
+    local files=() bad=0 last
+    mapfile -t files < <(find .scratch -maxdepth 1 -type f -name 'pr-*-body.md' -print 2>/dev/null)
+    for f in "${files[@]}"; do
+        last=$(awk 'NF { line = $0 } END { print line }' "$f")
+        case "$last" in
+            "Generated with assistance from"*) ;;
+            *)
+                printf 'missing AI declaration: %s\n' "$f"
+                bad=1
+                ;;
+        esac
+    done
+    printf 'checked %d PR bodies\n' "${#files[@]}"
+    [ "$bad" -eq 0 ]
 }
 
 python_tests() {
@@ -127,6 +146,8 @@ if command -v bun >/dev/null 2>&1; then
 else
     skip 'GitHub YAML parses' 'bun missing (Bun.YAML.parse is the only parser here)'
 fi
+
+step 'PR bodies carry the AI declaration' pr_bodies
 
 if command -v python3 >/dev/null 2>&1; then
     step 'Python syntax (all input methods)' python_syntax
