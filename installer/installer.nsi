@@ -1,4 +1,4 @@
-﻿; NOTE: This file MUST be saved as UTF-8 with BOM (utf-8-sig) so that
+; NOTE: This file MUST be saved as UTF-8 with BOM (utf-8-sig) so that
 ; NSIS (makensis) natively detects Unicode strings without breaking Git diffs.
 ; Do NOT convert this file to UTF-16.
 ;
@@ -33,10 +33,6 @@
 
 ; We need the MD5 plugin
 !addplugindir /x86-unicode "md5dll\UNICODE"
-
-; We need the INetC (internet client) plugin
-; https://nsis.sourceforge.io/Inetc_plug-in
-!addplugindir /x86-unicode "inetc\Plugins\x86-unicode"
 
 !include "macros.nsh"
 
@@ -235,47 +231,6 @@ Function .onInstFailed
 	${EndIf}
 FunctionEnd
 
-Function ensureVCRedist
-	; TODO(#966): This check is an obsolete relic from Windows 7 / 8.1.
-	; ucrtbase.dll is an in-box component in Windows 10+ (our minimum OS),
-	; PIME binaries statically link /MT, and embedded Python bundles vcruntime140.dll.
-	; Remove this function and the DownloadAndInstallVCRedist macro in a separate PR.
-	; Check if we have latest VC++ Redistributable
-	; Reference: https://blogs.msdn.microsoft.com/vcblog/2015/03/03/introducing-the-universal-crt/
-	;            https://docs.python.org/3/using/windows.html#embedded-distribution
-	${IfNot} ${FileExists} "$SYSDIR\ucrtbase.dll"
-	${OrIfNot} ${FileExists} "$SYSDIR\msvcp140.dll"
-		${If} ${RunningX64}
-			; In 64-bit environment, we need to check both x86 and x64 version of dlls,
-			; because we only need at least one of the x86 or x64 version is available,
-			; which means we need to check both these 2 directory:
-			;   1. C:\Windows\System32 (x64 64-bit version dlls are in here)
-			;   2. C:\Windows\SysWOW64 (x86 32-bit version dlls are in here) (already checked)
-
-			; Because X64 FS Redirection is enabled by default ($SYSDIR is pointed to C:\Windows\SysWOW64),
-			; now we just need to disable X64 FS Redirection (let $SYSDIR point to C:\Windows\System32)
-			; in order to check if we have x64 64-bit version of Universal CRT
-			${DisableX64FSRedirection}
-			${IfNot} ${FileExists} "$SYSDIR\ucrtbase.dll"
-			${OrIfNot} ${FileExists} "$SYSDIR\msvcp140.dll"
-				!insertmacro DownloadAndInstallVCRedist "https://aka.ms/vs/17/release/vc_redist.x64.exe" "vc_redist.x64.exe"
-			${EndIf}
-			${EnableX64FSRedirection}
-
-		${ElseIf} ${IsNativeARM64}
-			${DisableX64FSRedirection}
-			${IfNot} ${FileExists} "$SYSDIR\ucrtbase.dll"
-			${OrIfNot} ${FileExists} "$SYSDIR\msvcp140.dll"
-				!insertmacro DownloadAndInstallVCRedist "https://aka.ms/vs/17/release/vc_redist.arm64.exe" "vc_redist.arm64.exe"
-			${EndIf}
-			${EnableX64FSRedirection}
-
-		${Else}
-			!insertmacro DownloadAndInstallVCRedist "https://aka.ms/vs/17/release/vc_redist.x86.exe" "vc_redist.x86.exe"
-		${EndIf}
-	${EndIf}
-FunctionEnd
-
 ;Installer Type
 InstType "$(INST_TYPE_STD)"
 InstType "$(INST_TYPE_FULL)"
@@ -283,9 +238,6 @@ InstType "$(INST_TYPE_FULL)"
 ;Installer Sections
 Section $(SECTION_MAIN) SecMain
 	SectionIn 1 2 RO
-	; TODO(#966): Obsolete VC++ redist check, see issue #966
-	; Ensure that we have latest VC++ runtime (for python)
-	Call ensureVCRedist
 
 	SetOverwrite on ; overwrite existing files
 	SetOutPath "$INSTDIR"
@@ -429,6 +381,7 @@ SectionGroup /e $(NODE_SECTION_GROUP) node_section_group
 				SetOutPath "$INSTDIR\node\input_methods\McBopomofo"
 				File /r /x "server.js" /x "webpack_check.js" /x "run_*.bat" /x "README.md" /x "*.txt" "..\node\input_methods\McBopomofo\*.*"
 				StrCpy $INST_NODE "True"
+				StrCpy $INST_PYTHON "True"
 		SectionEnd
 
 		Section $(MCFOXIM) McFoxim
@@ -436,6 +389,7 @@ SectionGroup /e $(NODE_SECTION_GROUP) node_section_group
 				SetOutPath "$INSTDIR\node\input_methods\McFoxim"
 				File /r /x "server.js" /x "webpack_check.js" /x "run_*.bat" /x "README.md" /x "*.txt" "..\node\input_methods\McFoxim\*.*"
 				StrCpy $INST_NODE "True"
+				StrCpy $INST_PYTHON "True"
 		SectionEnd
 
 		Section $(MCTABIM) McTabim
@@ -443,6 +397,7 @@ SectionGroup /e $(NODE_SECTION_GROUP) node_section_group
 				SetOutPath "$INSTDIR\node\input_methods\McTabim"
 				File /r /x "server.js" /x "webpack_check.js" /x "run_*.bat" /x "README.md" /x "*.txt" "..\node\input_methods\McTabim\*.*"
 				StrCpy $INST_NODE "True"
+				StrCpy $INST_PYTHON "True"
 		SectionEnd
 
 		Section $(EMOJIME) emojime
@@ -518,7 +473,7 @@ Section "" Register
 	WriteRegStr HKLM "Software\PIME" "" $INSTDIR
 	;Write an entry to Add & Remove applications
 	WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "DisplayName" $(PRODUCT_NAME)
-	WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+	WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
 	WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "Publisher" $(PRODUCT_PUBLISHER)
 	; WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\x86\PIMETextService.dll"
 	WriteRegStr HKLM "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"

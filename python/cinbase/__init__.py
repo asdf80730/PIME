@@ -1685,7 +1685,10 @@ class CinBase:
 
             if cbTS.langMode == CHINESE_MODE and cbTS.dayisymbolsmode and len(cbTS.compositionChar) == 1 and (keyCode == VK_SPACE or keyCode == VK_RETURN):
                 candidates = cbTS.cin.getCharDef(cbTS.compositionChar)
-                if cbTS.compositionBufferMode and cbTS.directShowCand:
+                if not candidates:
+                    cbTS.setCommitString(getattr(cbTS, 'DayiSymbolString', cbTS.compositionChar))
+                    self.resetComposition(cbTS)
+                elif cbTS.compositionBufferMode and cbTS.directShowCand:
                     self.removeCompositionBufferString(cbTS, 1, True)
 
             if candidates and not cbTS.phrasemode:
@@ -2839,16 +2842,18 @@ class CinBase:
 
     # List 分段
     def chunks(self, l, n):
+        if not isinstance(n, int) or n <= 0:
+            n = 9
         for i in range(0, len(l), n):
             yield l[i:i+n]
 
     def getKeyState(self, keyCode):
-        return ctypes.WinDLL("User32.dll").GetKeyState(keyCode)
+        # The least significant bit indicates toggle state (Win SDK GetKeyState).
+        return bool(ctypes.WinDLL("User32.dll").GetKeyState(keyCode) & KEY_STATE_TOGGLED)
 
-    # https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getasynckeystate
-    # 當 keyCode 對應的按鍵、曾被按下觸發過，GetAsyncKeyState() 的回傳值會 >= 1
     def isPressed(self, keyCode):
-        return windll.user32.GetAsyncKeyState(keyCode) >= 1
+        # Most significant bit indicates key is down; least significant bit indicates key was pressed since last call (Win SDK GetAsyncKeyState).
+        return bool(windll.user32.GetAsyncKeyState(keyCode) & KEY_PRESSED_MASK)
 
     def setCompositionBufferString(self, cbTS, compositionString, removeStringLength):
         compPos1 = cbTS.compositionBufferCursor - removeStringLength
@@ -3121,14 +3126,26 @@ class CinBase:
         cbTS.configVersion = cfg.getVersion()
 
         # 每列顯示幾個候選字
-        cbTS.candPerRow = cfg.candPerRow
+        try:
+            candPerRow = int(cfg.candPerRow)
+            if candPerRow <= 0:
+                candPerRow = 1
+        except (ValueError, TypeError):
+            candPerRow = 1
+        cbTS.candPerRow = candPerRow
 
         # 如果程式為 UiLess 模式就取代設定
         if cbTS.client.isUiLess:
             cbTS.candPerRow = 1
 
         # 每頁顯示幾個候選字
-        cbTS.candPerPage = cfg.candPerPage
+        try:
+            candPerPage = int(cfg.candPerPage)
+            if candPerPage <= 0:
+                candPerPage = 9
+        except (ValueError, TypeError):
+            candPerPage = 9
+        cbTS.candPerPage = candPerPage
 
         # 設定 UI 外觀
         cbTS.customizeUI(candFontSize = cfg.fontSize,

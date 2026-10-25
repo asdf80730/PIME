@@ -234,6 +234,8 @@ impl BackendManager {
                 // Disconnect all existing clients so they are forced to reconnect and re-initialize
                 // with the new backend process instance.
                 manager_clone.disconnect_clients_for_backend(&backend_name_clone);
+                // Drain any pending requests from the disconnected clients immediately
+                while stdin_rx.try_recv().is_ok() {}
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 // Drain any stale requests in the queue sent by disconnected clients
                 // before or during the restart delay so they are not dispatched to the new backend.
@@ -386,21 +388,20 @@ impl BackendManager {
                         info!("Backend {} stdin channel closed. Exiting input loop.", backend_name);
                         return BackendExitReason::Normal;
                     };
-                    if let Some((client_id, json_part)) = data.split_once('|') {
-                        let mut state_guard = state.lock().unwrap();
-                        let Some(entry) = state_guard.clients.get_mut(client_id) else {
-                            // Client is no longer active (e.g. disconnected due to backend crash/restart).
-                            // Discard this stale request to prevent corrupting the new backend state.
-                            info!(
-                                "Discarding stale message from disconnected client {} for backend {}",
-                                client_id, backend_name
-                            );
-                            continue;
-                        };
+                    let Some((client_id, json_part)) = protocol::parse_backend_input(&data) else {
+                        warn!(
+                            "Dropping malformed message for backend {}: {:?}",
+                            backend_name, data
+                        );
+                        continue;
+                    };
 
-                        if let Some(seq_num) = protocol::extract_seq_num(json_part) {
-                            let mut map = pending_requests.lock().unwrap();
-                            map.insert((client_id.to_string(), seq_num), tokio::time::Instant::now());
+                    if let Some(seq_num) = protocol::extract_seq_num(json_part) {
+                        let mut map = pending_requests.lock().unwrap();
+                        map.insert((client_id.to_string(), seq_num), tokio::time::Instant::now());
+
+                        let mut state_guard = state.lock().unwrap();
+                        if let Some(entry) = state_guard.clients.get_mut(client_id) {
                             entry.last_seq_num = seq_num;
                         }
                     }
@@ -470,5 +471,35 @@ mod tests {
             let state = manager.state.lock().unwrap();
             assert!(!state.clients.contains_key("client1"));
         }
+    }
+
+    #[tokio::test]
+    async fn test_unregister_client_sends_close_notification() {
+        let registry = BackendRegistry::new();
+        let manager = BackendManager::new(registry);
+
+        let (stdin_tx, mut stdin_rx) = mpsc::channel(10);
+        {
+            let mut state = manager.state.lock().unwrap();
+            state
+                .backends
+                .insert("test_backend".to_string(), BackendProcess { stdin_tx });
+        }
+
+        let client_id = "00000000-0000-0000-0000-000000000001";
+        let _ = manager
+            .register_client(client_id.to_string(), "test_backend".to_string())
+            .await;
+
+        manager.unregister_client(client_id, "test_backend").await;
+
+        let msg = stdin_rx
+            .try_recv()
+            .expect("Expected close message in channel");
+        let (parsed_client_id, json_part) =
+            msg.split_once('|').expect("Close message must contain delimiter");
+        assert_eq!(parsed_client_id, client_id);
+        assert_eq!(json_part, r#"{"method":"close","seqNum":1}"#);
+        assert_eq!(protocol::extract_seq_num(json_part), Some(1));
     }
 }

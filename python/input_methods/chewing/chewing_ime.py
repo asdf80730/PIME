@@ -171,8 +171,13 @@ class ChewingTextService(TextService):
             user_phrase = cfg.getUserPhrase().encode("UTF-8")
 
             # 建立 ChewingContext，此處路徑需要 UTF-8 編碼
-            chewingContext = ChewingContext(
-                syspath=search_paths, userpath=user_phrase)
+            try:
+                chewingContext = ChewingContext(
+                    syspath=search_paths, userpath=user_phrase)
+            except Exception:
+                # If loading user phrase fails (e.g. corrupted/locked sqlite db), fallback to memory
+                chewingContext = ChewingContext(
+                    syspath=search_paths, userpath=b":memory:")
             self.chewingContext = chewingContext
             chewingContext.set_maxChiSymbolLen(50)  # 編輯區長度：50 bytes
 
@@ -752,7 +757,7 @@ class ChewingTextService(TextService):
     def getCapslockState(self):
         if self.lastKeyEvent:
             return self.lastKeyEvent.isKeyToggled(VK_CAPITAL)
-        return ((windll.user32.GetKeyState(VK_CAPITAL) & 0x0001) != 0)
+        return bool(windll.user32.GetKeyState(VK_CAPITAL) & KEY_STATE_TOGGLED)
 
     def onKeyUp(self, keyEvent):
         pressedDuration = time.time() - self.lastKeyDownTime
