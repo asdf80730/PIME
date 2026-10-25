@@ -2,6 +2,33 @@
 
 A PR to `EasyIME/PIME` carries the product change only. The local harness stays local.
 
+## Syncing local `master`
+
+`master` is the integration branch and the base of every PR branch, so bring upstream in
+before branching. Merge on `master` itself: `git push fork master` pushes that ref, not
+`HEAD`, so a merge parked on a side branch still ships the old tip and CI spends a run on
+the stale SHA.
+
+```bash
+git fetch origin
+git switch master
+git merge --no-ff origin/master      # resolve here
+tests/run_local_tests.sh             # all PASS before the push
+git push fork master
+git ls-remote fork refs/heads/master # must equal `git rev-parse master`
+```
+
+Conflicts land in the same places every sync:
+
+- Product code (launcher, node, Python): take upstream's side, then re-apply only the local
+  seam a test needs — `loadServices(baseDir)` is the standing example.
+- Rust: run `cargo fmt` after taking their hunks; upstream's formatting fails the local
+  `cargo fmt --check` step.
+- `AGENTS.md` and the workflows: keep upstream's text and re-add the local sections and
+  steps below it.
+
+## Delivering a PR
+
 - Branch from `origin/master`. Local `master` is the integration branch; it also carries
   `docs/agents/`, `GLOSSARY.md`, research notes, and CI steps that run local test suites.
   The PR branch carries none of `docs/`, `tests/` or `AGENTS.md`, so read those and run the
@@ -30,7 +57,9 @@ A PR to `EasyIME/PIME` carries the product change only. The local harness stays 
   body. The fine-grained token cannot write: `addComment`, label, close, `gh pr create`,
   `gh pr edit` and `gh pr ready` all return 403, so the delivery is the compare URL plus a
   body file, and a PR opened as a draft stays a draft until the human clicks "Ready for
-  review".
+  review". `gh api notifications` is 403 as well: list the work with
+  `gh search prs --author @me --state open` and read discussion through
+  `gh api repos/EasyIME/PIME/issues/<n>/comments`.
   Rerun `tests/run_local_tests.sh` after writing the body: its `PR bodies carry the AI
   declaration` step fails when the last line is missing.
 - Done means: branch pushed, body file written, compare URL printed:

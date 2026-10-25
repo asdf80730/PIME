@@ -74,6 +74,20 @@ Done when every test passes (15 at the time of writing: 12 in `src/lib.rs`, 1 in
 the shim in `syswow64` is what lets that child start. `cargo clean` is safe — the
 shim lives in the Wine prefix, not the target directory.
 
+## When a step hangs
+
+Wine answers an unimplemented import by starting `winedbg` and waiting, so the
+call never returns; a local run that hit one sat until its 25-minute deadline.
+`tests/run_local_tests.sh` bounds every step (`STEP_TIMEOUT`, default 600s) and
+prints `HANG` with the function to rerun; a hand-run Wine command needs its own
+bound, `timeout 60 wine …`.
+
+Bisect by writing the probe before the guesses: log each import to stderr, since
+stderr survives the abort, then run the whole probe once under `timeout`. The
+last line printed names the import that triggered it. That is how
+`propsys.dll.VariantToString` surfaced — reaching it through `cinbase` is why the
+`cinbase` test modules skip themselves under Wine.
+
 ## Limits
 
 - Wine 8 is not Windows: ACLs, job objects, named-pipe security descriptors and

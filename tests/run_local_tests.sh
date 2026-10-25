@@ -24,16 +24,71 @@ skipped=0
 pass() { printf 'PASS  %s\n' "$1"; }
 skip() { printf 'SKIP  %s (%s)\n' "$1" "$2"; skipped=$((skipped + 1)); }
 
+# Wine answers an unimplemented import by starting winedbg and waiting, so a
+# single new test can hold the whole run: 25 minutes of CI budget went into one
+# such hang. Bound every step, and take the step's whole session with it, since
+# the hung program is a grandchild (wine -> winedbg) that a plain `timeout`
+# would leave behind holding the Wine prefix.
+STEP_TIMEOUT=${STEP_TIMEOUT:-600}
+
+run_bounded() {
+    local seconds=$1
+    shift
+
+    if ! command -v setsid >/dev/null 2>&1; then
+        "$@"
+        return
+    fi
+
+    setsid bash -c 'set -u; "$@"' _ "$@" &
+    local pid=$!
+    local marker="$BUILD_DIR/hung.$$"
+    local watchdog
+
+    # The watchdog gets its own session too: killing it with `kill $watchdog`
+    # would leave its `sleep` child holding the run's stdout, so the pipeline
+    # that started the suite would not finish until the deadline passed.
+    setsid bash -c '
+        sleep "$1"
+        : >"$2"
+        kill -TERM -- "-$3" 2>/dev/null
+        sleep 5
+        kill -KILL -- "-$3" 2>/dev/null
+    ' _ "$seconds" "$marker" "$pid" &
+    watchdog=$!
+
+    local status=0
+    wait "$pid" || status=$?
+    kill -TERM -- "-$watchdog" 2>/dev/null
+    wait "$watchdog" 2>/dev/null
+
+    if [ -e "$marker" ]; then
+        rm -f "$marker"
+        return 124
+    fi
+    return "$status"
+}
+
 step() {
     local name=$1
     shift
     printf '\n== %s ==\n' "$name"
-    if "$@"; then
-        pass "$name"
-    else
-        printf 'FAIL  %s\n' "$name"
-        failures=$((failures + 1))
-    fi
+    local status=0
+    run_bounded "$STEP_TIMEOUT" "$@" || status=$?
+    case "$status" in
+        0)
+            pass "$name"
+            ;;
+        124)
+            printf 'HANG  %s (killed after %ss; rerun by hand: %s)\n' \
+                "$name" "$STEP_TIMEOUT" "$*"
+            failures=$((failures + 1))
+            ;;
+        *)
+            printf 'FAIL  %s (exit %s)\n' "$name" "$status"
+            failures=$((failures + 1))
+            ;;
+    esac
 }
 
 python_syntax() {
@@ -83,8 +138,12 @@ python_tests() {
 
 python_bundled_tests() {
     # The installer ships this interpreter; run the same suite on it.
+    # Python 3.15 under Wine aborts in `init_sys_streams` with WinError 6 when
+    # stdout is a regular file, so `tests/run_local_tests.sh > log` would fail
+    # this step alone. A pipe is accepted, hence `| cat` and PIPESTATUS.
     WINEDEBUG=-all wine python/python3/python.exe \
-        -m unittest discover -s tests -p 'test_*.py' -v
+        -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | cat
+    return "${PIPESTATUS[0]}"
 }
 
 node_tests() {
@@ -143,6 +202,13 @@ rust_lint() {
         "$CARGO" fmt --check &&
         "$CARGO" clippy --target i686-pc-windows-gnu --all-targets -- -D warnings)
 }
+
+# A step runs in a fresh bash so the deadline can take its whole session down;
+# the function and everything it reads therefore has to be exported.
+export ROOT BUILD_DIR GO CARGO
+export -f python_syntax yaml_parse pr_bodies python_tests python_bundled_tests \
+    node_tests cpp_json_test cpp_cursor_wine_test go_all_tests go_windows_build \
+    rust_tests rust_lint
 
 printf 'PIME local verification (root: %s)\n' "$ROOT"
 

@@ -21,6 +21,11 @@ exits nonzero on failure:
 tests/run_local_tests.sh
 ```
 
+Every step is bounded (`STEP_TIMEOUT`, default 600s) and reports `HANG` when the
+deadline fires, so one stuck Wine call cannot eat the run. A run reads the script
+incrementally: leave `tests/run_local_tests.sh` untouched while a background run
+is still going, or run a copy.
+
 Individual commands, if you want to narrow the loop:
 
 - **Python backend** — the full `tests/` suite (protocol loop, TextService
