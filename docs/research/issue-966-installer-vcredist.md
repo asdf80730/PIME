@@ -604,11 +604,12 @@ tests/run_local_tests.sh                           # unaffected layers must stay
 The `-- installer` scope matters because this research note contains the same
 words; `git grep` over the whole tree would match the note itself.
 
-`tests/run_local_tests.sh` covers the Python/Node/Go/C++ host layers but not
-the installer. The NSIS compile cannot be checked here: `docs/agents/verification.md:98-102`
-states that Linux `makensis` cannot preprocess the installer because the
-Windows `StdUtils` plugin is unavailable; after §6.3 the note should no longer
-blame `inetc`.
+`tests/run_local_tests.sh` covers the Python/Node/Go/C++ host layers and, since
+this note was corrected, the installer: Debian's `makensis` 3.08 (the version
+`build-and-sign.yaml` pins) assembles `installer/installer.nsi` in full once
+each `File ` is rewritten to `File /nonfatal` in a scratch copy, so the script,
+its includes and its LogicLib blocks are checked locally. Packaging, signing
+and install-time behaviour stay in Windows CI.
 
 ### 7.2 Windows CI (must pass)
 

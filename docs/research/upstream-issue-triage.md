@@ -80,10 +80,11 @@ PRs. "PR?" is the state on 2026-10-20; `—` means no PR exists.
 - Patch size: ~95 deleted lines across 5 files (`installer.nsi:238-280` is the 43-line function,
   `:284-288` the call site, `macros.nsh:259-297` the 39-line macro, 3 strings × 3 locales). No new
   logic.
-- Verification here: no local build check exists — `docs/agents/verification.md:98-102` records that
-  Linux `makensis` cannot preprocess `installer/installer.nsi` (missing Windows `inetc`/`StdUtils`).
-  Verification is the `build-and-sign` job (`makensis` step) on a branch, plus a static check that
-  no reference survives: `git grep -n 'VCREDIST' -- installer/`.
+- Verification here: `tests/run_local_tests.sh` now assembles `installer/installer.nsi` with
+  Debian's `makensis` 3.08 (see `docs/agents/verification.md`), so a broken script, include or
+  LogicLib block fails locally; packaging still relies on the `build-and-sign` job (`makensis`
+  step) on a branch, plus a static check that no reference survives:
+  `git grep -n 'VCREDIST' -- installer/`.
 - Duplication risk: low. Of the 18 open PRs, only draft #898 lists any `installer/` file, and no PR
   mentions `vc_redist` (`search/issues?q=repo:EasyIME/PIME+is:pr+vcredist` → 0). #898
   ("Replace NSIS with a monolithic WiX Bootstrapper") rewrites `installer/` and `README.md`, but it

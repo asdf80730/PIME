@@ -130,13 +130,19 @@ Individual commands, if you want to narrow the loop:
   a new form against SchemaStore's `github-issue-forms.json` before pushing.
 - **C++ text service** — cannot build or run here: the root `CMakeLists.txt` uses
   MSVC flags (`/MT`, `/D_UNICODE`), TSF needs a Windows host, and running `cmake`
-  on Linux proves nothing. The NSIS installer is also CI-only: Linux `makensis`
-  cannot preprocess `installer/installer.nsi` because the installer loads
-  vendored Windows-only NSIS plugins (for example `StdUtils`) that Linux
-  `makensis` cannot use. Windows CI remains the check. The installer
-  also packages the JavaScript input methods that `build.bat` generates
-  (`node/input_methods/McBopomofo`, `McFoxim`, `McTabim`, and `emojime/dist`),
-  so `makensis` needs `build.bat`'s output even on Windows.
+  on Linux proves nothing. The NSIS installer is not in that group: Debian's
+  `makensis` is 3.08, the same version `build-and-sign.yaml` pins, and it
+  preprocesses and assembles `installer/installer.nsi` in full, vendored
+  plugins included. The only failures are `File` directives whose Windows
+  build output is absent. `tests/run_local_tests.sh` therefore copies
+  `installer/` plus `version.txt`, `LGPL-2.0.txt` and `PSF.txt` into a temp
+  directory, rewrites each `File ` to `File /nonfatal`, and compiles, so a
+  broken script, include or LogicLib block fails locally. What that does not
+  prove: packaging and signing, plugin behaviour at install time, and the
+  payload, since the installer packages the JavaScript input methods
+  `build.bat` generates (`node/input_methods/McBopomofo`, `McFoxim`,
+  `McTabim`, and `emojime/dist`). Windows CI (`windows-2025`) remains the
+  check for those.
 
 ## CI (GitHub Actions)
 

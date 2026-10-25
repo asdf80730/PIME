@@ -131,6 +131,27 @@ yaml_parse() {
         printf 'parsed %d files\n' "${#files[@]}"
 }
 
+nsis_smoke() {
+    # Linux makensis (3.08 here) preprocesses and assembles installer.nsi; what
+    # it lacks is build.bat's Windows output, which shows up only as "File: ...
+    # no files found". Make every File directive non-fatal in a scratch copy and
+    # compile, so the script, its includes and its LogicLib blocks are checked
+    # locally. Packaging and signing stay in Windows CI.
+    local tmp status
+    tmp=$(mktemp -d)
+    cp -r "$ROOT/installer" "$tmp/"
+    cp "$ROOT/version.txt" "$ROOT/LGPL-2.0.txt" "$ROOT/PSF.txt" "$tmp/"
+    sed -E -i 's/^([[:space:]]*)File /\1File \/nonfatal /' "$tmp/installer/installer.nsi"
+    (cd "$tmp" && makensis -V1 installer/installer.nsi) >"$tmp/makensis.log" 2>&1
+    status=$?
+    if [ "$status" -ne 0 ]; then
+        printf 'makensis failed:\n'
+        tail -20 "$tmp/makensis.log"
+    fi
+    rm -rf "$tmp"
+    return "$status"
+}
+
 pr_bodies() {
     # AGENTS.md §2 puts the AI declaration at the end of the message, and the
     # body is pasted by hand: a missing last line makes the human add it.
@@ -228,7 +249,7 @@ rust_lint() {
 # A step runs in a fresh bash so the deadline can take its whole session down;
 # the function and everything it reads therefore has to be exported.
 export ROOT BUILD_DIR GO CARGO
-export -f python_syntax yaml_parse pr_bodies python_tests python_bundled_tests \
+export -f python_syntax yaml_parse nsis_smoke pr_bodies python_tests python_bundled_tests \
     node_tests cpp_json_test cpp_cursor_wine_test go_all_tests go_windows_build \
     rust_tests rust_lint
 
@@ -238,6 +259,12 @@ if command -v bun >/dev/null 2>&1; then
     step 'GitHub YAML parses' yaml_parse
 else
     skip 'GitHub YAML parses' 'bun missing (Bun.YAML.parse is the only parser here)'
+fi
+
+if command -v makensis >/dev/null 2>&1; then
+    step 'NSIS installer script assembles' nsis_smoke
+else
+    skip 'NSIS installer script assembles' 'makensis missing; apt-get install nsis'
 fi
 
 step 'PR bodies carry the AI declaration' pr_bodies
