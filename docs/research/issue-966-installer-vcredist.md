@@ -556,10 +556,19 @@ leaving 39 dead files in the tree is the worse option.
 
 The issue's safety argument assumes Windows 10. Make that true:
 
-- `installer/installer.nsi:189`: `${AtLeastWinVista}` → `${AtLeastWin10}`
-  (`AtLeastWin10` is defined by NSIS 3.08's
-  [`WinVer.nsh`](https://github.com/kichik/nsis/blob/v308/Include/WinVer.nsh);
-  `WINVER_10` is 0x0A000000, line 160).
+- `installer/installer.nsi:185-187` gates on `${AtLeastWinVista}`. There is no
+  `${AtLeastWin10}` to swap in, contrary to an earlier revision of this note:
+  NSIS 3.08–3.13 `WinVer.nsh` stop at `${AtLeastWin8}` (checked at tags v308,
+  v309, v310, v311, v312, v313), and `master` defines only `${AtLeastWin11}`
+  (through `WinVer_BuildNumCheck`). `WINVER_10` exists as a numeric define, but
+  the OS-test macro does not.
+  A 3.08-compatible floor is a two-part check: `${IfNot} ${AtLeastWin8}` →
+  reject, then `ReadRegDWORD` `CurrentMajorVersionNumber` under
+  `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion` → reject when it is
+  absent or below 10 (only Windows 10+ writes it; 8.1 still reports 6.3). The
+  alternative, bumping the CI NSIS (`build-and-sign.yaml:86` pins 3.08) to a
+  build that would carry `${AtLeastWin11}`, buys nothing here: 11 is not the
+  floor.
 - Rename `AtLeastWinVista_MESSAGE` (or at least rewrite its text) in
   `installer/locale/{English,SimpChinese,TradChinese}.nsh:14` to say Windows 10
   or later. The current text says "Windows Vista or later", which is already
@@ -568,7 +577,7 @@ The issue's safety argument assumes Windows 10. Make that true:
 Without this, a Windows 8.1 install succeeds after the removal and then fails
 at `ucrtbase.dll`/`vcruntime140.dll` load time unless the machine was fully
 updated. With it, unsupported systems are rejected before old-version removal
-(the gate is in `.onInit` before `uninstallOldVersion`, `:189` vs `:220`).
+(the gate is in `.onInit` before `uninstallOldVersion`, `:185-187` vs `:220`).
 
 ### 6.5 Diff estimate
 
@@ -576,7 +585,7 @@ updated. With it, unsupported systems are rejected before old-version removal
 - Issue deletion: 92 deleted lines across 5 files.
 - `inetc`: 3 deleted lines + 39 deleted files (215 KiB in git).
 - Docs: 1 edited line.
-- Optional OS gate: 4 edited lines across 4 files.
+- Optional OS gate: ~10 lines in `installer.nsi` + 4 locale strings.
 
 Total for the safe version: +1 line, −95 lines, 39 files removed.
 
