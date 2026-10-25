@@ -7,7 +7,8 @@ checkout (`fa055ef`) diverges from `origin/master` in CI/tests/docs, but
 PIMELauncher/CMakeLists.txt PIMELauncher/Cargo.toml` is empty, so the installer
 and build files cited here are identical in both trees. The issue is
 [EasyIME/PIME#966](https://github.com/EasyIME/PIME/issues/966) (PCMan,
-2026-10-18, open).
+2026-10-18; open when this analysis was written, closed 2026-10-24 as resolved
+by #976 — §9).
 
 What was executed:
 
@@ -25,14 +26,22 @@ What was executed:
 - `gh api` for the issue body, the CI run, and the libchewing source at its
   pinned SHA (`452f622…`).
 
-What was not executed, and why: `makensis` (needs Windows plugins; the local
-note `docs/agents/verification.md:98-102` records that the NSIS compile is
-CI-only), any MSVC/Rust build (Linux host), and a clean Windows VM. Anything
-that depends on those is marked `[INFERENCE]`.
+What was not executed for this analysis, and why: `makensis` (it needs Windows
+build output; at the time the note recorded `docs/agents/verification.md` as
+saying the NSIS compile is CI-only), any MSVC/Rust build (Linux host), and a
+clean Windows VM. Anything that depends on those is marked `[INFERENCE]`. The
+NSIS half has since been replayed locally and the removal has shipped — §9 has
+the current state, including what is still unverified.
 
 ## TL;DR
 
-- **The literal patch in the issue is a NO-GO.** Removing the check alone
+- **Status (2026-10-25): the recommended patch shipped.** #975 made the
+  launcher CRT static and added the CI dependency gate (merged
+  `2439db0a6df49c4735a6e5f65e8522aa46165446`, 2026-10-24); #976 removed the
+  check, the macro, the locale strings and `installer/inetc` (merged
+  `3dbea11097370b5fc0170b28404d2311b552ba09`, 2026-10-24); #966 is closed. The
+  Windows 10 floor from §6.4 is still open as #1005. Details in §9.
+- **The literal patch in the issue was a NO-GO.** Removing the check alone
   leaves `PIMELauncher.exe` with an unsatisfied static import of
   `VCRUNTIME140.dll`. The launcher is installed unconditionally
   (`installer/installer.nsi:302-303`) and launched at install time
@@ -40,30 +49,39 @@ that depends on those is marked `[INFERENCE]`.
   Python package (`python/python3/vcruntime140.dll`) sits in
   `$INSTDIR\python\python3`, which is not on the launcher's DLL search path;
   the installer never adds it to `PATH`.
-- The CI-built launcher from the current tree imports `VCRUNTIME140.dll`
-  (verified). The other core binaries are self-sufficient:
+- The CI-built launcher of that tree imported `VCRUNTIME140.dll` (verified at
+  analysis time; #975 has since made the launcher static, §9). The other core
+  binaries were and are self-sufficient:
   `PIMETextService.dll` (x86/x64/ARM64) imports no CRT at all;
   `python/*`, `node.exe`, `opencc.dll` and `rime.dll` either carry the runtime
   locally or import none. No shipped binary imports `msvcp140.dll` or
   `vcruntime140_1.dll`.
-- **GO, if bundled with a one-line launcher build fix**:
+- **GO, if bundled with a one-line launcher build fix** — the shape that
+  actually landed (see §9):
   `corrosion_add_target_rustflags(PIMELauncher "-Ctarget-feature=+crt-static")`
   in `PIMELauncher/CMakeLists.txt`, then the 92-line deletion in the issue.
   With that flag the launcher needs only in-box Windows 10 components, and
-  `inetc` becomes entirely dead.
+  `inetc` became entirely dead.
 - The issue's premise is partly wrong: `libchewing`'s shipped `chewing.dll`
   is dynamically linked to `VCRUNTIME140.dll` (not `/MT`), and
   `PIMELauncher.exe` is a Rust binary using the MSVC runtime dynamically
   (Rust's default). Only `PIMETextService.dll`/`libIME2` are `/MT`.
-- `installer/inetc` has no other caller after the macro is removed and can be
-  deleted with its `!addplugindir` line (39 files, 215 KiB in git). Keeping it
-  is not justified by StdUtils (separate plugin directory) or any build script.
-- The installer does **not** enforce the issue's "Windows 10 minimum": it only
-  rejects pre-Vista (`installer/installer.nsi:188-192`). Removing the UCRT
-  check without gating Windows 10 would let 8.1 installs succeed and then fail
-  at Python startup. An optional companion change is listed in §6.4.
+- `installer/inetc` had no other caller once the macro was removed and was
+  deleted with its `!addplugindir` line in #976 (39 files, 215 KiB in git).
+  Keeping it was not justified by StdUtils (separate plugin directory) or any
+  build script.
+- When this analysis was written the installer did **not** enforce the issue's
+  "Windows 10 minimum": it only rejects pre-Vista
+  (`installer/installer.nsi:188-192`). Removing the UCRT check without gating
+  Windows 10 would let 8.1 installs succeed and then fail at Python startup.
+  The companion change listed in §6.4 is still unmerged as #1005, so `master`
+  today still carries that gap.
 
-## 1. What the code does today
+## 1. What the code did before #976
+
+The line references and quoted code in this section describe
+`origin/master` at `15863744`, i.e. the state the removal was argued against;
+the function is gone from the current tree (§9.1).
 
 ### 1.1 The check and the macro
 
@@ -556,7 +574,7 @@ leaving 39 dead files in the tree is the worse option.
 
 The issue's safety argument assumes Windows 10. Make that true:
 
-- `installer/installer.nsi:185-187` gates on `${AtLeastWinVista}`. There is no
+- `installer/installer.nsi:188-192` gates on `${AtLeastWinVista}`. There is no
   `${AtLeastWin10}` to swap in, contrary to an earlier revision of this note:
   NSIS 3.08–3.13 `WinVer.nsh` stop at `${AtLeastWin8}` (checked at tags v308,
   v309, v310, v311, v312, v313), and `master` defines only `${AtLeastWin11}`
@@ -577,7 +595,15 @@ The issue's safety argument assumes Windows 10. Make that true:
 Without this, a Windows 8.1 install succeeds after the removal and then fails
 at `ucrtbase.dll`/`vcruntime140.dll` load time unless the machine was fully
 updated. With it, unsupported systems are rejected before old-version removal
-(the gate is in `.onInit` before `uninstallOldVersion`, `:185-187` vs `:220`).
+(the gate is in `.onInit` before `uninstallOldVersion`, `:188-192` vs `:221`).
+
+**Status (2026-10-25):** written up as PR #1005 "feat(installer): require
+Windows 10 or later" (opened 2026-10-25, non-draft, `mergeStateStatus: CLEAN`,
+head `31b732d69fe415737738d591155b1cf0ab947ac8` on `pr/installer-win10-floor`).
+It is **not merged** and is not an ancestor of `master`, which still gates on
+`${AtLeastWinVista}` at `installer/installer.nsi:185-188` (the block moved up
+when `ensureVCRedist` was deleted). The paragraph above therefore describes the
+live gap, not a hypothetical one.
 
 ### 6.5 Diff estimate
 
@@ -624,9 +650,13 @@ and install-time behaviour stay in Windows CI.
   catches a regression in the static-CRT flag, and is the only reliable
   Windows-side check for the actual gap — CI runners have the VC++ redist
   installed, so a *runtime* smoke there cannot prove clean-machine behavior.
+  This landed with #975 (`.github/workflows/build-and-sign.yaml:96-111`); it
+  matches `VCRUNTIME140|MSVCP140`, which also covers `VCRUNTIME140_1.dll`
+  because the pattern is a substring match.
 - Optional: scan the five uploaded artifacts with the same gate. Today the
   only allowed `VCRUNTIME140` importer is under `python\` (and that directory
-  carries the DLL); the launcher and the text services must be clean.
+  carries the DLL); the launcher and the text services must be clean. This
+  optional widening was not taken: the gate checks the launcher exe only.
 
 ### 7.3 Manual clean-VM matrix
 
@@ -667,15 +697,19 @@ already broken today because the check installs only the 64-bit redist.
 line) and the inetc deletion. One-line reason: only one shipped binary still
 imports a redistributable CRT DLL, and making that binary `/MT` removes the
 last real dependency; everything else either carries its runtime or imports
-none, and Windows 10 supplies the UCRT.
+none, and Windows 10 supplies the UCRT. This is the shape that shipped: #975
+and #976 merged on 2026-10-24, #966 closed (§9).
 
 Residual risks:
 
 - `msvcp140.dll`: no current binary imports it, but a future third-party DLL
-  rebuilt with `/MD` and C++ std would. The CI dependency gate should treat
-  `MSVCP140` as a hard failure (outside the Python tree, where none exists
-  today).
-- `vcruntime140_1.dll`: same treatment; no importer today.
+  rebuilt with `/MD` and C++ std would. The CI dependency gate that landed with
+  #975 (`.github/workflows/build-and-sign.yaml:96-111`) does treat `MSVCP140` as
+  a hard failure, but only for `build\PIMELauncher\PIMELauncher.exe` — not for
+  the Python tree (where no such import exists today) and not for the uploaded
+  artifacts.
+- `vcruntime140_1.dll`: same gate catches it, because its `VCRUNTIME140`
+  alternative is a substring match; no importer today.
 - `chewing.dll` is dynamic-CRT and only works in-process with Python. If the
   Python interpreter stops shipping `vcruntime140.dll` (e.g. a future CPython
   change) or chewing is loaded from a process without the runtime, it breaks.
@@ -683,13 +717,108 @@ Residual risks:
 - The Python 3.12 embeddable ZIP's `vcruntime140.dll` is version 14.42; it is
   byte-identical to upstream CPython's, but it is not a substitute for the
   launcher's toolset runtime. Do not point the fallback at it.
-- Unsupported Windows 7/8.1 installs are not gated. Without §6.4, removing the
-  UCRT check makes those installs *look* successful and fail later. With
-  §6.4, the product statement and the code agree.
+- Unsupported Windows 7/8.1 installs are still not gated on `master`: #1005
+  (§6.4) is open and unmerged, so removing the UCRT check leaves those installs
+  looking successful and failing later. With that PR, the product statement and
+  the code agree.
 - `inetc` is deleted, so there is no longer any network access during setup.
   Nothing else used it; a future online bootstrap would need a new mechanism.
-- ARM64: the `${RunningX64}`/`${IsNativeARM64}` ordering means the ARM64 URL
-  is dead code today. The x64 bundle contains ARM64 binaries per Microsoft, so
-  behavior is correct by accident; after removal the whole branch disappears,
-  which is a cleanup rather than a risk. Verify the ARM64X text service in the
-  matrix anyway.
+- ARM64: the `${RunningX64}`/`${IsNativeARM64}` ordering meant the ARM64 URL
+  was dead code. The x64 bundle contains ARM64 binaries per Microsoft, so
+  behavior was correct by accident; the branch went away with `ensureVCRedist`
+  in #976, which is a cleanup rather than a risk. Verify the ARM64X text
+  service in the matrix anyway.
+
+## 9. Outcome (2026-10-25)
+
+The §8 recommendation was executed in two stacked PRs on 2026-10-24, so this
+note is now a record rather than a plan. Everything below was re-checked
+against `gh` and this checkout on 2026-10-25.
+
+| Ref | State | Merge commit |
+| --- | --- | --- |
+| #975 `build(launcher): statically link the MSVC CRT` (asdf80730) | merged 2026-10-24T22:14:31Z | `2439db0a6df49c4735a6e5f65e8522aa46165446` |
+| #976 `installer: remove obsolete VCRedist bootstrap and inetc (#966)` (asdf80730) | merged 2026-10-24T22:29:22Z | `3dbea11097370b5fc0170b28404d2311b552ba09` |
+| #974 `fix(installer): remove obsolete VC++ redist check (#966)` (dannyward630) | closed unmerged 2026-10-24T22:30:06Z | — |
+| #966 | closed 2026-10-24T22:29:24Z | — |
+| #1005 `feat(installer): require Windows 10 or later` | open, non-draft, `mergeStateStatus: CLEAN`, head `31b732d69fe415737738d591155b1cf0ab947ac8` | — |
+
+Both merge commits are ancestors of `origin/master` (`b3c47ad`,
+2026-10-25T01:24Z) and of this checkout's `master`. PCMan closed #974 as
+"resolved by #976", the PR that also deleted the vendored `inetc` tree; #974
+alone would have left the launcher importing `VCRUNTIME140.dll`.
+
+### 9.1 What landed
+
+- #975: `PIMELauncher/CMakeLists.txt` +4 lines (the
+  `-Ctarget-feature=+crt-static` rustflag plus its comment, §6.1) and
+  `build-and-sign.yaml` +18 lines — the dependency gate proposed in §7.2.
+- #976: `installer/installer.nsi` −48 (the 47-line `Function
+  ensureVCRedist`, its `TODO` comment and `Call`, the `!addplugindir` line for
+  inetc, and the ARM64 URL branch), `installer/macros.nsh` −42,
+  `English/SimpChinese/TradChinese.nsh` −3 each, and the 39 files under
+  `installer/inetc` (§6.2, §6.3).
+- `installer.nsi` no longer contains a `TODO` marker at all
+  (`grep -n TODO installer/installer.nsi` exits 1). The "TODO comment" row in
+  §6.2 describes the deleted code, not the current file.
+
+### 9.2 Static checks in this tree
+
+```
+$ git grep -nE 'VCREDIST|vc_redist|DownloadAndInstallVCRedist|inetc' -- installer build.bat .github appveyor.yml appveyor.after_build.bat README.md
+(no output, exit 1)
+$ git grep -n 'VCRUNTIME140\|MSVCP140' -- .github/workflows/build-and-sign.yaml
+.github/workflows/build-and-sign.yaml:108:          if ($deps -match 'VCRUNTIME140|MSVCP140') {
+$ grep -n crt-static PIMELauncher/CMakeLists.txt
+5:corrosion_add_target_rustflags(PIMELauncher "-Ctarget-feature=+crt-static")
+```
+
+Every §7.1 removal grep comes back empty, `installer/inetc` is gone, and the
+launcher flag from §6.1 is present. The gate sits at
+`.github/workflows/build-and-sign.yaml:96-111`, between `build.bat` and the
+`unsigned-binaries` upload. It runs `dumpbin /dependents` on
+`build\PIMELauncher\PIMELauncher.exe` only; the pattern is a substring match, so
+`VCRUNTIME140_1.dll` is caught by the `VCRUNTIME140` alternative. The CI
+evidence for the change is fork run
+[39446806581](https://github.com/asdf80730/PIME/actions/runs/39446806581)
+(2026-10-20, branch `ci/966-remove-vcredist`, head `49fbe86`), which contains
+both `052467d` (#975) and `7503a07` (the #976 commit) plus a workflow
+permission fix; `build-and-sign` passed there. Per-PR evidence exists as well: #976's
+`ci / build-and-sign` run [39531854162](https://github.com/EasyIME/PIME/actions/runs/39531854162)
+passed, #975 shows only an AppVeyor pass (its branch run `40129832326`, head `702bf91c`, ended in
+`startup_failure`), and #1005's earlier branch runs (`40220116420`, `40220349999`) ended the same
+way before run [40225416508](https://github.com/EasyIME/PIME/actions/runs/40225416508) on head
+`31b732d` passed `ci / build-and-sign` and AppVeyor. `gh pr checks 982`, `1005` and `1006` are green
+as of this refresh.
+
+### 9.3 Local NSIS assembly
+
+`makensis` was available this time — Debian `v3.08-3+deb12u1`, the 3.08 line
+`build-and-sign.yaml` pins — so §7.1's "CI-only" caveat no longer holds for the
+script itself. Replaying the `nsis_smoke` step from
+`tests/run_local_tests.sh:134-153` by hand (copy `installer/` plus
+`version.txt`, `LGPL-2.0.txt`, `PSF.txt` into a temp dir, rewrite
+`^([[:space:]]*)File ` to `File /nonfatal ` in the copy, run
+`makensis -V1 installer/installer.nsi` there) gave **exit 0** with an empty log
+and produced `PIME-2.0.0-beta4-setup.exe` (236 122 bytes in that replay; a
+second run produced 236 091, so the size varies with timestamps). The script, its
+includes and its LogicLib blocks assemble; only the Windows build output is
+masked by `/nonfatal`. That script is local-only — `tests/run_local_tests.sh`
+does not exist in `origin/master`.
+
+### 9.4 Windows floor
+
+Still not landed. `master` rejects only pre-Vista
+(`installer/installer.nsi:185-188`, `${IfNot} ${AtLeastWinVista}`). #1005
+implements §6.4 — `${AtLeastWin8}` followed by a `CurrentMajorVersionNumber >=
+10` read — and is open and outside `master`, so the "Windows 7/8.1 installs are
+not gated" residual risk in §8 is the one gap this work left open.
+
+### 9.5 What remains unverified
+
+- §7.3's clean-VM matrix was not run: neither #975 nor #976 claims a manual VM
+  test (their recorded verification is CI plus the static greps), and this
+  checkout holds no record of one. The offline Windows 10 install, the x86
+  regression case and the Windows 8.1 refusal are still untested claims.
+- The dependency gate proves imports, not loadability; nothing here observed
+  `PIMELauncher.exe` starting on a machine without the redistributable.
