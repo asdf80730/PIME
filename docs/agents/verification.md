@@ -33,7 +33,13 @@ Individual commands, if you want to narrow the loop:
 
   `tests/run_local_tests.sh` also runs the same suite on the shipped
   interpreter (`python/python3/python.exe`, 3.15.1) under Wine; the Linux-only
-  IME smoke test skips itself there. Run it directly with:
+  IME smoke test skips itself there, and so do the modules that import
+  `cinbase`, because `cinbase/__init__.py` reaches
+  `propsys.dll.VariantToString`, which this Wine build does not implement (Wine
+  aborts into `winedbg` instead of raising, so the test would hang). The host
+  run keeps that coverage: those modules install the smoke runner's Win32
+  shims, and the logic under test never calls a Win32 function. Run the
+  bundled suite directly with:
 
   ```
   WINEDEBUG=-all wine python/python3/python.exe -m unittest discover -s tests -p "test_*.py" -v
@@ -56,10 +62,12 @@ Individual commands, if you want to narrow the loop:
   python3 -m compileall -q -x '(^|/)python3(/|$)' python
   ```
 
-- **Node backend** — `cd node && npm test`: two scripts. `server.test.js` spawns
-  `node/server.js` and speaks the launcher's `<client_id>|<json>` framing over
-  stdin/stdout; `loadServices.test.js` discovers services from a temporary
-  `input_methods` tree (both loaders accept an optional `baseDir` for this).
+- **Node backend** — `cd node && npm test`: three scripts. Upstream's
+  `tests/nimeServer.test.js` covers the line protocol under `node --test`;
+  `server.test.js` spawns `node/server.js` and speaks the launcher's
+  `<client_id>|<json>` framing over stdin/stdout; `loadServices.test.js`
+  discovers services from a temporary `input_methods` tree (both loaders accept
+  an optional `baseDir` for this).
   The bundled `node/node.exe` is v22.23.4 (32-bit); CI runs Node 22.x. Wine
   cannot run that Node build (`EBADF` while loading builtins), so the bundled
   runtime is exercised on Windows CI instead: `server.test.js` spawns

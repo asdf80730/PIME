@@ -38,6 +38,9 @@ SERVICES = [
 SKIP_MARKERS = (
     ("set_autoLearn", "system libchewing does not match the bundled binding"),
     ("libchewing.so", "libchewing is not installed"),
+    # #988 made a failed context creation raise; the DLLs this checkout ships
+    # are Windows builds, so the context cannot be created here.
+    ("Failed to create chewing context", "libchewing cannot create a context on Linux"),
     ("librime.so", "librime is not installed"),
     ("Rime.dll", "rime.dll is Windows-only"),
 )
@@ -77,6 +80,20 @@ def install_windows_shims():
         ctypes.windll = FakeDLL()
     if not hasattr(ctypes, "WinDLL"):
         ctypes.WinDLL = lambda *args, **kwargs: FakeDLL()
+
+
+def under_wine():
+    """True for Wine's Win32 emulation, which lacks calls real Windows has.
+
+    Wine ships ntdll's ``wine_get_version`` export, so this separates the two
+    without touching a Win32 function itself.
+    """
+    if sys.platform != "win32":
+        return False
+    try:
+        return hasattr(ctypes.windll.ntdll, "wine_get_version")
+    except OSError:
+        return False
 
 
 def service_class(module):

@@ -8,8 +8,19 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PYTHON_DIR = os.path.join(ROOT, "python")
 if PYTHON_DIR not in sys.path:
     sys.path.insert(0, PYTHON_DIR)
+TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if TESTS_DIR not in sys.path:
+    sys.path.insert(0, TESTS_DIR)
+
+# `import cinbase` pulls in winsound and ctypes.windll at module scope. The
+# smoke runner's shims stand in for them on Linux; the tests below never call
+# a Win32 function.
+import ime_smoke_runner  # noqa: E402 - located after ROOT is known
+ime_smoke_runner.install_windows_shims()
 
 
+@unittest.skipIf(ime_smoke_runner.under_wine(),
+                 "Wine lacks propsys.dll.VariantToString, which importing cinbase reaches")
 class CinbaseCandPerPageTests(unittest.TestCase):
     def setUp(self):
         import cinbase
