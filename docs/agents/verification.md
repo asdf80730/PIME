@@ -1,9 +1,11 @@
 # Verifying changes in this repo
 
-This checkout is Linux; the product is Windows-only. Verify each layer in the
-cheapest place it actually runs.
+The product is Windows-only. Verify each layer in the cheapest place it
+actually runs. This checkout can be either a Linux box (Wine) or a Windows box
+(native) — see [Windows (native)](#windows-native-this-machine) below for the
+Windows path.
 
-## Sandbox facts
+## Sandbox facts (Linux checkout)
 
 - **YAML**: `python3` has no PyYAML. The Bun parse command is the `GitHub YAML
   parses` step under Local below.
@@ -148,6 +150,32 @@ Individual commands, if you want to narrow the loop:
   `build.bat` generates (`node/input_methods/McBopomofo`, `McFoxim`,
   `McTabim`, and `emojime/dist`). Windows CI (`windows-2025`) remains the
   check for those.
+
+## Windows (native, this machine)
+
+This checkout lives on a Windows 11 ARM64 box, so every layer runs natively —
+no Wine, no WSL. The toolchain is not installed system-wide: Go, Node, Bun,
+Rust, and mingw-w64 all sit under `.tools/` in the project directory, and
+`.tools/` is excluded through `.git/info/exclude` (local only, never upstream).
+
+```
+bash tests/install_windows_toolchain.sh   # once
+bash tests/verify_windows.sh              # every time
+```
+
+Twelve layers: GitHub/AppVeyor YAML parse (Bun), the Python backend suite on
+the shipped `python/python3/python.exe`, three Node backend suites on the
+shipped `node/node.exe`, the Go backend tests plus the shipped
+`GOOS=windows GOARCH=386` build, `PIMELauncher` tests / `cargo fmt --check` /
+`cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
+`CompositionCursor`) built with mingw g++.
+
+The two layers that still need Windows CI are the C++/TSF text service (MSVC)
+and the NSIS installer.
+
+`docs/agents/windows-toolchain.md` has the pinned versions and why each one
+(Go 1.25 for `GOARCH=386`, the GNU Rust host, and so on), plus the PATH
+helpers for running the tools by hand.
 
 ## CI (GitHub Actions)
 

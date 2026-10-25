@@ -92,7 +92,10 @@ Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/a
 `tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled
 Python, Node, Go tests plus Windows cross-build, C++ helpers, Rust tests/fmt/clippy
 under Wine) and skips missing toolchains. C++/TSF and installer changes still need
-Windows CI. See `docs/agents/verification.md`.
+Windows CI. On a Windows checkout the same layers run natively through
+`tests/verify_windows.sh` (toolchain under `.tools/`, installed by
+`tests/install_windows_toolchain.sh`, excluded locally). See
+`docs/agents/verification.md` and `docs/agents/windows-toolchain.md`.
 
 ### Upstream PRs
 
