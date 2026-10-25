@@ -496,8 +496,9 @@ mod tests {
         let msg = stdin_rx
             .try_recv()
             .expect("Expected close message in channel");
-        let (parsed_client_id, json_part) =
-            msg.split_once('|').expect("Close message must contain delimiter");
+        let (parsed_client_id, json_part) = msg
+            .split_once('|')
+            .expect("Close message must contain delimiter");
         assert_eq!(parsed_client_id, client_id);
         assert_eq!(json_part, r#"{"method":"close","seqNum":1}"#);
         assert_eq!(protocol::extract_seq_num(json_part), Some(1));

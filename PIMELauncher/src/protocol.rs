@@ -66,7 +66,10 @@ pub fn extract_seq_num(json_str: &str) -> Option<i64> {
     if !json_str.contains("\"seqNum\"") {
         return None;
     }
-    serde_json::from_str::<Value>(json_str).ok()?.get("seqNum")?.as_i64()
+    serde_json::from_str::<Value>(json_str)
+        .ok()?
+        .get("seqNum")?
+        .as_i64()
 }
 
 #[cfg(test)]
@@ -116,7 +119,10 @@ mod tests {
 
     #[test]
     fn test_extract_seq_num_with_pipe_in_payload() {
-        assert_eq!(extract_seq_num(r#"{"commitString":"a|b","seqNum":7}"#), Some(7));
+        assert_eq!(
+            extract_seq_num(r#"{"commitString":"a|b","seqNum":7}"#),
+            Some(7)
+        );
         assert_eq!(extract_seq_num(r#"{"success":true}"#), None);
     }
 
