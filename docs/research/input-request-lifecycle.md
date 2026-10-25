@@ -208,8 +208,9 @@ respawns after 1 s, so the next request reconnects, re-`init`s and re-sends `onA
 
 ## Not verifiable here
 
-- Any execution of `PIMETextService`, `libIME2` or `PIMELauncher`: this checkout is Linux and those
-  targets are Windows-only (`docs/agents/verification.md`). Read instead: `PIMEClient.cpp/.h`,
+- Any execution of `PIMETextService`, `libIME2` or `PIMELauncher`: this host has no Visual Studio
+  toolchain, so those targets cannot be built or run here
+  (`docs/agents/verification.md`). Read instead: `PIMEClient.cpp/.h`,
   `PIMETextService.cpp`, all of `PIMELauncher/src`, `node/server.js`, `node/node_modules/nime/src`,
   `python/`, `go-backend/`.
 - Real named-pipe semantics (byte vs message mode, `WaitNamedPipe` timing, ACLs) and TSF callback

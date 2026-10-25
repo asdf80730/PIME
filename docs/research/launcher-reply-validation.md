@@ -5,8 +5,8 @@ This note answers four reply-side questions left open by
 flow are described there and are not repeated here. Scope is the reply direction only: backend
 stdout → launcher → TSF.
 
-Nothing was executed. This checkout is Linux and the product is Windows-only
-(`docs/agents/verification.md:1-3`); every claim below comes from reading the source in this
+Nothing was executed. The product's Windows-only targets cannot be built on this
+host (the "Sandbox facts" section of `docs/agents/verification.md`); every claim below comes from reading the source in this
 checkout, including the existing tests and `git log`/`git show`. Test intent is read from test code,
 not from a run.
 
@@ -439,8 +439,8 @@ first tick at or after 15 s.
 
 ## Not verifiable here
 
-- No execution of `PIMETextService`, `libIME2` or `PIMELauncher`; this checkout is Linux and those
-  targets are Windows-only (`docs/agents/verification.md:1-3`). No tests, builds, or backends were
+- No execution of `PIMETextService`, `libIME2` or `PIMELauncher`; this host has no Visual Studio
+  toolchain, so those targets cannot be built or run here (the "Sandbox facts" section of `docs/agents/verification.md`). No tests, builds, or backends were
   run.
 - Windows named-pipe timing and close semantics: whether a write to a pipe whose client handle has
   just closed fails immediately or is buffered, and whether a cancelled overlapped read can still

@@ -9,18 +9,22 @@ on:
     paths:
       - 'docs/**'
       - 'README.md'
+      - 'AGENTS.md'
       - 'build.bat'
       - 'appveyor.after_build.bat'
       - 'tests/test_docs_pages.py'
       - 'tests/test_readme_contract.py'
+      - 'tests/test_agent_docs.py'
   pull_request:
     paths:
       - 'docs/**'
       - 'README.md'
+      - 'AGENTS.md'
       - 'build.bat'
       - 'appveyor.after_build.bat'
       - 'tests/test_docs_pages.py'
       - 'tests/test_readme_contract.py'
+      - 'tests/test_agent_docs.py'
 
 permissions:
   contents: read
@@ -34,3 +38,5 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_docs_pages.py' -v
       - name: Check README build steps
         run: python3 -m unittest discover -s tests -p 'test_readme_contract.py' -v
+      - name: Check agent doc references
+        run: python3 -m unittest discover -s tests -p 'test_agent_docs.py' -v

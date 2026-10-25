@@ -13,3 +13,5 @@ cleanup_x64.ps1
 replace_x64_dll.ps1
 /%APPDATA%/
 /node_modules/
+__pycache__/
+*.pyc
