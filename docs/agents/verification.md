@@ -26,6 +26,11 @@ deadline fires, so one stuck Wine call cannot eat the run. A run reads the scrip
 incrementally: leave `tests/run_local_tests.sh` untouched while a background run
 is still going, or run a copy.
 
+Prove a harness change on both paths: a synthetic `hang() { sleep 30; }` step
+under `STEP_TIMEOUT=2` must print `HANG` within a couple of seconds, and a normal
+run must still finish in about 30s — a watchdog that outlives its step holds the
+run's stdout, which only the pipeline's wall time reveals.
+
 Individual commands, if you want to narrow the loop:
 
 - **Python backend** — the full `tests/` suite (protocol loop, TextService
@@ -101,7 +106,7 @@ Individual commands, if you want to narrow the loop:
     `i686-w64-mingw32-g++ -std=c++17 -static -I PIMETextService tests/composition_cursor_test.cpp -o /tmp/composition_cursor_test.exe && wine /tmp/composition_cursor_test.exe`
     (needs `g++-mingw-w64-i686`).
 - **Rust launcher** — cross-build for `i686-pc-windows-gnu` and run under Wine
-  (15 tests at the time of writing; `docs/agents/wine.md`). Treat that as a
+  (`docs/agents/wine.md`; the run prints its own test counts). Treat that as a
   smoke check, not Windows. The same block runs `cargo fmt --check` and
   `cargo clippy --target i686-pc-windows-gnu --all-targets -- -D warnings`
   when `rustfmt`/`clippy` are installed (`rustup component add rustfmt clippy`).

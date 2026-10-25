@@ -16,7 +16,25 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 
 BUILD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/pime-local-tests.XXXXXX")
-trap 'rm -rf "$BUILD_DIR"' EXIT
+
+# A step runs in its own session; if the run is interrupted (Ctrl-C, or the
+# harness's job deadline) the step's session has to go with it, or a Wine prefix
+# stays busy for the next run.
+ACTIVE_STEP=
+ACTIVE_WATCHDOG=
+cleanup() {
+    if [ -n "$ACTIVE_STEP" ]; then
+        kill -TERM -- "-$ACTIVE_STEP" 2>/dev/null
+        ACTIVE_STEP=
+    fi
+    if [ -n "$ACTIVE_WATCHDOG" ]; then
+        kill -TERM -- "-$ACTIVE_WATCHDOG" 2>/dev/null
+        ACTIVE_WATCHDOG=
+    fi
+    rm -rf "$BUILD_DIR"
+}
+trap cleanup EXIT
+trap 'exit 130' INT TERM
 
 failures=0
 skipped=0
@@ -58,7 +76,11 @@ run_bounded() {
     watchdog=$!
 
     local status=0
+    ACTIVE_STEP=$pid
+    ACTIVE_WATCHDOG=$watchdog
     wait "$pid" || status=$?
+    ACTIVE_STEP=
+    ACTIVE_WATCHDOG=
     kill -TERM -- "-$watchdog" 2>/dev/null
     wait "$watchdog" 2>/dev/null
 

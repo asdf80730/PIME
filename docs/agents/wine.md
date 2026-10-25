@@ -2,8 +2,7 @@
 
 `windows-2025` CI is the authoritative Windows check. This recipe is a local
 pre-check: it cross-compiles `PIMELauncher` for `i686-pc-windows-gnu` and runs its
-tests under Wine 8 (15 at the time of writing). It does not touch the C++ text
-service.
+tests under Wine 8. It does not touch the C++ text service.
 
 ## Setup (Debian bookworm, root)
 
@@ -69,8 +68,9 @@ WINEDLLOVERRIDES="bcryptprimitives=n;mscoree=;mshtml=" \
 /root/.cargo/bin/cargo test --target i686-pc-windows-gnu
 ```
 
-Done when every test passes (15 at the time of writing: 12 in `src/lib.rs`, 1 in
-`src/main.rs`, and 2 integration). The integration test spawns `mock_backend.exe`;
+Done when every suite `cargo test` prints ends green — the lib, `src/main.rs`, and
+the integration tests, whose counts the run reports itself. The integration test
+spawns `mock_backend.exe`;
 the shim in `syswow64` is what lets that child start. `cargo clean` is safe — the
 shim lives in the Wine prefix, not the target directory.
 
@@ -95,3 +95,7 @@ last line printed names the import that triggered it. That is how
   change still needs a green `windows-2025` run.
 - The C++ text service needs a real TSF host. It cannot build or run in this
   checkout; see `verification.md`.
+- Python 3.15 aborts in `init_sys_streams` with `WinError 6` when its stdout is a
+  regular file, so `wine python/python3/python.exe … > log` fails while a pipe
+  passes; `tests/run_local_tests.sh` pipes that step through `cat` for this
+  reason.
