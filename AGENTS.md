@@ -97,3 +97,10 @@ Windows CI. See `docs/agents/verification.md`.
 ### Upstream PRs
 
 Upstream PRs carry product changes only; tests, CI wiring and agent docs stay on local `master`, and PR branches start from `origin/master`. See `docs/agents/upstream-pr.md`.
+
+### Windows verification box
+
+A second agent works from a Windows 11 machine against the same fork, and the
+Windows-only harness lives there. Read `docs/agents/windows-box.md` before
+pushing any branch to `fork`: one writer per ref, `win/*` is the box's only ref,
+and results are reported against a SHA.

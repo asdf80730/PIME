@@ -2,6 +2,9 @@
 
 A PR to `EasyIME/PIME` carries the product change only. The local harness stays local.
 
+A Windows 11 box verifies what this checkout cannot and pushes only `win/*`; ref
+ownership and the SHA-not-branch rule are in `windows-box.md`.
+
 ## Syncing local `master`
 
 `master` is the integration branch and the base of every PR branch, so bring upstream in
