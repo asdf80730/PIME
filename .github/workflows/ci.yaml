@@ -7,7 +7,12 @@ name: Build
 
 on:
   push:
-    branches: ['**']
+    # A fork holds none of the SignPath secrets, so build-and-sign can only fail
+    # there, and a mail per pushed branch is noise for a `win/*` branch that
+    # exists to be fetched rather than built. Branch pushes are therefore the
+    # integration branch only; PR builds go through `pull_request` and release
+    # builds through the tag list below.
+    branches: ['master']
     tags: ['v*']
     # Docs and agent notes cannot change the build output. Tag pushes ignore
     # these filters, so release builds are unaffected.
