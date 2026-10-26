@@ -107,6 +107,14 @@ done
 run_native 'GitHub YAML parses' \
 	"bun.exe \"$(cygpath -w "$ROOT/tests/check_yaml.ts")\"$yaml_args"
 
+# --- Authorship -------------------------------------------------------------
+# check_ai_declarations.sh otherwise runs only under the Linux gate, so a
+# missing header on a branch added here shows up first at the wrong end of
+# the chain. The check is diff-scoped against origin/master, so it is a
+# no-op (exit 0) on the mirror branch and bites on win/* branches.
+run_native 'Added files carry an AI declaration' \
+	'bash.exe tests/check_ai_declarations.sh'
+
 # --- Python ---------------------------------------------------------------
 run_native_verbose 'Python backend tests (bundled python.exe)' \
 	'python\python3\python.exe -m unittest discover -s tests -p test_*.py'
