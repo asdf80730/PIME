@@ -9,6 +9,11 @@ before branching. Merge on `master` itself: `git push fork master` pushes that r
 `HEAD`, so a merge parked on a side branch still ships the old tip and CI spends a run on
 the stale SHA.
 
+The fork carries ~150 stale remote branches, so `git branch -a` and `git branch -avv`
+print kilobytes of noise. Ask ancestry and recency questions directly instead:
+`git branch --contains <sha>`, `git log --all --oneline --since=<date>`, or
+`git ls-remote fork refs/heads/master`.
+
 ```bash
 git fetch origin
 git switch master
