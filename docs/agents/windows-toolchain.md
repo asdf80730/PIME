@@ -68,6 +68,11 @@ go version
 Both helpers only prepend the tool directories to `PATH` for the current
 process.
 
+`env.sh` prepends PATH entries in both formats because Windows-style
+entries are the format some non-interactive harness shells resolve. If a
+tool ever reports `command not found` there, run it by relative path
+(`./.tools/go/bin/go.exe`) or through `cmd.exe /c`.
+
 ## Building the text service and the installer
 
 The C++/TSF text service and the NSIS installer used to be CI-only. Both build

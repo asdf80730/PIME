@@ -235,7 +235,10 @@ cat >"$TOOLS/env.sh" <<'SH'
 # Source this from Git Bash:  source .tools/env.sh
 PIME_TOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PIME_TOOLS
-export PATH="$PIME_TOOLS/mingw64/bin:$PIME_TOOLS/go/bin:$PIME_TOOLS/bun:$PIME_TOOLS/node:$PIME_TOOLS/cargo/bin:$PIME_TOOLS/bin:$PATH"
+# Prepend both PATH formats: POSIX-style entries work in Git Bash, and
+# Windows-style ones are the only format some harness shells resolve.
+PIME_WIN="$(printf '%s' "$PIME_TOOLS" | sed -e 's#^/c/#C:/#' -e 's#/#\\#g')"
+export PATH="$PIME_WIN\\mingw64\\bin;$PIME_WIN\\go\\bin;$PIME_WIN\\bun;$PIME_WIN\\node;$PIME_WIN\\cargo\\bin;$PIME_WIN\\bin:$PIME_TOOLS/mingw64/bin:$PIME_TOOLS/go/bin:$PIME_TOOLS/bun:$PIME_TOOLS/node:$PIME_TOOLS/cargo/bin:$PIME_TOOLS/bin:$PATH"
 export GOROOT="$PIME_TOOLS/go"
 export GOPATH="$PIME_TOOLS/gopath"
 export CARGO_HOME="$PIME_TOOLS/cargo"

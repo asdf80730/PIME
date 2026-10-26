@@ -39,6 +39,15 @@ Conflicts land in the same places every sync:
 - `AGENTS.md` and the workflows: keep upstream's text and re-add the local sections and
   steps below it.
 
+## Before picking up an upstream issue
+
+Open issues go stale: merged PRs resolve parts of a report faster than the
+thread updates, so some stay open regardless (#973's `mode=0o700` removal and
+NULL-context raise landed in #988; only the launcher elevation warning was
+left). Before writing code, re-check the report against `origin/master` —
+`git grep` the named code, `git log -S <key>` for the fix — and record which
+claim of the report is still true.
+
 ## Delivering a PR
 
 The fine-grained token is push-only. `gh pr create`, `gh pr edit`, `gh pr comment`,
