@@ -30,7 +30,8 @@ PATH_REFERENCE = re.compile(
 # Directories a bare or partial path may be relative to, besides the repo root.
 # A document that says `cinbase/__init__.py` means the one under `python/`.
 SOURCE_ROOTS = ("", "python/", "node/", "tests/", "go-backend/", "installer/",
-                "PIMETextService/", "PIMELauncher/", "libIME2/")
+                "PIMETextService/", "PIMELauncher/", "libIME2/",
+                ".github/workflows/")
 
 # References that name a file which does not exist and is not meant to:
 # an optional file the domain layout may or may not have, and a path template
