@@ -33,10 +33,20 @@ Conflicts land in the same places every sync:
 
 ## Delivering a PR
 
+The fine-grained token is push-only. `gh pr create`, `gh pr edit`, `gh pr comment`,
+`gh pr ready`, label and close all return 403; do not retry them. Write the body file and
+hand the compare URL plus body to the human.
+
 - Branch from `origin/master`. Local `master` is the integration branch; it also carries
   `docs/agents/`, `GLOSSARY.md`, research notes, and CI steps that run local test suites.
   The PR branch carries none of `docs/`, `tests/` or `AGENTS.md`, so read those and run the
   checks on `master` before branching, then switch back after pushing.
+- Before pushing a `pr/*` branch, run the check from the PR worktree by absolute path
+  (`<integration-checkout>/tests/check_pr_scope.sh`): the script exists only on local
+  `master`, and `tests/run_local_tests.sh` checks its own checkout, so it skips there.
+  It fails when `git merge-base HEAD master` is not on `origin/master`, which is the
+  signature of a branch accidentally cut from local `master`; rebase with
+  `git rebase --onto origin/master <printed-base>`.
 - Ship the smallest diff that fixes the issue. Regression tests, CI wiring and HACKING
   entries stay on local `master` unless the maintainer asks for them in the PR.
 - Title: `type(scope): what it does (#<issue>)`. Body: `Fixes #<issue>` (or `Closes`), a
@@ -58,13 +68,12 @@ Conflicts land in the same places every sync:
 - Commit messages follow `AGENTS.md` §2, including the AI declaration.
 - Deliver: push the branch to `fork`, write the PR body to
   `.scratch/pr-<number>-body.md`, then open the browser compare URL and paste the
-  body. The fine-grained token cannot write: `addComment`, label, close, `gh pr create`,
-  `gh pr edit` and `gh pr ready` all return 403, so the delivery is the compare URL plus a
-  body file, and a PR opened as a draft stays a draft until the human clicks "Ready for
-  review". `gh api notifications` is 403 as well: list the work with
+  body. A PR opened as a draft stays a draft until the human clicks "Ready for review".
+  `gh api notifications` is 403 as well: list the work with
   `gh search prs --author @me --state open` and read discussion through
   `gh api repos/EasyIME/PIME/issues/<n>/comments`.
   Rerun `tests/run_local_tests.sh` after writing the body: its `PR bodies carry the AI
-  declaration` step fails when the last line is missing.
+  declaration` step fails when the last line is missing. A body kept outside `.scratch`
+  can be checked without moving it: `PR_BODY=/tmp/pr-<number>-body.md tests/run_local_tests.sh`.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.

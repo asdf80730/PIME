@@ -106,6 +106,9 @@ step() {
                 "$name" "$STEP_TIMEOUT" "$*"
             failures=$((failures + 1))
             ;;
+        125)
+            skip "$name" 'not applicable here'
+            ;;
         *)
             printf 'FAIL  %s (exit %s)\n' "$name" "$status"
             failures=$((failures + 1))
@@ -152,6 +155,20 @@ nsis_smoke() {
     return "$status"
 }
 
+pr_scope() {
+    # Catch a product PR branch cut from local master before it reaches GitHub.
+    # The check skips on master and on ordinary feature branches; report that as
+    # a skip rather than a pass so the step never claims coverage it did not run.
+    local out status
+    out=$("$ROOT/tests/check_pr_scope.sh")
+    status=$?
+    printf '%s\n' "$out"
+    case "$out" in
+        SKIP*) return 125 ;;
+    esac
+    return "$status"
+}
+
 pr_bodies() {
     # AGENTS.md §2 puts the AI declaration at the end of the message, and the
     # body is pasted by hand: a missing last line makes the human add it.
@@ -159,6 +176,14 @@ pr_bodies() {
     # accepted for bodies written before it and posted already.
     local files=() bad=0 last
     mapfile -t files < <(find .scratch -maxdepth 1 -type f -name 'pr-*-body.md' -print 2>/dev/null)
+    if [ -n "${PR_BODY:-}" ]; then
+        if [ -f "$PR_BODY" ]; then
+            files+=("$PR_BODY")
+        else
+            printf 'PR_BODY is not a file: %s\n' "$PR_BODY"
+            bad=1
+        fi
+    fi
     for f in "${files[@]}"; do
         last=$(awk 'NF { line = $0 } END { print line }' "$f")
         case "$last" in
@@ -249,7 +274,7 @@ rust_lint() {
 # A step runs in a fresh bash so the deadline can take its whole session down;
 # the function and everything it reads therefore has to be exported.
 export ROOT BUILD_DIR GO CARGO
-export -f python_syntax yaml_parse nsis_smoke pr_bodies python_tests python_bundled_tests \
+export -f python_syntax yaml_parse nsis_smoke pr_scope pr_bodies python_tests python_bundled_tests \
     node_tests cpp_json_test cpp_cursor_wine_test go_all_tests go_windows_build \
     rust_tests rust_lint
 
@@ -267,6 +292,7 @@ else
     skip 'NSIS installer script assembles' 'makensis missing; apt-get install nsis'
 fi
 
+step 'PR branch starts at origin/master' pr_scope
 step 'PR bodies carry the AI declaration' pr_bodies
 
 if command -v python3 >/dev/null 2>&1; then

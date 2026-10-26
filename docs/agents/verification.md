@@ -15,7 +15,8 @@ cheapest place it actually runs.
 ## Local (Linux, this checkout)
 
 One command runs every layer below, skips toolchains the machine lacks, and
-exits nonzero on failure:
+exits nonzero on failure. It also checks that a `pr/*` branch starts at
+`origin/master`; local `master` commits in a product PR fail the run.
 
 ```
 tests/run_local_tests.sh
