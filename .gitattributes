@@ -1,4 +1,9 @@
 *.nsi text
+# Shell scripts keep LF endings everywhere: Git Bash mis-parses a CRLF
+# shebang line, and a Windows checkout is a first-class target here.
+*.sh text eol=lf
+# Batch files keep CRLF endings everywhere: cmd.exe mis-parses LF.
+*.bat text eol=crlf
 # Vendored NSIS plugin: keep its CRLF bytes as-is. The blobs predate `*.nsi text`,
 # so the attribute makes every checkout of a branch that touches installer/inetc
 # report 15 dirty files until the next `git add` renormalizes them.
