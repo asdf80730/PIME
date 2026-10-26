@@ -206,9 +206,10 @@ python_tests() {
 
 python_bundled_tests() {
     # The installer ships this interpreter; run the same suite on it.
-    # Python 3.15 under Wine aborts in `init_sys_streams` with WinError 6 when
-    # stdout is a regular file, so `tests/run_local_tests.sh > log` would fail
-    # this step alone. A pipe is accepted, hence `| cat` and PIPESTATUS.
+    # The bundled Python under Wine can abort in `init_sys_streams` with
+    # WinError 6 when stdout is a regular file, so `tests/run_local_tests.sh >
+    # log` would fail this step alone. A pipe is accepted, hence `| cat` and
+    # PIPESTATUS.
     WINEDEBUG=-all wine python/python3/python.exe \
         -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | cat
     return "${PIPESTATUS[0]}"

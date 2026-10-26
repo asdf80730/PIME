@@ -95,7 +95,7 @@ last line printed names the import that triggered it. That is how
   change still needs a green `windows-2025` run.
 - The C++ text service needs a real TSF host. It cannot build or run in this
   checkout; see `verification.md`.
-- Python 3.15 aborts in `init_sys_streams` with `WinError 6` when its stdout is a
-  regular file, so `wine python/python3/python.exe … > log` fails while a pipe
-  passes; `tests/run_local_tests.sh` pipes that step through `cat` for this
-  reason.
+- The bundled Python can abort in `init_sys_streams` with `WinError 6` when its
+  stdout is a regular file, so `wine python/python3/python.exe … > log` can fail
+  while a pipe passes; `tests/run_local_tests.sh` pipes that step through `cat` for
+  this reason.

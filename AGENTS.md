@@ -47,7 +47,7 @@ Please stick to the existing coding style for each language in this repository:
 - **Do No Harm**: Preserve existing docstrings, comments, and file structures. Do not delete code unless explicitly instructed.
 - **No Placeholders**: Do not leave `// TODO` or `pass` stubs in generated code. Implement the full logic required for the task.
 - **Do Not Break the Build**: The PIME DLL must support 32-bit (x86), 64-bit (x64), and ARM64 architectures. However, `PIMELauncher` and the backend servers are deliberately kept x86 to maximize compatibility.
-- **OS Compatibility**: Minimum supported OS is **Windows 10**. Do not write backward-incompatible code or use APIs that only work on the latest Windows versions.
+- **OS Compatibility**: Minimum supported OS is **Windows 8.1**. The bundled runtime and the installer in `master` still target Windows 10 until the open installer and runtime PRs land (`docs/research/windows-8-support-floor.md` records the direction and its limits). Do not write backward-incompatible code or use APIs that only work on the latest Windows versions.
 - **Comment Languages**: In the core framework, use **English only**. In input method modules, comments in the local language (e.g., `zh_TW` for a Traditional Chinese IM) are welcomed. Otherwise, default to English.
 - **AI Authorship & Copyright in File Headers**:
   - **New Files**:

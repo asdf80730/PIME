@@ -43,7 +43,8 @@ Individual commands, if you want to narrow the loop:
   ```
 
   `tests/run_local_tests.sh` also runs the same suite on the shipped
-  interpreter (`python/python3/python.exe`, 3.15.1) under Wine; the Linux-only
+  interpreter (`python/python3/python.exe`; read `python/python3/python3*._pth`
+  for the bundled version) under Wine; the Linux-only
   IME smoke test skips itself there, and so do the modules that import
   `cinbase`, because `cinbase/__init__.py` reaches
   `propsys.dll.VariantToString`, which this Wine build does not implement (Wine
@@ -111,6 +112,11 @@ Individual commands, if you want to narrow the loop:
   smoke check, not Windows. The same block runs `cargo fmt --check` and
   `cargo clippy --target i686-pc-windows-gnu --all-targets -- -D warnings`
   when `rustfmt`/`clippy` are installed (`rustup component add rustfmt clippy`).
+  Corrosion copies `<bin>.pdb` after the Windows release build, so a release profile
+  that emits none breaks `build.bat` while the build itself reports success; only
+  `windows-2025` sees that half. The Rust 1.77 toolchain PR therefore keeps
+  `debug = 1` and `strip = false` in `PIMELauncher/Cargo.toml`; `master` still uses
+  the stable toolchain with `strip = true`.
 - **Docs pages** — `tests/test_docs_pages.py` checks local links/assets, anchors,
   duplicate ids, and `aria-controls`/`aria-labelledby` targets. The `Docs checks`
   workflow runs it on pushes and PRs that touch `docs/**`; `docs/tour/`

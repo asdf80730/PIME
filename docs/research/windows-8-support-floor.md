@@ -1,5 +1,10 @@
 # Windows 8/8.1 support floor: can PIME roll back?
 
+> **Status (2026-10-26): superseded by the 8.1 direction.** PR #1005 was
+> rewritten to accept 8.1, and PR #1007 lowers the runtime floor; the
+> “keep Windows 10” recommendation below records the pre-decision analysis,
+> not the current plan.
+
 Reference tree: local `master` at `066e12a9a83e79216bf11624aad5c7ce198809cd`
 (2026-10-26). PR [#1005](https://github.com/EasyIME/PIME/pull/1005) is open,
 non-draft, `mergeStateStatus` `CLEAN`, head

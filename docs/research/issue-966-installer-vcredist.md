@@ -1,5 +1,11 @@
 # Installer VC++ redistributable check (#966): removal analysis
 
+> **Status (2026-10-26): the floor section is stale.** §6.4 and the
+> “Windows 10 minimum” reasoning describe the pre-decision plan; the floor is now
+> the Windows 8.1 direction recorded in `windows-8-support-floor.md`, and the
+> installer check is being retargeted to 8.1 plus an explicit UCRT prerequisite.
+> The VC++/UCRT removal analysis below still describes `master`.
+
 Reference tree: `origin/master` at `15863744fca71874788939bb3a5d9cdb80509ca3`
 (2026-10-19, merge of #970). Line references below are to that SHA. The local
 checkout (`fa055ef`) diverges from `origin/master` in CI/tests/docs, but
