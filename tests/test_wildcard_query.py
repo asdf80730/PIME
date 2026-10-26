@@ -189,6 +189,20 @@ class WildcardQueryTests(unittest.TestCase):
         # Big5 symbol codes occur on CJK code points such as 兙 (U+5159).
         self.assertEqual(classify_character("\u5159"), "big5S")
 
+    def test_every_classifier_output_has_a_tier(self):
+        # The wildcard module indexes the tier table by classifier name. A
+        # name with no tier is the #627 KeyError, so sweep every reachable
+        # classifier branch rather than a sample.
+        names = {classify_character(chr(codepoint))
+                 for codepoint in range(0x4E00, 0x9FEC)}
+        names.update(
+            classify_character(chr(codepoint))
+            for codepoint in (0x3105, 0x02CA, 0x3400, 0x20000, 0x2A700,
+                              0x2B740, 0x2B820, 0x2CEB0, 0xE000, 0xF0000,
+                              0x100000, 0xF900, 0xFA0E, 0x2F800)
+        )
+        self.assertEqual(names - TIER_BY_NAME.keys(), set())
+
     def test_rare_order_names_are_tiered_rare(self):
         self.assertEqual(len(RARE_ORDER), len(set(RARE_ORDER)))
         self.assertEqual(
