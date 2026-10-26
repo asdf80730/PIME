@@ -82,6 +82,20 @@ def install_windows_shims():
         ctypes.WinDLL = lambda *args, **kwargs: FakeDLL()
 
 
+def opencc_available():
+    """True when the opencc shared library can be loaded.
+
+    The cinbase family imports opencc at module scope, so a machine without
+    ``libopencc.so`` errors on import instead of failing an assertion; the
+    tests skip on this probe rather than reporting a missing library as a bug.
+    """
+    try:
+        ctypes.CDLL("libopencc.so")
+        return True
+    except OSError:
+        return False
+
+
 def under_wine():
     """True for Wine's Win32 emulation, which lacks calls real Windows has.
 

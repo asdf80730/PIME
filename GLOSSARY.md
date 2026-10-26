@@ -28,3 +28,23 @@ _Avoid_: session, connection
 The first request on every pipe connection; carries the language-profile GUID and the request that
 resolves the GUID to a backend and a service.
 _Avoid_: handshake, login
+
+**Candidate**:
+One completion item offered for the current composition or menu.
+_Avoid_: suggestion, completion
+
+**Candidate set**:
+All candidates for the current composition or menu, before pagination.
+_Avoid_: candidate list, candidate pool
+
+**Candidate page**:
+The subset of a candidate set shown at once.
+_Avoid_: chunk, page candidates, candidate list
+
+**Candidate cursor**:
+The index of the highlighted candidate within the current candidate page.
+_Avoid_: selection, selected index
+
+**CandidateView**:
+The paginated, selectable view of a candidate set: its page size, current page, and cursor.
+_Avoid_: pager, candidate list model

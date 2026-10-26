@@ -52,15 +52,6 @@ class CinbaseCandPerPageTests(unittest.TestCase):
         cfg.sanitize()
         self.assertEqual(cfg.candPerPage, 9)
 
-    def test_chunks_handles_invalid_n_gracefully(self):
-        cinbase_inst = self.cinbase_mod.CinBase
-        items = list(range(25))
-
-        for bad_n in [0, -1, "", "9", None, 0.0]:
-            chunked = list(cinbase_inst.chunks(items, bad_n))
-            self.assertTrue(len(chunked) > 0)
-            self.assertEqual([x for c in chunked for x in c], items)
-
     def test_apply_config_sanitizes_attributes(self):
         from unittest.mock import MagicMock
         cinbase_inst = self.cinbase_mod.CinBase

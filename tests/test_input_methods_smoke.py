@@ -8,7 +8,6 @@ reported as skipped rather than failed.
 
 # Generated with assistance from DeepSeek V4.1 Flash.
 
-import ctypes
 import errno
 import json
 import os
@@ -35,17 +34,9 @@ EXPECTED_SERVICES = {
 }
 
 
-def opencc_available():
-    try:
-        ctypes.CDLL("libopencc.so")
-        return True
-    except OSError:
-        return False
-
-
 @unittest.skipIf(sys.platform == "win32",
                  "the shims exist for Linux; run chewing_test.py on Windows instead")
-@unittest.skipUnless(opencc_available(),
+@unittest.skipUnless(ime_smoke_runner.opencc_available(),
                      "libopencc.so not installed (Debian: apt install libopencc-dev)")
 class InputMethodSmokeTests(unittest.TestCase):
     def test_services_activate_and_dispatch_key_events(self):
