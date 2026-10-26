@@ -48,3 +48,8 @@ _Avoid_: selection, selected index
 **CandidateView**:
 The paginated, selectable view of a candidate set: its page size, current page, and cursor.
 _Avoid_: pager, candidate list model
+
+**Support floor**:
+The oldest Windows release an installable artifact is allowed to run on, for every component that
+artifact ships.
+_Avoid_: minimum OS, minimum version, compatibility target

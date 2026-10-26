@@ -1,9 +1,10 @@
 # Windows 8/8.1 support floor: can PIME roll back?
 
-> **Status (2026-10-26): superseded by the 8.1 direction.** PR #1005 was
-> rewritten to accept 8.1, and PR #1007 lowers the runtime floor; the
-> “keep Windows 10” recommendation below records the pre-decision analysis,
-> not the current plan.
+> **Status (2026-10-26): decided — the floor stays at Windows 10.** The
+> “Recommendation: keep the Windows 10 floor” below is now the decision
+> (`docs/adr/0001-windows-support-floor.md`); PR #1005 is retargeted to reject
+> Windows 8.1 and older, and PR #1007 is closed. §4 is retained as the record of
+> the rejected 8.1 option, not as a plan.
 
 Reference tree: local `master` at `066e12a9a83e79216bf11624aad5c7ce198809cd`
 (2026-10-26). PR [#1005](https://github.com/EasyIME/PIME/pull/1005) is open,

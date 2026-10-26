@@ -1,10 +1,9 @@
 # Installer VC++ redistributable check (#966): removal analysis
 
-> **Status (2026-10-26): the floor section is stale.** §6.4 and the
-> “Windows 10 minimum” reasoning describe the pre-decision plan; the floor is now
-> the Windows 8.1 direction recorded in `windows-8-support-floor.md`, and the
-> installer check is being retargeted to 8.1 plus an explicit UCRT prerequisite.
-> The VC++/UCRT removal analysis below still describes `master`.
+> **Status (2026-10-26): §6.4 is now the decision.** The floor stays at
+> Windows 10 (`docs/adr/0001-windows-support-floor.md`); #1005 enforces it, so
+> the §6.4 “Windows 10 minimum” reasoning stands. The VC++/UCRT removal analysis
+> below still describes `master`, where the installer gates only on Vista.
 
 Reference tree: `origin/master` at `15863744fca71874788939bb3a5d9cdb80509ca3`
 (2026-10-19, merge of #970). Line references below are to that SHA. The local
