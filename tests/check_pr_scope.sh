@@ -10,12 +10,15 @@
 #
 # The check is deliberately quiet on the integration branch and on ordinary
 # local feature branches; set CHECK_PR_SCOPE=1 to force it for another branch.
+#
+# Exit codes: 0 the branch is clean, 1 it carries local commits, 125 not
+# applicable (integration branch, another branch type, or a missing base).
 
 set -u
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
     printf 'SKIP  PR scope (not inside a git checkout)\n'
-    exit 0
+    exit 125
 }
 cd "$ROOT"
 
@@ -27,7 +30,7 @@ fi
 if [ -z "$branch" ] || [ "$branch" = master ] || [ "$branch" = main ]; then
     printf 'SKIP  PR scope (%s is an integration branch or detached HEAD)\n' \
         "${branch:-detached HEAD}"
-    exit 0
+    exit 125
 fi
 
 case "$branch" in
@@ -35,18 +38,18 @@ case "$branch" in
     *)
         if [ "${CHECK_PR_SCOPE:-0}" != 1 ]; then
             printf 'SKIP  PR scope (set CHECK_PR_SCOPE=1 to check %s)\n' "$branch"
-            exit 0
+            exit 125
         fi
         ;;
 esac
 
 if ! git rev-parse --verify --quiet master >/dev/null; then
     printf 'SKIP  PR scope (local master is absent)\n'
-    exit 0
+    exit 125
 fi
 if ! git rev-parse --verify --quiet origin/master >/dev/null; then
     printf 'SKIP  PR scope (origin/master is absent; fetch it first)\n'
-    exit 0
+    exit 125
 fi
 
 base=$(git merge-base HEAD master 2>/dev/null) || {
