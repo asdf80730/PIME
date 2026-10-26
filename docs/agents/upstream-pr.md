@@ -30,10 +30,12 @@ Conflicts land in the same places every sync:
 
 - Product code (launcher, node, Python): take upstream's side, then re-apply only the local
   seam a test needs — `loadServices(baseDir)` is the standing example.
-- `node/package.json` — upstream owns the `test` script (`tests/nimeServer.test.js`); the
-  local suites live in `node/test/` (`server.test.js`, `loadServices.test.js`). Keep all
-  three: `node --test tests/nimeServer.test.js && node test/server.test.js && node test/loadServices.test.js`.
-  A PR branch that adds a test under `node/tests/` merges its file into the list the same way.
+- `node/package.json` — upstream owns the `test` script and names one file
+  (`tests/nimeServer.test.js`), and its workflows install Node without ever running a
+  test, so #999's `tests/emojime.test.js` runs only where the script names it. Name
+  both: `node --test tests/nimeServer.test.js tests/emojime.test.js && node
+  test/server.test.js && node test/loadServices.test.js`. A PR branch that adds a test
+  under `node/tests/` merges its file into that list the same way.
 - Rust: run `cargo fmt` after taking their hunks; upstream's formatting fails the local
   `cargo fmt --check` step.
 - `AGENTS.md` and the workflows: keep upstream's text and re-add the local sections and
