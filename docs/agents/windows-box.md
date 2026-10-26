@@ -86,10 +86,12 @@ The workflow therefore restricts branch pushes to `master`. Tag pushes
 (`tags: ['v*']`) and the `paths-ignore` list are unchanged, so releases and the
 markdown-only push filter behave as before.
 
-Residual: a push to `fork/master` still runs, and still fails for want of
-secrets. If that mail is unwanted, the next step is a repository guard on the
-`ci` job (which also drops the fork's `linux-checks` run) or disabling Actions on
-the fork; neither follows from the branch filter.
+A second guard sits on the `ci` job: `github.repository == 'EasyIME/PIME'`. The
+SignPath secrets exist only upstream, so on the fork that call could only fail;
+`linux-checks` still runs there, which is the signal a fork can actually
+produce, and a fork PR still builds in the upstream run once a maintainer
+approves it. What a fork loses is the ability to build Windows binaries at all —
+take artifacts from the PR's upstream run, not from the fork.
 
 The file is a local divergence from `origin/master`: keep it out of a `pr/*`
 branch, since upstream builds its own branches.
