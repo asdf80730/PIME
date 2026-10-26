@@ -82,3 +82,11 @@ hand the compare URL plus body to the human.
   can be checked without moving it: `PR_BODY=/tmp/pr-<number>-body.md tests/run_local_tests.sh`.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
+
+## Rewriting history
+
+Only rewrite a commit you created moments ago. More than one agent session can hold this
+checkout, so the tip may already carry someone else's commit. Read `git log --oneline -5`
+before `--amend`, `--fixup` or `rebase`, and leave a commit alone when its message is not
+yours: a rebase that replays it anyway rewrites its hash and detaches the other session's
+branch from its own work.
