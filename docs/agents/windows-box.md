@@ -16,7 +16,7 @@ the secrets to pass.
 | --- | --- | --- |
 | `fork/master` | Linux | `git push fork master` publishes the integration branch. The box fetches it and rewrites its worktree from it; it never pushes there and never merges into it. |
 | `fork/pr/<topic>` | Linux | Cut from `origin/master`, deleted after merge. Never rebased once pushed: a rebase moves the tip out from under a run on the box. |
-| `fork/win/<topic>` | Windows box | Windows-only fixes. The box pushes; Linux fetches, cherry-picks what it does not already have, deletes the branch. |
+| `fork/win/<topic>` | Windows box | Windows-only fixes. The box pushes; Linux fetches, fast-forwards `master` when the branch was cut from it (the normal case after a rebase) or cherry-picks what `master` lacks, then deletes the branch. |
 | `fork/local/linux-master` | Linux | Read-only mirror of local `master` for the box. Force-push allowed; never a base for a commit or a PR. |
 | local `master`, `.scratch/` | Linux | Integration branch and the only issue tracker. Exactly one copy, on this machine. |
 
@@ -32,9 +32,11 @@ describes that checkout, not the fork — ask
 `git ls-remote fork refs/heads/master` before reasoning about shared state.
 
 The box's harness layer (`verify_windows.sh`, `.tools/build_windows_artifacts.sh`,
-environment notes) came from that gap: neither file exists here. It merges once,
-as `win/win11-layer` cherry-picked on this side, and the branch is then deleted.
-That is the only time the box pushes a branch that is not a SHA-pinned test.
+environment notes) came from that gap: neither file existed here. It landed on
+2026-10-27 as eleven commits on `29d68db` (`8573c02`), after the box rebased its
+branch onto the new `master` — so the push carried the `ci.yaml` filter, ran no
+build, and `master` could fast-forward, keeping the box's commit hashes. That was
+the only time the box pushed a branch that is not a SHA-pinned test.
 
 ## Test a SHA, never a branch name
 
