@@ -31,6 +31,7 @@ files it points at.
 - Believing an open upstream issue before re-checking it against the tree
   (#973 was already fixed by PR #988) — the check is a step in
   `docs/agents/upstream-pr.md`.
+
 - Treating upstream CI as evidence for the Go backend — upstream `ci.yaml`
   never compiles Go; the go-backend on `upstream/master` imports
   `input_methods/{fcitx5,simple_pinyin}`, which are absent from its tree
@@ -38,6 +39,15 @@ files it points at.
   exists.
 - Editing the shared checkout directly, then trying to disentangle after the
   fact; the worktree rule exists to make that impossible.
+
+## Pushing this fork triggers its CI, which cannot pass
+
+`build-and-sign` runs on every branch pushed to `asdf80730/PIME` and fails
+there because the fork holds no signing secrets — every push becomes a
+"Run failed" email to the owner. Back up with `git bundle` or rely on the
+local worktree; do not push a backup branch. A push for a PR is fine — it
+is the one time CI on a branch is wanted, and the failed fork run is
+superseded by the `action_required` run in the PR itself.
 
 ## Tests on this host are ours alone
 
