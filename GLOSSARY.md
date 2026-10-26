@@ -49,6 +49,19 @@ _Avoid_: selection, selected index
 The paginated, selectable view of a candidate set: its page size, current page, and cursor.
 _Avoid_: pager, candidate list model
 
+**Wildcard pattern**:
+A composition containing the wildcard character (`*` or `z`), which stands for one unknown key at
+that position.
+_Avoid_: mask, regex
+
+**Wildcard query**:
+The expansion of a wildcard pattern into the candidate set whose input codes match it.
+_Avoid_: wildcard search, fuzzy lookup
+
+**Character tier**:
+The ordering class of a character in wildcard results: common, rare, or other.
+_Avoid_: bucket, charset group
+
 **Support floor**:
 The oldest Windows release an installable artifact is allowed to run on, for every component that
 artifact ships.
