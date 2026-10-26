@@ -170,8 +170,18 @@ shipped `node/node.exe`, the Go backend tests plus the shipped
 `cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
 `CompositionCursor`) built with mingw g++.
 
-The two layers that still need Windows CI are the C++/TSF text service (MSVC)
-and the NSIS installer.
+The C++/TSF text service and the NSIS installer build here as well, in two
+scripts that are not part of the everyday run because they are slow:
+
+```
+bash tests/build_windows_artifacts.sh    # text service (x86/x64/ARM64) + launcher
+bash tests/build_windows_installer.sh     # the NSIS installer
+```
+
+`build_windows_artifacts.sh` ends by loading the ARM64X forwarder from an
+ARM64 process and from an emulated x64 process, and checks that each one
+reaches its own backend. What still needs Windows CI is the signed installer
+and the text service running inside a live TSF host.
 
 `docs/agents/windows-toolchain.md` has the pinned versions and why each one
 (Go 1.25 for `GOARCH=386`, the GNU Rust host, and so on), plus the PATH

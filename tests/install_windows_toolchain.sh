@@ -29,6 +29,12 @@ NODE_VERSION=22.23.4
 BUN_VERSION=1.4.4
 MINGW_URL=https://github.com/brechtsanders/winlibs_mingw/releases/download/16.2.0posix-23.1.3-14.0.0-ucrt-r3/winlibs-x86_64-posix-seh-gcc-16.2.0-llvm-23.1.3-mingw-w64ucrt-14.0.0-r3.zip
 RUSTUP_URL=https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe
+CMAKE_VERSION=4.2.8
+NSIS_VERSION=3.08
+XWIN_VERSION=0.10.0
+CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
+NSIS_URL=https://sourceforge.net/projects/nsis/files/NSIS%203/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip
+XWIN_URL=https://github.com/Jake-Shadle/xwin/releases/download/${XWIN_VERSION}/xwin-${XWIN_VERSION}-x86_64-pc-windows-msvc.zip
 
 # Host architecture. `uname -m` is unreliable here: Git for Windows is an
 # x86-64 build, so it reports x86_64 even on an ARM64 machine (it runs under
@@ -130,6 +136,70 @@ else
 	printf 'Rust already installed\n'
 fi
 
+# --- CMake (configures the text service and the launcher) ------------------
+if [ ! -x "$TOOLS/cmake/cmake-${CMAKE_VERSION}-windows-x86_64/bin/cmake.exe" ]; then
+	printf 'CMake %s\n' "$CMAKE_VERSION"
+	fetch "$CMAKE_URL" "$DL/cmake.zip"
+	rm -rf "$TOOLS/cmake" "$TOOLS/.cmake-tmp"
+	mkdir -p "$TOOLS/.cmake-tmp"
+	unzip -q "$DL/cmake.zip" -d "$TOOLS/.cmake-tmp"
+	mkdir -p "$TOOLS/cmake"
+	mv "$TOOLS/.cmake-tmp/cmake-${CMAKE_VERSION}-windows-x86_64" "$TOOLS/cmake/"
+	rm -rf "$TOOLS/.cmake-tmp"
+else
+	printf 'CMake already installed\n'
+fi
+
+# --- NSIS (builds the installer) -------------------------------------------
+if [ ! -x "$TOOLS/nsis/nsis-${NSIS_VERSION}/Bin/makensis.exe" ]; then
+	printf 'NSIS %s\n' "$NSIS_VERSION"
+	fetch "$NSIS_URL" "$DL/nsis.zip"
+	rm -rf "$TOOLS/nsis" "$TOOLS/.nsis-tmp"
+	mkdir -p "$TOOLS/.nsis-tmp" "$TOOLS/nsis"
+	unzip -q "$DL/nsis.zip" -d "$TOOLS/.nsis-tmp"
+	mv "$TOOLS/.nsis-tmp/nsis-${NSIS_VERSION}" "$TOOLS/nsis/"
+	rm -rf "$TOOLS/.nsis-tmp"
+else
+	printf 'NSIS already installed\n'
+fi
+
+# --- Windows SDK + MSVC CRT (xwin) -----------------------------------------
+# clang-cl needs real Windows headers and import libraries. xwin downloads
+# the redistributable parts of the SDK and the CRT and splats them into
+# .tools/msvc/{crt,sdk}, so no Visual Studio installation is needed. The MS
+# architecture names (x86, x64, arm64) are kept, because that is what the
+# toolchain files in tests/toolchains/ refer to.
+XWIN_DIR="$TOOLS/xwin/xwin-${XWIN_VERSION}-x86_64-pc-windows-msvc"
+if [ ! -x "$XWIN_DIR/xwin.exe" ]; then
+	printf 'xwin %s\n' "$XWIN_VERSION"
+	fetch "$XWIN_URL" "$DL/xwin.zip"
+	rm -rf "$TOOLS/xwin" "$TOOLS/.xwin-tmp"
+	mkdir -p "$TOOLS/.xwin-tmp" "$TOOLS/xwin"
+	unzip -q "$DL/xwin.zip" -d "$TOOLS/.xwin-tmp"
+	mv "$TOOLS/.xwin-tmp/xwin-${XWIN_VERSION}-x86_64-pc-windows-msvc" "$TOOLS/xwin/"
+	rm -rf "$TOOLS/.xwin-tmp"
+else
+	printf 'xwin already installed\n'
+fi
+
+if [ ! -d "$TOOLS/msvc/sdk/include/um" ]; then
+	printf 'Windows SDK + MSVC CRT (x86, x64, arm64)\n'
+	rm -rf "$TOOLS/msvc"
+	for step in download unpack; do
+		"$XWIN_DIR/xwin.exe" --accept-license --cache-dir "$TOOLS/xwin-cache" \
+			--arch x86,x86_64,aarch64 --variant desktop "$step" > /dev/null
+	done
+	# The splat warns that it cannot create the versioned include symlink
+	# (Windows wants Developer Mode or elevation for that) and carries on:
+	# the toolchain files point straight at the version-less directories.
+	"$XWIN_DIR/xwin.exe" --accept-license --cache-dir "$TOOLS/xwin-cache" \
+		--arch x86,x86_64,aarch64 --variant desktop splat \
+		--output "$TOOLS/msvc" \
+		--preserve-ms-arch-notation --disable-symlinks > /dev/null
+else
+	printf 'Windows SDK + MSVC CRT already installed\n'
+fi
+
 # --- shims -----------------------------------------------------------------
 mkdir -p "$TOOLS/bin"
 cat >"$TOOLS/bin/node" <<'SH'
@@ -193,3 +263,4 @@ fi
 rm -rf "$DL"
 
 printf '\nToolchain ready. Run:\n  bash tests/verify_windows.sh\n'
+printf 'To build the text service and the installer:\n  bash tests/build_windows_artifacts.sh\n  bash tests/build_windows_installer.sh\n'
