@@ -13,8 +13,12 @@ REM   .tools\stage\python           junction -> repo python\
 REM   .tools\stage\node             junction -> repo node\
 REM   .tools\stage\installer        copy of repo installer\ (sources are NOT modified)
 setlocal
-set REPO=%~dp0..
-set STAGE=%~dp0stage
+REM Resolve the repository root once, so no path in this script carries a
+REM ".." component: cmd's copy and mklink handle those badly.
+pushd "%~dp0.."
+set REPO=%CD%
+popd
+set STAGE=%REPO%\.tools\stage
 
 if exist "%STAGE%" rmdir /s /q "%STAGE%"
 mkdir "%STAGE%\build\PIMELauncher"
@@ -54,6 +58,29 @@ copy /y "%REPO%\.tools\build-arm64\PIMETextService\PIMETextService.dll" "%STAGE%
 REM --- big payload trees as junctions (NSIS traverses them recursively) ---
 mklink /J "%STAGE%\python" "%REPO%\python"
 mklink /J "%STAGE%\node"   "%REPO%\node"
+
+REM --- the installer script cannot open a file it does not find, and the
+REM --- failure only shows up as a makensis error much later on.
+for %%F in (
+  "%STAGE%\version.txt"
+  "%STAGE%\backends.json"
+  "%STAGE%\LGPL-2.0.txt"
+  "%STAGE%\PSF.txt"
+  "%STAGE%\installer\installer.nsi"
+  "%STAGE%\installer\macros.nsh"
+  "%STAGE%\installer\StdUtils.2015-11-16\Include\StdUtils.nsh"
+  "%STAGE%\installer\StdUtils.2015-11-16\Plugins\Release_Unicode\StdUtils.dll"
+  "%STAGE%\build\PIMELauncher\PIMELauncher.exe"
+  "%STAGE%\build\PIMETextService\Release\PIMETextService.dll"
+  "%STAGE%\build64\PIMETextService\Release\PIMETextService.dll"
+  "%STAGE%\build_arm64\PIMETextService\Release\PIMETextService.dll"
+  "%STAGE%\build_arm64\PIMETextService\Release\PIMETextService_arm64.dll"
+) do (
+  if not exist %%F (
+    echo ERROR: staging is incomplete, %%F is missing.
+    exit /b 1
+  )
+)
 
 endlocal
 echo Staging done: %STAGE%
