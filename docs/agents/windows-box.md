@@ -121,3 +121,9 @@ git reset --hard fork/local/linux-master
 
 so its harness always matches this `master`. The forced update is confined to
 `local/linux-master`; `master` only ever moves forward.
+
+The reset is safe only because the box commits before it: `--hard` discards
+uncommitted work, the mirror carries committed work, and one run on the box was
+lost that way. The declaration check it now runs (`check_ai_declarations.sh`, as
+a `verify_windows.sh` layer) reads `origin/master`, so refresh that ref with the
+same `git fetch fork` before running it.
