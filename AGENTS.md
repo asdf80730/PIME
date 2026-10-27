@@ -101,7 +101,7 @@ path in `docs/agents/wine.md`, and the issue-triage labels in
 
 ### Upstream PRs
 
-Upstream PRs carry product changes only; tests, CI wiring and agent docs stay on local `master`, and PR branches start from `origin/master`. See `docs/agents/upstream-pr.md`. Before delivering, review the diff under the rules in `docs/agents/code-review.md`.
+Upstream PRs carry product changes only; tests, CI wiring and agent docs stay on local `master`, and PR branches start from `origin/master`. See `docs/agents/upstream-pr.md`. Before delivering, review the diff under the rules in `docs/agents/code-review.md`. Before any push to the fork — any branch, not just `pr/*` — run `tests/check_fork_ci_noise.sh <branch>`: the pushed tree's own workflow files fire the runs, so a ref carrying the old push trigger mails the owner a failure per push.
 
 ### Windows verification box
 
