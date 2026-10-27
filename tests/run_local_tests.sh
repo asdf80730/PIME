@@ -151,6 +151,13 @@ yaml_parse() {
         printf 'parsed %d files\n' "${#files[@]}"
 }
 
+shellcheck_all() {
+    # The harness scripts gate every other check in this repo; a misquoted
+    # expansion turns one into a silent no-op (scalar used as an array,
+    # word-split path). Error severity only: definite bugs, not style.
+    shellcheck -S error tests/*.sh
+}
+
 nsis_smoke() {
     # Linux makensis (3.08 here) preprocesses and assembles installer.nsi; what
     # it lacks is build.bat's Windows output, which shows up only as "File: ...
@@ -287,7 +294,7 @@ rust_lint() {
 export ROOT BUILD_DIR GO CARGO PY
 export -f python_syntax yaml_parse nsis_smoke pr_bodies python_tests python_bundled_tests \
     node_tests cpp_json_test cpp_cursor_wine_test go_all_tests go_windows_build \
-    rust_tests rust_lint
+    rust_tests rust_lint shellcheck_all
 
 printf 'PIME local verification (root: %s)\n' "$ROOT"
 
@@ -308,6 +315,12 @@ step 'PR scope gate self-test' "$ROOT/tests/check_pr_scope_test.sh"
 step 'Added files carry an AI declaration' "$ROOT/tests/check_ai_declarations.sh"
 step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
 step 'PR bodies carry the AI declaration' pr_bodies
+
+if command -v shellcheck >/dev/null 2>&1; then
+    step 'Harness shell scripts lint' shellcheck_all
+else
+    skip 'Harness shell scripts lint' 'shellcheck missing; apt-get install shellcheck'
+fi
 
 PY="$(python_cmd)" || PY=''
 if [ -n "$PY" ]; then
