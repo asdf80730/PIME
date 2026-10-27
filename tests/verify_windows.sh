@@ -52,6 +52,7 @@ fi
 # generated .bat that sets the tool directories in Windows form.
 # A step's environment: the tool directories plus the per-user homes the
 # toolchains look for (cargo is a rustup proxy and needs RUSTUP_HOME).
+# CARGO_TARGET_DIR is shared so every worktree reuses one dependency cache.
 write_step() {
 	local bat="$RUN_DIR/step.bat"
 	local win_tools win_root
@@ -64,6 +65,7 @@ write_step() {
 		printf '%s\r\n' "set \"GOPATH=$win_tools\\gopath\""
 		printf '%s\r\n' "set \"CARGO_HOME=$win_tools\\cargo\""
 		printf '%s\r\n' "set \"RUSTUP_HOME=$win_tools\\rustup\""
+		printf '%s\r\n' "set \"CARGO_TARGET_DIR=$win_tools\\cargo-target\""
 		printf '%s\r\n' "cd /d \"$win_root\""
 		printf '%s\r\n' "$*"
 	} >"$bat"

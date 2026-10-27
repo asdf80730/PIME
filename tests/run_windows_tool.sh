@@ -53,6 +53,7 @@ trap 'rm -f "$bat"' EXIT
 	printf '%s\r\n' "set \"GOPATH=$win_tools\\gopath\""
 	printf '%s\r\n' "set \"CARGO_HOME=$win_tools\\cargo\""
 	printf '%s\r\n' "set \"RUSTUP_HOME=$win_tools\\rustup\""
+	printf '%s\r\n' "set \"CARGO_TARGET_DIR=$win_tools\\cargo-target\""
 	printf '%s\r\n' "cd /d \"$win_cwd\""
 	printf '%s\r\n' "$command"
 } >"$bat"
