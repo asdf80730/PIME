@@ -87,6 +87,10 @@ Issues live as local markdown under `.scratch/` in this checkout — upstream Ea
 
 Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+### Input method tables
+
+cinbase tables are `.cin` sources run through the converter into committed runtime JSON; the installer ships only the JSON, so sources and JSON are committed as a pair and must stay in sync. Adding or re-deriving a table: see `docs/agents/input-method-tables.md`.
+
 ### Verification
 
 `tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled

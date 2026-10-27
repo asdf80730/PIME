@@ -71,3 +71,11 @@ _Avoid_: bucket, charset group
 The oldest Windows release an installable artifact is allowed to run on, for every component that
 artifact ships.
 _Avoid_: minimum OS, minimum version, compatibility target
+
+**Five-stroke keyset (五筆畫)**:
+The five stroke classes used as input keys for stroke input — 橫、豎、撇、捺、點 folded into 橫豎撇捺折 — written with the home keys `h s p n z` and displayed as `一丨丿丶乙`.
+_Avoid_: wubi (五筆 refers to the 五筆字型 shape method), five strokes (ambiguous with stroke count)
+
+**Stroke table (筆畫表)**:
+The chardefs mapping every stroke sequence, and every prefix of one, to the characters written with exactly those strokes; the sole table backing the stroke Service.
+_Avoid_: stroke dictionary (a Rime artifact), stroke dict
