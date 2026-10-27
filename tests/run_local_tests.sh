@@ -253,7 +253,13 @@ cpp_cursor_wine_test() {
 }
 
 go_all_tests() {
-    (cd go-backend && "$GO" test ./...)
+    # -count=1: a cached `ok` is not evidence. The hole was measured on the
+    # Windows box, where an installed PIME leaves a live %APPDATA%\Rime and
+    # the rime TestRealRime* tests fail a fresh arm64 run while the cache
+    # kept reporting ok (docs/agents/verification.md, Go backend). On Linux
+    # those tests skip because APPDATA is unset, so fresh runs stay green —
+    # measured on go1.21.13: 4 packages ok, re-timed 0.005-0.014s.
+    (cd go-backend && "$GO" test -count=1 ./...)
 }
 
 go_windows_build() {
