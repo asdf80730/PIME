@@ -46,9 +46,19 @@ Conflicts land in the same places every sync:
 Open issues go stale: merged PRs resolve parts of a report faster than the
 thread updates, so some stay open regardless (#973's `mode=0o700` removal and
 NULL-context raise landed in #988; only the launcher elevation warning was
-left). Before writing code, re-check the report against `origin/master` —
+left). Before writing code, re-check the report against the product master —
 `git grep` the named code, `git log -S <key>` for the fix — and record which
 claim of the report is still true.
+
+## Auditing a branch
+
+A branch called orphanless is usually a draft PR nobody triaged: `gh pr list
+--repo <product> --head <branch> --state all` names it before you plan a
+replacement. Then `git cherry <product-master> <branch>` separates commits
+already landed from commits still pending; the pending ones are superseded
+when a newer PR rewrites the same files (`git log --oneline <product-master>
+-- <path>` shows the merged side). Close the loop in the PR thread: state the
+supersession facts and where the surviving half of the work landed.
 
 ## Delivering a PR
 
