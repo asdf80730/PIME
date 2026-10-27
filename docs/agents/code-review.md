@@ -19,3 +19,14 @@ clears `candidates` on entry (`python/cinbase/__init__.py`, start of
 the previous keypress left behind. A review that missed this manufactured a
 false "Enter now commits" regression and sent implementation on a traceback
 hunt for a bug that did not exist.
+
+## Fmt churn in a PR diff is scope creep
+
+An upstream PR carries the smallest diff, so a hunk that is only `rustfmt`
+reflow of code the change never functionally touches is **churn** — the
+author ran the formatter crate-wide, not the tooling: the vendored rustfmt
+disagrees with the runner's, and upstream files ride their own formatting
+(`docs/agents/verification.md`, PR-worktree note). Flag every such file; the
+fix is restoring it and re-running the formatter over the touched files
+only. A diff where unrelated lines ride along breaks the reviewer's one
+job: every line earning its review.
