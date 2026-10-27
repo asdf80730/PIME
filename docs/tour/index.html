@@ -186,8 +186,8 @@
   <p class="lede">一個 Windows 文字服務 DLL，只負責把按鍵轉發給常駐的啟動器，再由啟動器交給 Python、Node 或 Go 寫的後端。改輸入法不必碰 C++，也不必重新註冊 DLL。</p>
   <div class="meta">
     <span>整理自 <code>README.md</code>、<code>HACKING.txt</code>、<code>GLOSSARY.md</code>、<code>docs/research/</code></span>
-    <span>上游 <code>EasyIME/PIME@1458cea</code>，已合併進本地 <code>master</code></span>
-    <span>2026-10-20</span>
+    <span>上游 <code>EasyIME/PIME@3697f88</code>，已合併進本地 <code>master</code></span>
+    <span>2026-10-28</span>
   </div>
 </header>
 
@@ -424,35 +424,37 @@
 
 <section id="status">
   <h2><span class="num">07</span>目前狀態</h2>
-  <p class="sub">2026-10-20，對照上游 <code>1458cea</code>。維護者正在集中清理 Node 後端與 TSF 的舊問題。</p>
+  <p class="sub">2026-10-28，對照上游 <code>3697f88</code>。近兩週合併了一整輪 Node、C++ 與 launcher 修復；還開著的主要是需要實機的 DPI（#960）與 pipe 阻塞（#942）。</p>
 
   <div class="table-wrap">
     <table>
       <thead><tr><th>Issue</th><th>主題</th><th>狀態</th><th>PR</th></tr></thead>
       <tbody>
-        <tr><td>#936</td><td>Node 未捕捉例外會殺掉整個後端</td><td><span class="chip open">open</span></td><td>#945、#971（皆 open）</td></tr>
-        <tr><td>#937</td><td>未知 GUID／未 init 的請求讓 nime 解引用 null</td><td><span class="chip open">open</span></td><td>#946、#955、#971（皆 open）</td></tr>
+        <tr><td>#890</td><td>Shift 按下不離開中文輸入狀態</td><td><span class="chip open">open</span></td><td>#1013</td></tr>
+        <tr><td>#936</td><td>Node 未捕捉例外會殺掉整個後端</td><td><span class="chip ok">已修正</span></td><td>#945、#971</td></tr>
+        <tr><td>#937</td><td>未知 GUID／未 init 的請求讓 nime 解引用 null</td><td><span class="chip ok">已修正</span></td><td>#946、#971</td></tr>
         <tr><td>#938</td><td>UTF-16 surrogate pair 的游標位移</td><td><span class="chip ok">已修正</span></td><td>#944</td></tr>
         <tr><td>#939</td><td>候選字字型名稱缺 NUL 結尾</td><td><span class="chip ok">已修正</span></td><td>#947</td></tr>
         <tr><td>#940</td><td>在 loader lock 下建構 ImeModule</td><td><span class="chip ok">已修正</span></td><td>#948</td></tr>
         <tr><td>#941</td><td>語言列圖示快取共用</td><td><span class="chip ok">已修正</span></td><td>#949</td></tr>
-        <tr><td>#942</td><td>launcher 不回應時 UI 執行緒卡 3 × 3 秒</td><td><span class="chip open">open</span></td><td>#972</td></tr>
+        <tr><td>#942</td><td>launcher 不回應時 UI 執行緒卡 3 × 3 秒</td><td><span class="chip open">open</span></td><td>#972（已關閉未合併）</td></tr>
         <tr><td>#943</td><td>重啟後把舊請求送給新後端</td><td><span class="chip ok">已修正</span></td><td>#950</td></tr>
-        <tr><td>#951</td><td>Node 載入 <code>ime.json</code> 的容錯</td><td><span class="chip open">open</span></td><td>#952</td></tr>
+        <tr><td>#951</td><td>Node 載入 <code>ime.json</code> 的容錯</td><td><span class="chip ok">已修正</span></td><td>#952</td></tr>
         <tr><td>#960</td><td>候選窗不隨 Per-Monitor DPI 縮放</td><td><span class="chip open">open</span></td><td>#962</td></tr>
         <tr><td>#961</td><td>C++ 端未保護的 JSON 例外</td><td><span class="chip ok">已修正</span></td><td>#964</td></tr>
-        <tr><td>#966</td><td>installer 移除過時的 VCRedist 檢查</td><td><span class="chip open">open</span></td><td>無</td></tr>
+        <tr><td>#966</td><td>installer 移除過時的 VCRedist 檢查</td><td><span class="chip ok">已修正</span></td><td>#976</td></tr>
+        <tr><td>#973</td><td>elevated launcher 建出管理員屬性的 <code>%APPDATA%\PIME</code>，Chewing 靜默失能</td><td><span class="chip open">部分</span></td><td>#988（0o700 與 NULL raise）、#1016（elevated 警告，open）</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="note">
-    <span class="label">上游動態（10/18–10/19）</span>
-    <p>合併了 #964（#961）、#967／#969（installer 重構，刪掉 md5dll）、#965（ARM64X forwarder）；AppVeyor 改成從 GitHub Releases 下載 CMake。新開的 PR 是 #970（Python 錯誤回覆測試）、#971（直接 patch vendored <code>nime</code>，補 #936／#937）與 #972（#942）；新 issue 是 #966（installer 移除 VCRedist 下載）。</p>
+    <span class="label">上游動態（10/20–10/28）</span>
+    <p>合併了 #935（#856 大易符號卡住）、Node 三連 #945／#946／#952 加直接 patch vendored <code>nime</code> 的 #971（收掉 #936／#937／#951）、C++ 初始化與註冊三件 #992／#993／#994、launcher 的 #997（close 通知轉發）與 #998（client ID 寬度驗證）、#976（#966 installer VCRedist 檢查移除）、#1000（Python <code>GetAsyncKeyState</code> 位元遮罩）與 #999（emojime 候選越界）。新開的社群 PR：#1013（#890 cinbase Shift）、#1016（#973 launcher elevated 警告）。</p>
   </div>
 
   <h3>這個 checkout 額外帶的東西</h3>
-  <p>本地 <code>master</code> 是整合分支，除了上游同步之外還有幾項只留在本地的東西：CI 的權限修正（reusable workflow 不能提升權限）、docs-only push 不建置的路徑過濾、以及 <code>docs/research/</code> 兩份研究筆記。照 repo 的規則，這些不會進 upstream PR。</p>
+  <p>本地 <code>master</code> 是整合分支，除了上游同步之外還有幾項只留在本地的東西：雙層驗證 harness（<code>tests/run_local_tests.sh</code>、Windows 原生的 <code>tests/verify_windows.sh</code> 與 <code>.tools/</code> 下的 vendored 工具鏈）、CI 的權限修正與 docs-only push 路徑過濾、<code>docs/agents/</code> 協作規則、<code>docs/research/</code> 研究筆記、根目錄 <code>GLOSSARY.md</code> 與 <code>docs/adr/</code>。照 repo 的規則，這些不會進 upstream PR。</p>
 </section>
 
 <section id="files">
@@ -472,7 +474,7 @@
     <div><span class="p">go-backend/</span><span class="d">單一行程的 Go 後端</span></div>
     <div><span class="p">installer/</span><span class="d">NSIS 安裝與 TSF 註冊</span></div>
     <div><span class="p">backends.json</span><span class="d">語言設定 → 後端命令的對照表</span></div>
-    <div><span class="p">tests/</span><span class="d">Python 測試與 C++ 單元測試（Windows CI 執行）</span></div>
+    <div><span class="p">tests/</span><span class="d">Python 測試、C++ 單元測試與驗證 harness；<code>tests/verify_windows.sh</code> 在本機跑全部層級</span></div>
   </div>
 </section>
 
@@ -511,10 +513,10 @@
       <thead><tr><th>部分</th><th>依據</th><th>強度</th></tr></thead>
       <tbody>
         <tr><td>管線協定、seqNum、逾時</td><td>逐行讀 <code>PIMEClient.cpp</code>、<code>protocol.rs</code>、<code>backend_manager.rs</code>，與 <code>docs/research/</code> 兩份筆記交叉比對</td><td>高</td></tr>
-        <tr><td>三個後端的錯誤處理</td><td>讀 <code>python/server.py</code>、<code>node/server.js</code>、<code>go-backend/server.go</code>；Python 的 16 個測試與 Node 黑箱測試在本機實際跑過</td><td>高</td></tr>
-        <tr><td>路由與 watchdog</td><td>讀 <code>backend_manager.rs</code>／<code>backend_registry.rs</code>；Rust 測試只在上游 Windows CI 執行，本機沒有 <code>cargo</code></td><td>中</td></tr>
-        <tr><td>安裝檔與 ARM64X</td><td>讀 <code>installer.nsi</code>／<code>macros.nsh</code> 與 #965 的 commit message；沒有在 Windows 上實際安裝</td><td>中</td></tr>
-        <tr><td>Windows 上的實際輸入</td><td>此環境無法執行 TSF、COM 或具名管道，只能靠原始碼與 issue 描述</td><td>未驗證</td></tr>
+        <tr><td>三個後端的錯誤處理</td><td>讀 <code>python/server.py</code>、<code>node/server.js</code>、<code>go-backend/server.go</code>；Python 後端 126 個測試與 Node 黑箱測試在本機原生跑過（<code>tests/verify_windows.sh</code>）</td><td>高</td></tr>
+        <tr><td>路由與 watchdog</td><td>讀 <code>backend_manager.rs</code>／<code>backend_registry.rs</code>；Rust 測試、fmt、clippy 由 <code>tests/verify_windows.sh</code> 在本機原生執行（工具鏈在 <code>.tools/</code>）</td><td>高</td></tr>
+        <tr><td>安裝檔與 ARM64X</td><td>讀 <code>installer.nsi</code>／<code>macros.nsh</code> 與 #965 的 commit message；安裝檔能在本機編出未簽章版，但沒有實際安裝</td><td>中</td></tr>
+        <tr><td>Windows 上的實際輸入</td><td>launcher、具名管道與後端已在 Windows 原生 smoke 過；真正的 TSF 宿主載入與實際打字（候選窗、組字）仍只能靠原始碼與 issue 描述</td><td>部分未驗證</td></tr>
       </tbody>
     </table>
   </div>
@@ -531,7 +533,7 @@
     <li><code>docs/research/input-request-lifecycle.md</code> — 請求方向與 launcher 的行程管理</li>
     <li><code>docs/research/launcher-reply-validation.md</code> — 回覆方向、seqNum、close、readBuffer</li>
   </ul>
-  <p>Issue/PR 狀態取自 GitHub API，上游比對點 <code>EasyIME/PIME@1458cea</code>。</p>
+  <p>Issue/PR 狀態取自 GitHub API（2026-10-28），上游比對點 <code>EasyIME/PIME@3697f88</code>。</p>
 </footer>
 
 </main>
