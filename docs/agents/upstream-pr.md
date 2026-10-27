@@ -77,6 +77,11 @@ and hand the compare URL plus body to the human.
   paths (`docs/agents/`, `GLOSSARY.md`, `.scratch/`). Push only after it
   prints `PASS`; recover with `git rebase --onto <product-base> <base>` or a fresh
   worktree plus cherry-picks.
+- Before any push to the fork — branch or PR — run
+  `tests/check_fork_ci_noise.sh <branch>`: the pushed tree's own workflow files
+  decide what GitHub runs, so refs cut before the ci.yaml hardening mail the
+  owner a startup failure per push. The check names them; a rebase onto a state
+  carrying the hardened ci.yaml ends the mails.
 - Ship the smallest diff that fixes the issue. Regression tests, CI wiring and HACKING
   entries stay on local `master` unless the maintainer asks for them in the PR.
 - Title: `type(scope): what it does (#<issue>)`. Body: `Fixes #<issue>` (or `Closes`), a
