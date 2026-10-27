@@ -83,12 +83,22 @@ def install_windows_shims():
 
 
 def opencc_available():
-    """True when the opencc shared library can be loaded.
+    """True when cinbase's module-scope ``import opencc`` can succeed.
 
-    The cinbase family imports opencc at module scope, so a machine without
-    ``libopencc.so`` errors on import instead of failing an assertion; the
-    tests skip on this probe rather than reporting a missing library as a bug.
+    The cinbase family imports opencc at module scope (cinbase/__init__.py),
+    so a machine without it errors on import instead of failing an assertion;
+    the tests skip on this probe rather than reporting a missing library as
+    a bug. On Windows the repo ships a vendored pure-Python opencc under
+    python/opencc, so the faithful probe is the import itself — a .so name
+    there would skip every service-level test forever. Linux hosts use the
+    system library, which ctypes can name directly.
     """
+    if sys.platform == "win32":
+        try:
+            importlib.import_module("opencc")
+            return True
+        except ImportError:
+            return False
     try:
         ctypes.CDLL("libopencc.so")
         return True
