@@ -171,6 +171,14 @@ shipped `node/node.exe`, the Go backend tests plus the shipped
 `cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
 `CompositionCursor`) built with mingw g++.
 
+Commits on this checkout also pass a pre-commit gate that runs the Python
+backend suite on the shipped interpreter (~5 s). It is versioned at
+`tests/hooks/pre-commit`; recreate it with
+`cp tests/hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit`.
+Product worktrees skip it (they carry no `tests/`), and
+`git commit --no-verify` carries a deliberately mid-refactor commit that the
+next commit makes green.
+
 On a worktree cut from the product master, the two Rust style gates need a
 wider base than this branch offers. The vendored `rustfmt` disagrees with the
 runner's rustfmt — the same drift `upstream-pr.md` hits when syncing — so run
