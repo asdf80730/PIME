@@ -20,7 +20,7 @@ print kilobytes of noise. Ask ancestry and recency questions directly instead:
 ```bash
 git fetch origin
 git switch master
-git merge --no-ff origin/master      # resolve here
+git merge --no-ff origin/master      # the EasyIME remote, whatever this checkout names it; resolve here
 tests/run_local_tests.sh             # all PASS before the push
 git push fork master
 git ls-remote fork refs/heads/master # must equal `git rev-parse master`
@@ -56,16 +56,20 @@ The fine-grained token is push-only. `gh pr create`, `gh pr edit`, `gh pr commen
 `gh pr ready`, label and close all return 403; do not retry them. Write the body file and
 hand the compare URL plus body to the human.
 
-- Branch from `origin/master`. Local `master` is the integration branch; it also carries
-  `docs/agents/`, `GLOSSARY.md`, research notes, and CI steps that run local test suites.
-  The PR branch carries none of `docs/`, `tests/` or `AGENTS.md`, so read those and run the
-  checks on `master` before branching, then switch back after pushing.
-- Before pushing a `pr/*` branch, run the check from the PR worktree by absolute path
-  (`<integration-checkout>/tests/check_pr_scope.sh`): the script exists only on local
-  `master`, and `tests/run_local_tests.sh` checks its own checkout, so it skips there.
-  It fails when `git merge-base HEAD master` is not on `origin/master`, which is the
-  signature of a branch accidentally cut from local `master`; rebase with
-  `git rebase --onto origin/master <printed-base>`.
+- Branch from the product remote's master — whichever remote's URL is
+  `EasyIME/PIME` (`upstream` on this box; `origin` is the fork, whose master *is*
+  the integration branch and carries `docs/agents/`, `GLOSSARY.md`, research notes,
+  and CI steps that run local test suites). The PR branch carries none of `docs/`,
+  `tests/` or `AGENTS.md`, so read those and run the checks on the integration
+  branch before branching, then switch back after pushing.
+- Before pushing a `pr/*` branch, run the check from the PR worktree by absolute
+  path (`<integration-checkout>/tests/check_pr_scope.sh <branch>`): the script
+  exists only on the integration branch, and `tests/run_local_tests.sh` checks its
+  own checkout, so it skips there. It resolves the product master by remote URL —
+  never by the fork — and fails when the branch does not sit on it, or when the
+  diff carries `docs/`, `tests/`, `AGENTS.md` or `GLOSSARY.md`. Push only after it
+  prints `PASS`; recover with `git rebase --onto <product-base> <base>` or a fresh
+  worktree plus cherry-picks.
 - Ship the smallest diff that fixes the issue. Regression tests, CI wiring and HACKING
   entries stay on local `master` unless the maintainer asks for them in the PR.
 - Title: `type(scope): what it does (#<issue>)`. Body: `Fixes #<issue>` (or `Closes`), a

@@ -182,6 +182,13 @@ pr_bodies() {
             printf 'missing AI declaration: %s\n' "$f"
             bad=1
         fi
+        # upstream-pr.md: merged PRs carry no generic-template headings. The
+        # /pr skill's Summary/Evidence/Merge Danger scaffold is the shape most
+        # likely to be pasted, so name it.
+        if grep -Eq '^## (Summary|Evidence|Merge Danger)[[:space:]]*$' "$f"; then
+            printf 'generic template headings in %s; follow docs/agents/upstream-pr.md\n' "$f"
+            bad=1
+        fi
     done
     printf 'checked %d PR bodies\n' "${#files[@]}"
     [ "$bad" -eq 0 ]
