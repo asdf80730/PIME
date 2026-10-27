@@ -77,7 +77,7 @@ and hand the compare URL plus body to the human.
   and CI steps that run local test suites). The PR branch carries none of `docs/`,
   `tests/` or `AGENTS.md`, so read those and run the checks on the integration
   branch before branching, then switch back after pushing. A fresh worktree likewise lacks the harness under `tests/`
-  (`ime_smoke_runner.py`, `run_local_tests.sh`): exercise the worktree's `python/` from the integration checkout by putting the worktree path first on `sys.path`. The worktree also predates every unmerged local feature, so only the *new* issue's test file can pass against it; regression suites for features still awaiting their upstream PR (#890-style) go red on that base by design — run those on the integration checkout, where their product code lives.
+  (`ime_smoke_runner.py`, `run_local_tests.sh`): run the worktree's `python/` from the integration checkout with `python/python3/python.exe tests/run_worktree_tests.py tests/test_<issue>.py <worktree>` — it aborts unless `cinbase` binds from the worktree, so a run cannot silently test the wrong tree. The worktree also predates every unmerged local feature, so only the *new* issue's test file can pass against it; regression suites for features still awaiting their upstream PR (#890-style) go red on that base by design — run those on the integration checkout, where their product code lives.
 - Before pushing a `pr/*` branch, run the check from the PR worktree by absolute
   path (`<integration-checkout>/tests/check_pr_scope.sh <branch>`): the script
   exists only on the integration branch, and `tests/run_local_tests.sh` checks its
