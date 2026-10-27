@@ -25,8 +25,9 @@
 #        reads the index of the checkout you are standing in, so running it
 #        from the integration checkout FAILs even a clean branch
 #        (docs/agents/upstream-pr.md).
-# Exit codes: 0 clean, 1 dirty, 125 not applicable (integration branch,
-# detached HEAD without an argument, or no EasyIME/PIME remote).
+# Exit codes: 0 clean, 1 dirty, 125 not applicable (integration branch, pull
+# request based on an integration branch, detached HEAD without an argument,
+# or no EasyIME/PIME remote).
 # tests/check_pr_scope_test.sh pins these exit codes; rerun it after edits.
 
 set -u
@@ -49,6 +50,17 @@ fi
 case "$target" in
     master|main|local/linux-master|omp/master|win/*)
         printf 'SKIP  PR scope (%s is an integration branch)\n' "$target"
+        exit 125
+        ;;
+esac
+
+# A pull_request run whose base is an integration branch tests harness work,
+# which carries docs/agents and tests by design; only product-bound branches
+# must be clean. master stays out of this list: a pull request into the fork's
+# master (a mirror of the product master) still has to pass every check.
+case "${GITHUB_BASE_REF:-}" in
+    local/linux-master|omp/master|win/*)
+        printf 'SKIP  PR scope (base %s is an integration branch)\n' "$GITHUB_BASE_REF"
         exit 125
         ;;
 esac
