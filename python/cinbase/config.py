@@ -42,6 +42,8 @@ class CinBaseConfig:
         self.switchLangWithWhichShift = SWITCH_LANG_WITH_BOTH_SHIFT
         self.outputSmallLetterWithShift = False
         self.shiftLetterSwitchToEnglish = False
+        # Shift+空白鍵切換全形/半形 (issue #844)，與新酷音同名設定
+        self.enableShiftSpace = True
         self.switchPageWithSpace = False
         self.outputSimpChinese = False
         self.enableSwitchTCSC = True

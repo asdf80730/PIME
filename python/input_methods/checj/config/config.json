@@ -32,5 +32,6 @@
   "directShowCand": true,
   "showPhrase": false,
   "outputSmallLetterWithShift": false,
-  "shiftLetterSwitchToEnglish": false
+  "shiftLetterSwitchToEnglish": false,
+  "enableShiftSpace": true
 }
