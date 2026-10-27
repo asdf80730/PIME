@@ -10,6 +10,11 @@
 # remote is called `origin` or `upstream`, and comparing against the fork's
 # master is worthless because the fork's master is the integration branch
 # and carries docs/agents, tests and CI wiring by design.
+# A branch cut from the integration branch always drags in files upstream
+# never carries: docs/agents, GLOSSARY.md.  The Windows box and the omp
+# checkout have no local master, and a fork mirror can sit at the same SHA
+# as master, blinding the merge-base test; the tracked-path check below
+# catches those layouts where the ancestry test cannot.
 #
 # A branch cut from the integration branch contains those local commits, so
 # the product master stops being an ancestor of it; and any branch whose diff
@@ -42,6 +47,15 @@ case "$target" in
         exit 125
         ;;
 esac
+
+# Tracked-path check: integration-only files must never ride a PR branch,
+# whatever remote layout this checkout uses.
+leaked=$(git ls-files -- docs/agents GLOSSARY.md .scratch | head -n 3)
+if [ -n "$leaked" ]; then
+    printf 'FAIL  PR scope (HEAD tracks integration-only files upstream lacks):\n'
+    printf '%s\n' "$leaked" | sed 's/^/  /'
+    exit 1
+fi
 
 base_ref=
 for remote in $(git remote); do
