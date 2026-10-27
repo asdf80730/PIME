@@ -21,6 +21,7 @@ SPDX-License-Identifier: LGPL-2.1-or-later
 import ctypes
 import json
 import os
+import sys
 import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
@@ -73,7 +74,11 @@ class RegistrationLocaleTests(unittest.TestCase):
                 self.assertEqual(profile["locale"], "zh-Hant-TW")
                 self.assertEqual(profile["fallbackLocale"], "zh-TW")
 
-    @unittest.skipUnless(hasattr(ctypes, "windll"),
+    # Probe the platform, not ctypes.windll: other modules in this suite
+    # install Win32 shims that make hasattr(ctypes, "windll") true on Linux,
+    # and the shim's kernel32 has no LocaleNameToLCID to resolve with
+    # (docs/agents/verification.md, probe discipline).
+    @unittest.skipUnless(sys.platform == "win32",
                          "needs the Windows kernel32 locale resolver")
     def test_registration_langid_is_traditional_chinese(self):
         kernel32 = ctypes.windll.kernel32
