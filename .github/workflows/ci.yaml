@@ -44,8 +44,8 @@ jobs:
           go-version-file: go-backend/go.mod
       - name: Install Bun for the GitHub YAML check
         uses: oven-sh/setup-bun@v2
-      - name: Install IME smoke test dependency
-        run: sudo apt-get update && sudo apt-get install -y libopencc-dev
+      - name: Install IME smoke test and shell lint dependencies
+        run: sudo apt-get update && sudo apt-get install -y libopencc-dev shellcheck
       - name: Run every locally verifiable layer
         run: tests/run_local_tests.sh
 
