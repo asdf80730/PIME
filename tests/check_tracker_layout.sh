@@ -11,7 +11,6 @@
 #
 # Exit codes: 0 the tracker follows the convention, 1 it does not, 125 not
 # applicable (no git checkout or no .scratch).
-
 set -u
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
@@ -31,6 +30,9 @@ bad=0
 features=0
 for dir in .scratch/*/; do
     feature=${dir%/}
+    if [ -f "$feature/ARCHIVE.md" ]; then
+        continue
+    fi
     features=$((features + 1))
     if [ ! -f "$feature/spec.md" ] && [ ! -f "$feature/map.md" ]; then
         printf 'missing spec: %s/spec.md (or map.md for a wayfinder effort)\n' "$feature"

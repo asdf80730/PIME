@@ -117,10 +117,26 @@ step() {
     esac
 }
 
+python_cmd() {
+    # `command -v python3` is fooled by the Microsoft Store stub, which
+    # resolves and then exits 49; the gate must be a real run. Prefer the
+    # bundled python/python3/python.exe — the shipped runtime CI exercises —
+    # and fall back to a PATH python3 that actually executes.
+    if [ -f "$ROOT/python/python3/python.exe" ] &&
+       "$ROOT/python/python3/python.exe" -c 'import sys' >/dev/null 2>&1; then
+        printf '%s\n' "$ROOT/python/python3/python.exe"
+    elif command -v python3 >/dev/null 2>&1 &&
+         python3 -c 'import sys' >/dev/null 2>&1; then
+        printf 'python3\n'
+    else
+        return 1
+    fi
+}
+
 python_syntax() {
     # Bundled runtime under python/python3 is a shipped dependency; checking it
     # only adds noise and time.
-    python3 -m compileall -q -x '(^|/)python3(/|$)' python
+    "$PY" -m compileall -q -x '(^|/)python3(/|$)' python
 }
 
 yaml_parse() {
@@ -195,7 +211,7 @@ pr_bodies() {
 }
 
 python_tests() {
-    python3 -m unittest discover -s tests -p 'test_*.py' -v
+    "$PY" -m unittest discover -s tests -p 'test_*.py' -v
 }
 
 python_bundled_tests() {
@@ -268,7 +284,7 @@ rust_lint() {
 
 # A step runs in a fresh bash so the deadline can take its whole session down;
 # the function and everything it reads therefore has to be exported.
-export ROOT BUILD_DIR GO CARGO
+export ROOT BUILD_DIR GO CARGO PY
 export -f python_syntax yaml_parse nsis_smoke pr_bodies python_tests python_bundled_tests \
     node_tests cpp_json_test cpp_cursor_wine_test go_all_tests go_windows_build \
     rust_tests rust_lint
@@ -292,11 +308,12 @@ step 'Added files carry an AI declaration' "$ROOT/tests/check_ai_declarations.sh
 step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
 step 'PR bodies carry the AI declaration' pr_bodies
 
-if command -v python3 >/dev/null 2>&1; then
+PY="$(python_cmd)" || PY=''
+if [ -n "$PY" ]; then
     step 'Python syntax (all input methods)' python_syntax
     step 'Python backend tests' python_tests
 else
-    skip 'Python backend tests' 'python3 missing'
+    skip 'Python backend tests' 'no runnable python3 (PATH stub exits 49, bundled exe failed to run)'
 fi
 
 if command -v wine >/dev/null 2>&1 && [ -f python/python3/python.exe ]; then

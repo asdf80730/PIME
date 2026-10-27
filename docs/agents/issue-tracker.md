@@ -12,6 +12,8 @@ Issues are not used as our work tracker. Tickets stay local to the checkout.
 - Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
+- Non-feature holdings (rescued WIP, snapshots) live in `.scratch/<name>/` carrying an
+  `ARCHIVE.md` that records the origin and restore target; the layout check skips those
 
 ## When a skill says "publish to the issue tracker"
 

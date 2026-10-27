@@ -41,6 +41,8 @@ OPTIONAL_REFERENCES = {
     "GLOSSARY-MAP.md",
     # issue-tracker.md: ".scratch/<effort>/map.md", created per effort.
     "map.md",
+    # issue-tracker.md: ".scratch/<name>/ARCHIVE.md", created when an archive lands.
+    "ARCHIVE.md",
 }
 
 
