@@ -322,6 +322,10 @@ else
     skip 'Harness shell scripts lint' 'shellcheck missing; apt-get install shellcheck'
 fi
 
+# compileall and unittest discovery would otherwise leave __pycache__ trees
+# inside the checkout, ready for a later `git add` to sweep into a commit
+# (the product .gitignore does not cover them).
+export PYTHONDONTWRITEBYTECODE=1
 PY="$(python_cmd)" || PY=''
 if [ -n "$PY" ]; then
     step 'Python syntax (all input methods)' python_syntax
