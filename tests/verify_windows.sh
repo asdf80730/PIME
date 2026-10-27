@@ -213,6 +213,16 @@ run_or_skip 'PR commit messages carry the AI declaration' \
 run_native 'Commit-declaration gate self-test' \
 	'bash.exe tests/check_pr_commit_declarations_test.sh'
 
+# A .sh committed from a core.filemode=false checkout lands 100644, and
+# run_local_tests.sh's step() executes scripts directly: the fork's
+# linux-checks answers such a step with exit 126. verify_windows.sh calls
+# every script through bash.exe, so this is the only layer that sees the
+# tree is missing the bit.
+run_native 'Shell scripts carry the exec bit' \
+	'bash.exe tests/check_sh_exec_bits.sh'
+run_native 'Exec-bit gate self-test' \
+	'bash.exe tests/check_sh_exec_bits_test.sh'
+
 # Pushing a ref that still carries the unhardened workflows mails the fork owner
 # one failure per push; the gate needs a ref to read, so the gate itself runs at
 # delivery time (docs/agents/upstream-pr.md) and only its contract runs here.

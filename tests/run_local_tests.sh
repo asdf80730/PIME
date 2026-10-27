@@ -325,6 +325,12 @@ step 'Commit-claims gate self-test' "$ROOT/tests/check_pr_commit_claims_test.sh"
 step 'Fork CI noise gate self-test' "$ROOT/tests/check_fork_ci_noise_test.sh"
 step 'Integration ref candidates' "$ROOT/tests/check_integration_ref.sh"
 
+# Scripts committed from a core.filemode=false checkout land 100644, and
+# step() executes them directly: exit 126 right here. The gate pins the
+# bit in the tree; the pre-commit hook stops it at staging.
+step 'Shell scripts carry the exec bit' "$ROOT/tests/check_sh_exec_bits.sh"
+step 'Exec-bit gate self-test' "$ROOT/tests/check_sh_exec_bits_test.sh"
+
 if command -v shellcheck >/dev/null 2>&1; then
     step 'Harness shell scripts lint' shellcheck_all
 else
