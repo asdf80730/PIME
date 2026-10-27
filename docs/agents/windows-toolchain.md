@@ -61,7 +61,7 @@ the same way: `go/`, `node/`, `bun/`, `cargo/` plus `rustup/` (cargo is the
 rustup proxy), `mingw64/`, `cmake/`, `msvc/` (the `xwin`-splatted SDK and
 CRT), `xwin/`, `nsis/`, the `bin/` shims (`node`, `npm`, `python3` point at
 the portable builds and the shipped interpreter), and the PATH helpers
-`env.sh` / `pime-env.bat`. Downloaded archives stay next to their component
+`.tools/env.sh` / `pime-env.bat`. Downloaded archives stay next to their component
 (`cmake/cmake.zip`, `nsis/nsis.zip`, `xwin/xwin.tar.gz`); only
 `.tools/.downloads/` is cleaned afterwards.
 
