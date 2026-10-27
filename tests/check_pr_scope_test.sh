@@ -48,13 +48,13 @@ EXPECT_ENV=()
 
 # expect <want-code> <name> <workdir> [gate-args...]
 # The gate must see the worktree's index, so it runs with cwd inside it;
-# GITHUB_HEAD_REF would silently replace the branch argument in CI.
-# EXPECT_ENV carries per-assertion environment (see assertion 3).
+# GITHUB_HEAD_REF would silently replace the branch argument in CI, and
+# GITHUB_BASE_REF would make every assertion a base-ref skip there.
 expect() {
     local want=$1 name=$2 dir=$3
     shift 3
     local out got=0
-    out=$(cd "$dir" && env -u GITHUB_HEAD_REF ${EXPECT_ENV[@]+"${EXPECT_ENV[@]}"} bash "$gate" "$@" 2>&1) || got=$?
+    out=$(cd "$dir" && env -u GITHUB_HEAD_REF -u GITHUB_BASE_REF ${EXPECT_ENV[@]+"${EXPECT_ENV[@]}"} bash "$gate" "$@" 2>&1) || got=$?
     if [ "$got" -eq "$want" ]; then
         printf 'PASS  %s (exit %s)\n' "$name" "$want"
     else
