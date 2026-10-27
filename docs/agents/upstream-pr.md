@@ -66,7 +66,8 @@ and hand the compare URL plus body to the human.
   the integration branch and carries `docs/agents/`, `GLOSSARY.md`, research notes,
   and CI steps that run local test suites). The PR branch carries none of `docs/`,
   `tests/` or `AGENTS.md`, so read those and run the checks on the integration
-  branch before branching, then switch back after pushing.
+  branch before branching, then switch back after pushing. A fresh worktree likewise lacks the harness under `tests/`
+  (`ime_smoke_runner.py`, `run_local_tests.sh`): exercise the worktree's `python/` from the integration checkout by putting the worktree path first on `sys.path`.
 - Before pushing a `pr/*` branch, run the check from the PR worktree by absolute
   path (`<integration-checkout>/tests/check_pr_scope.sh <branch>`): the script
   exists only on the integration branch, and `tests/run_local_tests.sh` checks its
