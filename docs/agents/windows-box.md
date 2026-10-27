@@ -1,9 +1,9 @@
 # The Windows 11 verification box
 
-This checkout is Linux and the product is Windows-only. `windows-2025` CI is the
-authoritative build; a second machine runs a real Windows 11 desktop for the
-layers CI cannot reach: interactive TSF input, `tests/chewing_test.py`, an
-installed payload, and the bundled `node.exe`/`python.exe` under a console.
+The product is Windows-only and `windows-2025` CI is the authoritative
+build; a real Windows 11 ARM64 desktop covers the layers CI cannot reach:
+interactive TSF input, `tests/chewing_test.py`, an installed payload, and
+the bundled `node.exe`/`python.exe` under a console.
 
 Two agents work this repo from two machines against the same fork
 (`asdf80730/PIME`). Nothing below is stylistic. Each rule exists because the
@@ -14,14 +14,26 @@ the secrets to pass.
 
 | Ref | Writer | Rule |
 | --- | --- | --- |
-| `fork/master` | Linux | `git push fork master` publishes the integration branch. The box fetches it and rewrites its worktree from it; it never pushes there and never merges into it. |
-| `fork/pr/<topic>` | Linux | Cut from `origin/master`, deleted after merge. Never rebased once pushed: a rebase moves the tip out from under a run on the box. |
+| `fork/master` | Windows box | Publishes the integration branch — fast-forward only, each push under explicit human approval (see the regime below). This was Linux's job until 2026-10-31; while Linux was live the box never pushed here. |
+| `fork/pr/<topic>` | Linux, then the Windows box | Cut from `origin/master`, deleted after merge. Never rebased once pushed: a rebase moves the tip out from under a run on the box. |
 | `fork/win/<topic>` | Windows box | Windows-only fixes. The box pushes; Linux fetches, fast-forwards `master` when the branch was cut from it (the normal case after a rebase) or cherry-picks what `master` lacks, then deletes the branch. |
-| `fork/local/linux-master` | Linux | Read-only mirror of local `master` for the box. Force-push allowed; never a base for a commit or a PR. |
-| local `master`, `.scratch/` | Linux | Integration branch and the only issue tracker. Exactly one copy, on this machine. |
+| `fork/local/linux-master` | Windows box (was Linux) | Read-only mirror of the integration branch for the box. Force-push allowed; never a base for a commit or a PR. |
+| local integration branch, `.scratch/` | the machine holding the work | Each checkout keeps its own integration branch and its own `.scratch/` tracker copy (both git-excluded); the fork's `master` is the exchange point. |
 
 The fork carries ~150 stale branches. Do not add a ref outside this table, and
 delete `win/*` once its commits are on `master`.
+
+### Publishing regime (2026-10-31 onward)
+
+The Linux-side checkout went offline on 2026-10-31, so the box publishes
+`fork/master` itself: `git push origin local/stroke-parked:master`, strictly
+fast-forward, each publish under explicit human approval. The push's
+`linux-checks` run is the authoritative Linux executor now — nothing else
+executes `run_local_tests.sh` on Ubuntu. Letting `master` sit 84 commits
+unpublished starved that signal for weeks and turned a two-minute check into
+a day of red diagnosis (the exit-126 and shimmed-`windll` defects both hid
+in the gap). Publish integration work promptly. If a Linux writer returns,
+this regime reverses and the table above rules again.
 
 ## Each machine's `master` is local, not shared
 

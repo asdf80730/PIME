@@ -187,12 +187,23 @@ bash tests/install_windows_toolchain.sh   # once
 bash tests/verify_windows.sh              # every time
 ```
 
+A new `.sh` must be staged with `git update-index --chmod=+x`: this box's
+git carries `core.filemode=false`, so the filesystem bit is never recorded,
+and `run_local_tests.sh`'s `step()` executes scripts directly — a 100644
+script answers the Linux CI with exit 126 while both boxes stay green
+calling it through `bash.exe`. `tests/check_sh_exec_bits.sh` gates the bit
+(tree mode in both gate scripts, staged mode in the pre-commit hook).
+
 Probe discipline here: a command whose stderr you discard with `2>/dev/null` is not
 evidence — a `tasklist` whose `/FI` quoting Git Bash mangled printed an empty process
 list, and the discarded half was the error saying so. When a probe disarms a Win32
 entry point, replace only that entry point: replacing all of `ctypes.windll` makes
 `ime_smoke_runner.under_wine()` find `wine_get_version` on the fake and report Wine,
 which silently skips every Service-level test and turns a green run into no run.
+The same discipline applies to grepping CI logs: log lines arrive with
+`<job>\t<step>\t<timestamp>` prefixes, so an anchored pattern (`^FAIL`) can
+match nothing and its silence reads as a clean run — confirm the extraction
+itself produced output before treating no-match as evidence.
 
 The shared machine's desktop state is a run input: when a cinbase behaviour
 test disagrees between runs, read the toggle state before chasing logic —
