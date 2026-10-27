@@ -20,6 +20,24 @@ git rev-parse --verify --quiet "$ref^{commit}" >/dev/null || {
     exit 125
 }
 
+# Product branches carry the upstream workflows unchanged; on those the fork
+# mails are inherent to upstream's own triggers, and grafting the hardened
+# ci.yaml onto a product branch would leak harness wiring into the PR. The
+# gate exists for local refs that diverge from the product master's
+# workflows while still carrying the unhardened pair.
+product_ref=
+for remote in $(git remote); do
+    case "$(git config --get "remote.$remote.url" || true)" in
+        *EasyIME/PIME*) product_ref="$remote/master"; break ;;
+    esac
+done
+if [ -n "$product_ref" ] &&
+   [ "$(git rev-parse --verify --quiet "$ref:.github/workflows")" = \
+     "$(git rev-parse --verify --quiet "$product_ref:.github/workflows")" ]; then
+    printf 'NOTE  %s carries the product master workflows unchanged; fork mails there are inherent to upstream triggers\n' "$ref"
+    exit 0
+fi
+
 blast=0
 for file in $(git ls-tree -r --name-only "$ref" -- .github/workflows | grep -E '\.ya?ml$'); do
     body=$(git show "$ref:$file")
