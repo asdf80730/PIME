@@ -163,12 +163,22 @@ bash tests/install_windows_toolchain.sh   # once
 bash tests/verify_windows.sh              # every time
 ```
 
-Twelve layers: GitHub/AppVeyor YAML parse (Bun), the Python backend suite on
-the shipped `python/python3/python.exe`, three Node backend suites on the
+Fourteen layers: the AI-declaration check and the PR scope-gate self-test,
+the GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the
+shipped `python/python3/python.exe`, three Node backend suites on the
 shipped `node/node.exe`, the Go backend tests plus the shipped
 `GOOS=windows GOARCH=386` build, `PIMELauncher` tests / `cargo fmt --check` /
 `cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
 `CompositionCursor`) built with mingw g++.
+
+On a worktree cut from the product master, the two Rust style gates need a
+wider base than this branch offers. The vendored `rustfmt` disagrees with the
+runner's rustfmt — the same drift `upstream-pr.md` hits when syncing — so run
+`cargo fmt` / `rustfmt --check` scoped to the files your branch touches: a
+whole-crate pass rewrites files the PR must not carry. And
+`cargo clippy -- -D warnings` fails on warnings only local master has fixed
+(e.g. `BackendRegistry`'s `new_without_default`); run clippy without `-D` and
+judge your change by the warning set against the base commit.
 
 The C++/TSF text service and the NSIS installer build here as well, in two
 scripts that are not part of the everyday run because they are slow:
