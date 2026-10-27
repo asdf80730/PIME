@@ -52,9 +52,14 @@ claim of the report is still true.
 
 ## Delivering a PR
 
-The fine-grained token is push-only. `gh pr create`, `gh pr edit`, `gh pr comment`,
-`gh pr ready`, label and close all return 403; do not retry them. Write the body file and
-hand the compare URL plus body to the human.
+Review the diff before delivering it; the rules the reviewers work under are
+`docs/agents/code-review.md`.
+
+PR verbs on `gh` follow the credential in front of them. This Windows box has a
+scoped gh login: `gh pr create` and `gh pr edit` worked (#1013). Checkouts holding
+the fine-grained push-only token get 403 on `gh pr create`, `edit`, `comment`,
+`ready`, label and close — when 403 comes back, do not retry; write the body file
+and hand the compare URL plus body to the human.
 
 - Branch from the product remote's master — whichever remote's URL is
   `EasyIME/PIME` (`upstream` on this box; `origin` is the fork, whose master *is*
@@ -76,6 +81,10 @@ hand the compare URL plus body to the human.
   short paragraph of why, bullets for the change, a `Validation:` list, then the AI
   declaration as the last line. The merged PRs here carry no
   `Summary`/`Evidence`/`Merge Danger` headings; do not import a generic template.
+- Keep the body self-standing: justify naming and behaviour choices by the product
+  facts that shaped them. Cite an unmerged PR you do not own only when its author
+  has agreed to the link; otherwise state the behaviour as fact, so the PR never
+  reads as dependent on someone else's pending work.
 - The declaration follows `AGENTS.md` §2 as rewritten upstream in #996, which splits code
   work three ways: `Architecture and design by <author>. Implementation generated with AI
   assistance from <agent> (<model>).` when the human set the approach,
@@ -85,6 +94,10 @@ hand the compare URL plus body to the human.
 - The first workflow run from a fork PR sits in `action_required` until a maintainer
   approves it. Check `gh api repos/EasyIME/PIME/commits/<sha>/check-runs` before claiming
   CI evidence, and ask for the approval in the PR conversation.
+- Write each `Validation:` line only after its run is green on the exact tree being
+  committed: run `tests/verify_windows.sh` first, then compose the commit message.
+  A green claim written before the run is credit taken before the sale; if the run
+  fails after committing, fix and re-run before touching the message.
 - Verify on `master`: `tests/run_local_tests.sh` runs the Python, Node, C++ helper, Go and
   Rust layers plus the GitHub YAML parse, skipping toolchains this machine lacks. Use the
   narrow command in `docs/agents/verification.md` when that loop is too slow.

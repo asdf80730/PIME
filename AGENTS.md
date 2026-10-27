@@ -101,7 +101,7 @@ path in `docs/agents/wine.md`, and the issue-triage labels in
 
 ### Upstream PRs
 
-Upstream PRs carry product changes only; tests, CI wiring and agent docs stay on local `master`, and PR branches start from `origin/master`. See `docs/agents/upstream-pr.md`.
+Upstream PRs carry product changes only; tests, CI wiring and agent docs stay on local `master`, and PR branches start from `origin/master`. See `docs/agents/upstream-pr.md`. Before delivering, review the diff under the rules in `docs/agents/code-review.md`.
 
 ### Windows verification box
 
