@@ -20,6 +20,13 @@ the previous keypress left behind. A review that missed this manufactured a
 false "Enter now commits" regression and sent implementation on a traceback
 hunt for a bug that did not exist.
 
+preserved-key worked example: a declined hotkey claim ends one layer below
+Python — `libIME2/src/TextService.cpp` assigns
+`*pfEaten = (BOOL)onPreservedKey(rguid)` in `OnPreservedKey`, so a `False`
+return un-eats the key and the application receives the plain keystroke (the
+issue #844 disabled Shift+Space fall-through). Cite that assignment or stay
+`[INFERENCE]`.
+
 ## Fmt churn in a PR diff is scope creep
 
 An upstream PR carries the smallest diff, so a hunk that is only `rustfmt`
