@@ -49,6 +49,11 @@ _Avoid_: selection, selected index
 The paginated, selectable view of a candidate set: its page size, current page, and cursor.
 _Avoid_: pager, candidate list model
 
+**Phrase mode (聯想字)**:
+The state after a character is committed in which the engine offers follow-on phrase
+candidates keyed by the last committed string.
+_Avoid_: association mode, autocomplete
+
 **Wildcard pattern**:
 A composition containing the wildcard character (`*` or `z`), which stands for one unknown key at
 that position.
