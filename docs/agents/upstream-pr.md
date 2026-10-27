@@ -71,8 +71,10 @@ and hand the compare URL plus body to the human.
   path (`<integration-checkout>/tests/check_pr_scope.sh <branch>`): the script
   exists only on the integration branch, and `tests/run_local_tests.sh` checks its
   own checkout, so it skips there. It resolves the product master by remote URL —
-  never by the fork — and fails when the branch does not sit on it, or when the
-  diff carries `docs/`, `tests/`, `AGENTS.md` or `GLOSSARY.md`. Push only after it
+  never by the fork — and fails when the branch does not sit on it, when the diff
+  carries `docs/`, `tests/`, `AGENTS.md` or `GLOSSARY.md`, or — first, before any
+  remote is consulted — when the worktree you stand in tracks integration-only
+  paths (`docs/agents/`, `GLOSSARY.md`, `.scratch/`). Push only after it
   prints `PASS`; recover with `git rebase --onto <product-base> <base>` or a fresh
   worktree plus cherry-picks.
 - Ship the smallest diff that fixes the issue. Regression tests, CI wiring and HACKING

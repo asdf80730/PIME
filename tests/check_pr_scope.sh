@@ -21,8 +21,13 @@
 # touches harness paths leaks them into a product PR. Both are FAILs here.
 #
 # Usage: check_pr_scope.sh [<branch>|<sha>]   (default: current branch)
+#        Stand in the PR worktree when you run it: the tracked-path check
+#        reads the index of the checkout you are standing in, so running it
+#        from the integration checkout FAILs even a clean branch
+#        (docs/agents/upstream-pr.md).
 # Exit codes: 0 clean, 1 dirty, 125 not applicable (integration branch,
 # detached HEAD without an argument, or no EasyIME/PIME remote).
+# tests/check_pr_scope_test.sh pins these exit codes; rerun it after edits.
 
 set -u
 

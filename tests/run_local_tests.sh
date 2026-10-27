@@ -304,6 +304,7 @@ else
 fi
 
 step 'PR branch starts at origin/master' "$ROOT/tests/check_pr_scope.sh"
+step 'PR scope gate self-test' "$ROOT/tests/check_pr_scope_test.sh"
 step 'Added files carry an AI declaration' "$ROOT/tests/check_ai_declarations.sh"
 step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
 step 'PR bodies carry the AI declaration' pr_bodies
