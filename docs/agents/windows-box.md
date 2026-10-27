@@ -5,35 +5,39 @@ build; a real Windows 11 ARM64 desktop covers the layers CI cannot reach:
 interactive TSF input, `tests/chewing_test.py`, an installed payload, and
 the bundled `node.exe`/`python.exe` under a console.
 
-Two agents work this repo from two machines against the same fork
-(`asdf80730/PIME`). Nothing below is stylistic. Each rule exists because the
-other arrangement loses a commit, or mails a failure for work that never had
-the secrets to pass.
+Two machines work this repo against the same fork (`asdf80730/PIME`). As of
+2026-10-30 the box is the only one with a checkout — the Linux machine's
+tree, and with it its local `master` and `.scratch/` copy, is gone — so
+every ref below is written from the box until a Linux checkout exists
+again. Nothing below is stylistic. Each rule exists because the other
+arrangement loses a commit, or mails a failure for work that never had the
+secrets to pass. Commands here are written from the box, where the fork is
+`origin` and the product remote is `upstream`.
 
 ## One writer per ref
 
 | Ref | Writer | Rule |
 | --- | --- | --- |
-| `fork/master` | Windows box | Publishes the integration branch — fast-forward only, each push under explicit human approval (see the regime below). This was Linux's job until 2026-10-31; while Linux was live the box never pushed here. |
-| `fork/pr/<topic>` | Linux, then the Windows box | Cut from `origin/master`, deleted after merge. Never rebased once pushed: a rebase moves the tip out from under a run on the box. |
-| `fork/win/<topic>` | Windows box | Windows-only fixes. The box pushes; Linux fetches, fast-forwards `master` when the branch was cut from it (the normal case after a rebase) or cherry-picks what `master` lacks, then deletes the branch. |
-| `fork/local/linux-master` | Windows box (was Linux) | Read-only mirror of the integration branch for the box. Force-push allowed; never a base for a commit or a PR. |
-| local integration branch, `.scratch/` | the machine holding the work | Each checkout keeps its own integration branch and its own `.scratch/` tracker copy (both git-excluded); the fork's `master` is the exchange point. |
+| `fork/master` | Windows box | `git push origin master` publishes the integration branch — fast-forward only, each push under explicit human approval (see the regime below). A Linux checkout, when one exists again, fetches it and rewrites its worktree from it; it never pushes there and never merges into it. |
+| `fork/pr/<topic>` | Windows box | Cut from `upstream/master`, deleted after merge. Never rebased once pushed: a rebase moves the tip out from under a run. |
+| `fork/win/<topic>` | Windows box | Windows-only fixes. The box pushes, then folds the commits into `master` itself — fast-forward when the branch was cut from it, otherwise cherry-pick what `master` lacks — and deletes the branch. |
+| `fork/local/linux-master` | not in use | Existed to carry `master` to the box while the Linux machine wrote it. The box publishes `master` directly now, so the ref stays retired — and stays no base for a commit or a PR — until a Linux checkout returns. |
+| local integration branch, `.scratch/` | Windows box | `local/stroke-parked` and the only issue-tracker copy: the Linux machine's `.scratch/` went with its tree. Exactly one copy of each. |
 
 The fork carries ~150 stale branches. Do not add a ref outside this table, and
 delete `win/*` once its commits are on `master`.
 
-### Publishing regime (2026-10-31 onward)
+### Publishing regime (as of 2026-10-30)
 
-The Linux-side checkout went offline on 2026-10-31, so the box publishes
-`fork/master` itself: `git push origin local/stroke-parked:master`, strictly
-fast-forward, each publish under explicit human approval. The push's
-`linux-checks` run is the authoritative Linux executor now — nothing else
-executes `run_local_tests.sh` on Ubuntu. Letting `master` sit 84 commits
-unpublished starved that signal for weeks and turned a two-minute check into
-a day of red diagnosis (the exit-126 and shimmed-`windll` defects both hid
-in the gap). Publish integration work promptly. If a Linux writer returns,
-this regime reverses and the table above rules again.
+No Linux checkout exists, so the box publishes `fork/master` itself:
+`git push origin local/stroke-parked:master`, strictly fast-forward, each
+publish under explicit human approval. The push's `linux-checks` run is the
+only Linux executor left — nothing else executes `run_local_tests.sh` on
+Ubuntu. Letting `master` sit 84 commits unpublished starved that signal for
+weeks and turned a two-minute check into a day of red diagnosis (the
+exit-126 and shimmed-`windll` defects both hid in the gap). Publish
+integration work promptly. If a Linux checkout exists again, this regime
+reverses and the Linux rows re-activate with it.
 
 ## Each machine's `master` is local, not shared
 
@@ -41,7 +45,9 @@ Measured 2026-10-26: both local `master`s descend from `fork/master` `f3bacaa`,
 and neither was pushed. This machine sat 18 commits ahead (`53cb4d1`); the box
 sat 5 ahead (`1da8847`, unknown here). A commit count quoted from one machine
 describes that checkout, not the fork — ask
-`git ls-remote fork refs/heads/master` before reasoning about shared state.
+`git ls-remote origin refs/heads/master` before reasoning about shared state.
+As of 2026-10-30 only the box's `local/stroke-parked` remains; the Linux side
+of both measurements is history.
 
 The box's harness layer (`verify_windows.sh`, `.tools/build_windows_artifacts.sh`,
 environment notes) came from that gap: neither file existed here. It landed on
@@ -52,12 +58,12 @@ the only time the box pushed a branch that is not a SHA-pinned test.
 
 ## Test a SHA, never a branch name
 
-`pr/*` is rebased onto a fresh `origin/master` when upstream moves, and history
+`pr/*` is rebased onto a fresh `upstream/master` when upstream moves, and history
 is rewritten here routinely (see `upstream-pr.md`). A result keyed to a branch
 name cannot be attributed to the tree that produced it.
 
 ```bash
-git fetch fork pr/<topic>
+git fetch origin pr/<topic>
 git switch --detach "$(git rev-parse FETCH_HEAD)"
 git rev-parse HEAD      # quote this SHA in the report
 ```
@@ -80,14 +86,20 @@ them it is not evidence.
   of a fork PR waits in `action_required` for a maintainer; that is not a failure.
 - A branch, when one is needed, starts from the tested SHA:
   `git switch -c win/<topic>-<short-sha> <sha>`.
+- New `tests/*.sh` must be staged with `git update-index --chmod=+x`: the
+  box's git carries `core.filemode=false`, so the tree records 100644 and
+  the direct `step()` invocations of `run_local_tests.sh` — run by
+  `linux-checks` — answer exit 126. `tests/check_sh_exec_bits.sh` gates the
+  bit in both tree and staged modes.
 
 ## Harness authorship, execution authority
 
 The Windows harness was written on the box, because that is the only place it
-runs. Its commits still enter `master` from this side, so `master` keeps one
-history; authoring and authority are separate. A change to `verify_windows.sh`
-or `.tools/build_windows_artifacts.sh` is proven by a green run on the box.
-`tests/run_local_tests.sh` skips or wines those layers, and says so in its output.
+runs, and the box publishes its commits to `master` directly. Authoring and
+authority remain separate: a change to `verify_windows.sh` or
+`.tools/build_windows_artifacts.sh` is proven by a green run on the box plus
+the push's `linux-checks`. `tests/run_local_tests.sh` skips or wines those
+layers, and says so in its output.
 
 ## Why `ci.yaml` pushes only `master`
 
@@ -113,29 +125,23 @@ the workflow file from the pushed commit, so a branch cut before this change —
 such as the one-time `win/win11-layer` — still builds every push. Rebase that
 branch onto the new `fork/master` before pushing it, or expect one mail.
 
-## Publishing to the box
+## Publishing from the box
 
 ```bash
-tests/run_local_tests.sh
-git push fork master
-git push fork +master:local/linux-master
-git ls-remote fork refs/heads/master refs/heads/local/linux-master
+bash tests/verify_windows.sh                # every layer, native
+bash tests/check_fork_ci_noise.sh <branch>  # the ref being pushed
+git push origin local/stroke-parked:master  # fast-forward only, human-approved
+git ls-remote origin refs/heads/master
 ```
 
-Both refs must print the same commit (`git rev-parse master`); the mirror is not
-a second history, just the same commit under a name the box may fetch without
-touching `master`. The box then runs, in its own clone:
+The push's `linux-checks` run is the Linux executor: quote its run id with
+the result. `local/linux-master` is not republished — the mirror carried
+`master` to the box while Linux held the checkout, and its remote ref was
+deleted on 2026-10-31. The inbound protocol it existed for (a Linux-side
+force-push to the mirror, then a forced `git reset --hard` on the box) is
+retired with it; one of those resets once cost the box an uncommitted run,
+and no publishing step forces anything today.
 
-```powershell
-git fetch fork
-git reset --hard fork/local/linux-master
-```
-
-so its harness always matches this `master`. The forced update is confined to
-`local/linux-master`; `master` only ever moves forward.
-
-The reset is safe only because the box commits before it: `--hard` discards
-uncommitted work, the mirror carries committed work, and one run on the box was
-lost that way. The declaration check it now runs (`check_ai_declarations.sh`, as
-a `verify_windows.sh` layer) reads `origin/master`, so refresh that ref with the
-same `git fetch fork` before running it.
+The declaration check (`check_ai_declarations.sh`, a `verify_windows.sh`
+layer) reads `origin/master`, so refresh that ref with `git fetch origin`
+before running it after anyone moves the integration ref.
