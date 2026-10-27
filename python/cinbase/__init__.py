@@ -109,6 +109,7 @@ class CinBase:
         cbTS.fullShapeSymbols = False
         cbTS.directOutFSymbols = False
         cbTS.easySymbolsWithShift = False
+        cbTS.shiftLetterSwitchToEnglish = False
         cbTS.showPhrase = False
         cbTS.sortByPhrase = False
         cbTS.intelligentSelect = False
@@ -358,6 +359,9 @@ class CinBase:
                     return True
                 # 若萬用字元使用*，輸入法需要處理*按鍵
                 if cbTS.selWildcardChar == '*' and keyEvent.keyCode == 0x38:
+                    return True
+                # 若開啟 Shift+字母直接切英文，輸入法需要處理此按鍵(issue #890)
+                if cbTS.shiftLetterSwitchToEnglish and not cbTS.imeDirName == "cheez" and self.isLetterChar(keyEvent.keyCode):
                     return True
                 if not cbTS.isComposing() and cbTS.compositionBufferMode and not cbTS.directShowCand and cbTS.shapeMode == HALFSHAPE_MODE:
                     return False
@@ -1062,6 +1066,24 @@ class CinBase:
                     else:
                         cbTS.compositionChar += '*'
                         cbTS.setCompositionString(cbTS.compositionString + keyname)
+                # Shift + 字母直接切換成英文模式(issue #890，與新酷音 shiftLetterSwitchToEnglish 同設定)
+                # 優先於快速輸入符號；要切回中文模式，單按 Shift 即可(switchLangWithShift)
+                elif (cbTS.shiftLetterSwitchToEnglish and self.isLetterChar(keyCode)
+                        and not cbTS.isComposing() and not cbTS.showCandidates):
+                    if cbTS.outputSmallLetterWithShift:
+                        CommitStr = charStr.upper() if cbTS.capsStates else charStr.lower()
+                    cbTS.langMode = ENGLISH_MODE
+                    self.updateLangButtons(cbTS)
+                    if cbTS.compositionBufferMode:
+                        RemoveStringLength = 0
+                        if not cbTS.compositionChar == '':
+                            RemoveStringLength = self.calcRemoveStringLength(cbTS)
+                        self.setCompositionBufferString(cbTS, CommitStr, RemoveStringLength)
+                        cbTS.compositionBufferType = "english"
+                        self.setCompositionBufferChar(cbTS, cbTS.compositionBufferType, charStr, cbTS.compositionBufferCursor)
+                    else:
+                        cbTS.setCommitString(CommitStr)
+                    self.resetComposition(cbTS)
                 # 使用 Shift 鍵做全形輸入 (easy symbol input)
                 # 這裡的 easy symbol input，是定義在 swkb.dat 設定檔中的符號
                 elif cbTS.easySymbolsWithShift and self.isLetterChar(keyCode):
@@ -1837,7 +1859,7 @@ class CinBase:
                                     cbTS.isHomophoneChardefs = True
                                     cbTS.homophonecandidates = HCinTable.cin.getCharDef(HCinTable.cin.getKey(commitStr))
                                     view.replace(cbTS.homophonecandidates)
-                    elif (keyCode == VK_RETURN or (keyCode == VK_SPACE and not cbTS.switchPageWithSpace)) and cbTS.canSetCommitString:  # 按下 Enter 鍵或空白鍵
+                    elif ((keyCode == VK_RETURN or (keyCode == VK_SPACE and not cbTS.switchPageWithSpace)) and cbTS.canSetCommitString) or (keyCode == VK_SPACE and len(candidates) == 1 and not cbTS.homophonemode):  # 按下 Enter 鍵或空白鍵(只有一個候選字時直接確認，issue #890)
                         if not cbTS.homophoneselpinyinmode:
                             # 找出目前游標位置的選字鍵 (1234..., asdf...等等)
                             commitStr = cbTS.candidateList[candCursor]
@@ -2012,7 +2034,7 @@ class CinBase:
                     view.move(Move.PAGE_UP)
                 elif keyCode == VK_NEXT:  # Page Down 鍵
                     view.move(Move.PAGE_DOWN)
-                elif keyCode == VK_SPACE and not cbTS.switchPageWithSpace:  # 按下空白鍵
+                elif keyCode == VK_SPACE and (not cbTS.switchPageWithSpace or len(phrasecandidates) == 1):  # 按下空白鍵(只有一個聯想字時直接確認，issue #890)
                     if cbTS.isShowPhraseCandidates:
                         # 找出目前游標位置的選字鍵 (1234..., asdf...等等)
                         commitStr = cbTS.candidateList[candCursor]
@@ -2029,6 +2051,21 @@ class CinBase:
                 elif keyCode == VK_SPACE and cbTS.switchPageWithSpace: # 按下空白鍵(換頁)
                     if cbTS.canUseSpaceAsPageKey:
                         view.move(Move.PAGE_DOWN, wrap=True)
+                elif (cbTS.shiftLetterSwitchToEnglish and keyEvent.isKeyDown(VK_SHIFT)
+                        and self.isLetterChar(keyCode) and cbTS.langMode == CHINESE_MODE
+                        and not cbTS.imeDirName == "cheez"
+                        and not keyEvent.isKeyDown(VK_CONTROL) and not keyEvent.isKeyDown(VK_MENU)):
+                    # 放棄聯想字候選，直接切成英文模式並輸出字母(issue #890)
+                    CommitStr = charStr
+                    if cbTS.outputSmallLetterWithShift:
+                        CommitStr = charStr.upper() if cbTS.capsStates else charStr.lower()
+                    cbTS.setCommitString(CommitStr)
+                    cbTS.phrasemode = False
+                    cbTS.isShowPhraseCandidates = False
+                    self.resetComposition(cbTS)
+                    cbTS.langMode = ENGLISH_MODE
+                    self.updateLangButtons(cbTS)
+                    view.reset_position()
                 else: # 按下其它鍵，先將候選字游標位址及目前頁數歸零
                     if cbTS.canSetPhraseCommitString or cbTS.multifunctionmode:
                         cbTS.phrasemode = False
@@ -2998,6 +3035,9 @@ class CinBase:
 
         # Shift 快速輸入符號?
         cbTS.easySymbolsWithShift = cfg.easySymbolsWithShift
+
+        # Shift + 字母直接切換成英文模式?
+        cbTS.shiftLetterSwitchToEnglish = cfg.shiftLetterSwitchToEnglish
 
         # 提示訊息顯示時間?
         cbTS.messageDurationTime = cfg.messageDurationTime
