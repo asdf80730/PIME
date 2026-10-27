@@ -18,7 +18,8 @@
 #
 # A branch cut from the integration branch contains those local commits, so
 # the product master stops being an ancestor of it; and any branch whose diff
-# touches harness paths leaks them into a product PR. Both are FAILs here.
+# touches harness paths leaks them into a product PR. A diff carrying bytecode
+# caches is a third FAIL.
 #
 # Usage: check_pr_scope.sh [<branch>|<sha>]   (default: current branch)
 #        Stand in the PR worktree when you run it: the tracked-path check
@@ -104,6 +105,18 @@ if [ -n "$leaked" ] && [ "${CHECK_PR_SCOPE_ALLOW:-0}" != 1 ]; then
     printf 'FAIL  PR scope: %s carries harness files into a product PR:\n' "$target"
     printf '%s\n' "$leaked"
     printf 'Leave them on the integration branch, or CHECK_PR_SCOPE_ALLOW=1 when the maintainer asked for them.\n'
+    exit 1
+fi
+
+# Bytecode caches: the product .gitignore carries no __pycache__ entry until
+# EasyIME/PIME#1015 lands, so a `git add <dir>` from a product worktree sweeps
+# them in; a PR diff must not.
+swept=$(git diff --name-only "$base_ref...$target" 2>/dev/null \
+    | grep -E '(^|/)__pycache__/' | head -n 3 || true)
+if [ -n "$swept" ]; then
+    printf 'FAIL  PR scope: %s carries bytecode caches:\n' "$target"
+    printf '%s\n' "$swept"
+    printf 'git rm --cached the .pyc paths and amend; keep caches out of the commit.\n'
     exit 1
 fi
 

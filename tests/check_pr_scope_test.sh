@@ -36,16 +36,19 @@ fi
 tmp=$(mktemp -d "$tmpbase/pime-pr-scope-selftest.XXXXXX")
 branch_bad=selftest/scope-dirty.$$
 branch_ok=selftest/scope-clean.$$
+branch_pyc=selftest/scope-pyc.$$
 work_bad=$tmp/bad
 work_detached=$tmp/detached
 work_ok=$tmp/ok
+work_pyc=$tmp/pyc
 
 cleanup() {
     git worktree remove --force "$work_bad" 2>/dev/null
     git worktree remove --force "$work_detached" 2>/dev/null
     git worktree remove --force "$work_ok" 2>/dev/null
+    git worktree remove --force "$work_pyc" 2>/dev/null
     git worktree prune 2>/dev/null
-    git branch -D "$branch_bad" "$branch_ok" 2>/dev/null
+    git branch -D "$branch_bad" "$branch_ok" "$branch_pyc" 2>/dev/null
     rm -rf "$tmp"
 }
 trap cleanup EXIT
@@ -132,6 +135,24 @@ else
     printf 'SKIP  clean-branch PASS (no %s; same skip the gate takes)\n' \
         "${base_ref:-EasyIME/PIME remote}"
     skipped=$((skipped + 1))
+fi
+
+# 5. Bytecode caches in the diff FAIL: the product .gitignore carries no
+#    __pycache__ entry until EasyIME/PIME#1015 lands, so a directory-wide
+#    git add from a product worktree sweeps them in. -f defeats any local
+#    ignore, mirroring what an unignored worktree commits.
+if [ -n "$base_ref" ] && git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+    git worktree add -B "$branch_pyc" "$work_pyc" "$base_ref" >/dev/null 2>&1
+    if [ -d "$work_pyc" ]; then
+        mkdir -p "$work_pyc/python/cinbase/__pycache__"
+        printf 'x' > "$work_pyc/python/cinbase/__pycache__/stale.cpython-315.pyc"
+        git -C "$work_pyc" add -f python/cinbase/__pycache__/stale.cpython-315.pyc >/dev/null 2>&1
+        git -C "$work_pyc" commit -qm 'selftest: bytecode cache in diff' >/dev/null 2>&1
+        expect 1 'branch carrying bytecode fails the gate' "$work_pyc" "$branch_pyc"
+    else
+        printf 'SKIP  bytecode FAIL (worktree at %s unavailable)\n' "$base_ref"
+        skipped=$((skipped + 1))
+    fi
 fi
 
 printf '%d failed, %d skipped\n' "$failures" "$skipped"
