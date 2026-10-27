@@ -24,7 +24,16 @@ gate=$root/tests/check_pr_scope.sh
     exit 125
 }
 
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/pime-pr-scope-selftest.XXXXXX")
+# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
+# git.exe then maps a /tmp argument to C:\tmp while bash sees %TEMP% — the
+# worktree lands where the shell cannot find it. A real WinTEMP template
+# yields a C:/... path both bash and git.exe resolve identically.
+if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
+    tmpbase=$(cygpath -w "$USERPROFILE/AppData/Local/Temp")
+else
+    tmpbase="${TMPDIR:-/tmp}"
+fi
+tmp=$(mktemp -d "$tmpbase/pime-pr-scope-selftest.XXXXXX")
 branch_bad=selftest/scope-dirty.$$
 branch_ok=selftest/scope-clean.$$
 work_bad=$tmp/bad
@@ -67,10 +76,13 @@ expect() {
 expect 125 'integration branch name skips' "$root" local/linux-master
 
 # 2. Detached HEAD with no argument is not applicable, not a silent pass.
-git worktree add --detach "$work_detached" HEAD >/dev/null 2>&1 || {
-    printf 'FAIL  could not create throwaway worktree\n'
+git worktree add --detach "$work_detached" HEAD >/dev/null 2>&1
+# git can return 0 while the checkout lands where this shell cannot see it
+# (the Windows /tmp alias again), so the directory itself is the proof.
+if [ ! -d "$work_detached" ]; then
+    printf 'FAIL  could not create throwaway worktree at %s\n' "$work_detached"
     exit 1
-}
+fi
 expect 125 'detached HEAD without argument skips' "$work_detached"
 
 # 3. A branch cut from the integration HEAD FAILs on tracked paths even when
