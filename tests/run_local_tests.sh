@@ -135,8 +135,28 @@ python_cmd() {
 
 python_syntax() {
     # Bundled runtime under python/python3 is a shipped dependency; checking it
-    # only adds noise and time.
-    "$PY" -m compileall -q -x '(^|/)python3(/|$)' python
+    # only adds noise and time. A zero-write compile() sweep replaces
+    # compileall, which exists to write .pyc and ignores
+    # PYTHONDONTWRITEBYTECODE, leaving __pycache__ trees for a later git add
+    # to sweep into a commit. tokenize.open honors each file's PEP 263 cookie.
+    "$PY" - "$ROOT/python" <<'PYEOF'
+import pathlib
+import sys
+import tokenize
+
+base = pathlib.Path(sys.argv[1])
+failed = 0
+for path in sorted(base.rglob("*.py")):
+    if "python3" in path.parts:
+        continue
+    try:
+        with tokenize.open(path) as source:
+            compile(source.read(), str(path), "exec")
+    except (SyntaxError, UnicodeDecodeError) as exc:
+        print(f"{path}: {exc}", file=sys.stderr)
+        failed = 1
+sys.exit(failed)
+PYEOF
 }
 
 yaml_parse() {
