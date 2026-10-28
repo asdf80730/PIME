@@ -29,7 +29,7 @@ import ime_smoke_runner  # noqa: E402 - located after ROOT is known
 # service. chewing/rime/braille are discovered too, but their native bindings
 # may not match the system libraries.
 EXPECTED_SERVICES = {
-    "chearray", "checj", "chedayi", "cheeng", "cheez", "cheliu",
+    "chearray", "chebihua", "checj", "chedayi", "cheeng", "cheez", "cheliu",
     "chephonetic", "chepinyin", "chesimplex", "meow",
 }
 
