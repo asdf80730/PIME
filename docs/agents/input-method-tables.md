@@ -66,10 +66,12 @@ the table exists:
   the debug log prints; without an entry the log shows the raw file name.
 - `python/cinbase/configtool.py` — `CinDict` is the roster the settings tool
   resolves a Service's tables through; a Service missing there dies on open.
-  Per-Service behaviour switches (learning counts, 功能開關 menu items) are
-  `imeDirName` tuples in the engine, `python/cinbase/__init__.py`: a new
-  Service wanting one joins the tuple. `CinBase.imeNameList` there is read by
-  nothing — `CinDict` and the tuples are the rosters that bite.
+  Per-Service behaviour switches gated on a Capability (learning counts,
+  功能開關 menu items) are declared in the Capability roster,
+  `python/cinbase/capabilities.py`: a new Service wanting Intelligent select
+  joins that roster, and a Service outside it gets neither the behaviour nor
+  its menu items, whatever its own configuration package says. `CinDict` and
+  the roster are the rosters that bite.
 - `tests/ime_smoke_runner.py` and the expected-roster assertion in
   `tests/test_input_methods_smoke.py` — when the table reaches users through a
   Service directory under `python/input_methods/`.
