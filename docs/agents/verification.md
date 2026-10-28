@@ -163,14 +163,18 @@ bash tests/install_windows_toolchain.sh   # once
 bash tests/verify_windows.sh              # every time
 ```
 
-Fifteen layers: the AI-declaration check, the PR scope-gate self-test and the
-local issue-tracker layout check (`.scratch/` is gitignored, so no CI job can
-ever run it — the Windows box holds the tickets), the GitHub/AppVeyor YAML parse
-(Bun), the Python backend suite on the shipped `python/python3/python.exe`, three
-Node backend suites on the shipped `node/node.exe`, the Go backend tests plus the
-shipped `GOOS=windows GOARCH=386` build, `PIMELauncher` tests / `cargo fmt
---check` / `cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
-`CompositionCursor`) built with mingw g++.
+Sixteen layers, and the run prints its own tally (`16 passed, 0 failed`) — quote
+that line rather than a counted number: the AI-declaration check, the PR scope-gate
+self-test, the AI-declaration self-test and the local issue-tracker layout check
+(`.scratch/` is gitignored, so no CI job can ever run it — the Windows box holds
+the tickets), the GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the
+shipped `python/python3/python.exe`, three Node backend suites on the shipped
+`node/node.exe`, the Go backend tests plus the shipped `GOOS=windows GOARCH=386`
+build, `PIMELauncher` tests / `cargo fmt --check` / `cargo clippy`, and the two
+pure-C++ helpers (`JsonUtils` gtest, `CompositionCursor`) built with mingw g++.
+Counting `run_native` call sites comes out at 15: the tracker check is dispatched
+inline (`write_step` plus its own `pass`/`fail`, so its exit 125 can read as
+"no .scratch" rather than a failure), so it is not one of those calls.
 
 A run reads this script as it goes: leave `tests/verify_windows.sh` untouched while
 a background run is still going, or run a copy. A failing layer keeps its output
