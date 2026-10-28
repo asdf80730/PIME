@@ -80,6 +80,11 @@ _Avoid_: wubi (五筆 refers to the 五筆字型 shape method), five strokes (am
 The chardefs mapping every stroke sequence, and every prefix of one, to the characters written with exactly those strokes; the sole table backing the stroke Service.
 _Avoid_: stroke dictionary (a Rime artifact), stroke dict
 
+**Table holder (碼表承載器)**:
+The in-process copy of a table that every instance of a Service shares, together with whether a load of
+that table is in flight.
+_Avoid_: singleton, global table, cache, CinTable (an engine-facing field name on one holder, not the concept)
+
 **Capability roster (能力名冊)**:
 The single declaration of which engine capabilities a Service may use; a Service outside the roster gets
 neither the behaviour nor its 功能開關 menu items, whatever its own configuration package says. Today the

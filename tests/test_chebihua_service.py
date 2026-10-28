@@ -16,6 +16,7 @@ import json
 import os
 import sys
 import tempfile
+import threading
 import time
 import unittest
 
@@ -98,21 +99,20 @@ class ChebihuaServiceTests(unittest.TestCase):
         return ChebihuaServiceTests._request(service, "onKeyDown", char_code, key_code)
 
     def activate_chebihua(self):
-        from input_methods.chebihua import chebihua_ime
+        from input_methods.chebihua import chebihua_ime, table_loaders
 
-        # Force a fresh table load so the Cin binds the APPDATA of this test.
-        chebihua_ime.CinTable.cin = None
-        chebihua_ime.CinTable.curCinType = None
+        # Force a fresh table load so the Cin binds the APPDATA of this
+        # test: the holder's own reset seam, not a poke at module globals.
+        table_loaders.CinTable.reset()
 
         service = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
         reply = service.handleRequest(
             {"method": "onActivate", "isKeyboardOpen": True, "seqNum": 1})
         self.assertTrue(reply.get("success"), reply)
-        for _ in range(500):
-            if chebihua_ime.CinTable.cin is not None and not chebihua_ime.CinTable.loading:
-                break
-            time.sleep(0.02)
-        self.assertIsNotNone(chebihua_ime.CinTable.cin, "Stroke table never loaded")
+        # The module's own bounded join: no 500×20 ms poll out here, and a
+        # load that failed raises TableLoadError naming the table instead
+        # of dying on a bare assertion below.
+        table_loaders.CinTable.wait_until_ready(timeout=10)
         return service
 
     def type_strokes(self, service, *letters):
@@ -255,6 +255,186 @@ class ChebihuaServiceTests(unittest.TestCase):
                                   "cincount.json")
         self.assertFalse(os.path.exists(count_file),
                          "counts kept accumulating after 智慧選字 was turned off")
+
+    def test_back_to_back_instantiations_start_one_loader(self):
+        # Two Services constructed back to back produce ONE counted load of
+        # the real table and both end up on it. What this pins is the
+        # counted spawn and the adopted table across two constructions —
+        # NOT the is_alive() window: with a ~0.5 s load, by the second
+        # ensure() the remembered loader has always either set its flag or
+        # finished. That window is pinned on purpose by
+        # test_second_instantiation_joins_a_loader_before_its_flag.
+        from input_methods.chebihua import chebihua_ime, table_loaders
+
+        table_loaders.CinTable.reset()
+        first = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        second = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        self.assertEqual(1, table_loaders.CinTable.load_count,
+                         "the second instantiation started a second loader")
+        table_loaders.CinTable.wait_until_ready(timeout=10)
+        self.assertIsNotNone(table_loaders.CinTable.cin)
+        self.assertIs(second.cin, table_loaders.CinTable.cin,
+                      "the second instance did not see a ready table")
+        self.assertIs(first.cin, table_loaders.CinTable.cin,
+                      "the first instance never received the load it started")
+        self.assertEqual([], ime_smoke_runner.LAUNCHES,
+                         "instantiating the Service reached the desktop")
+
+    def test_second_instantiation_joins_a_loader_before_its_flag(self):
+        # The check-then-spawn window the is_alive() guard closes: the
+        # remembered loader has been started but its run() has not yet set
+        # the loading flag. A second ensure() landing in that window sees
+        # stale-and-not-loading and would open a second loader on the same
+        # table — whose __del__ (python/cinbase/__init__.py:3298-3299) can
+        # reach the other loader's Cin, so the policy is worth pinning.
+        # The gate holds run() before the flag and a 2.0 s Timer releases
+        # it; the test then asserts the second instantiation BEGAN before
+        # that release, so missing the window is red rather than a silent
+        # pass. With the guard load_count is 1 and both instances adopt
+        # one table; delete table_loaders' `not (loader and
+        # loader.is_alive())` term and this test goes red on
+        # load_count == 2.
+        from input_methods.chebihua import chebihua_ime, table_loaders
+
+        held = []
+
+        class _GateHeldLoader(chebihua_ime.LoadCinTable):
+            def __init__(self, cbTS, CinTable):
+                super().__init__(cbTS, CinTable)
+                self.gate = threading.Event()
+                # inf until the gate actually opens: "never released" must
+                # make the window assertion below pass, not fail.
+                self.released_at = float("inf")
+                held.append(self)
+
+            def run(self):
+                self.gate.wait(10)
+                self.released_at = time.monotonic()
+                super().run()
+
+        self.addCleanup(lambda: [loader.gate.set() for loader in held])
+        holder = table_loaders.CinTable
+        holder.reset()
+        original = chebihua_ime.LoadCinTable
+        self.addCleanup(setattr, chebihua_ime, "LoadCinTable", original)
+        chebihua_ime.LoadCinTable = _GateHeldLoader
+
+        first = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        self.assertEqual(1, len(held),
+                         "the first instantiation did not spawn a loader")
+        threading.Timer(2.0, held[0].gate.set).start()
+        second_began = time.monotonic()
+        second = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+
+        self.assertEqual(1, holder.load_count,
+                         "a second loader started while the first was alive "
+                         "but pre-flag: the is_alive() guard is gone")
+        holder.wait_until_ready(timeout=10)
+        self.assertIs(second.cin, holder.cin,
+                      "the second instance did not adopt the same table")
+        self.assertIs(first.cin, holder.cin,
+                      "the first instance never received the load it started")
+        self.assertEqual([], ime_smoke_runner.LAUNCHES)
+        # The window itself: if this test did not reach ensure() while the
+        # loader was started-but-pre-flag, the assertions above cannot
+        # tell "the guard blocked a spawn" from "the load finished early"
+        # — so say so, loudly, instead of passing silently.
+        self.assertLess(second_began, held[0].released_at,
+                        "the hold expired before the second instantiation "
+                        "reached ensure(): this test did not exercise the "
+                        "window the guard closes")
+
+    def test_missing_table_raises_table_load_error(self):
+        # Upstream's LoadCinTable.run ends in `except Exception: pass`: the
+        # exception object is unrecoverable and nothing may claim to
+        # re-raise it. The failure surfaces through the two seams with
+        # their two contracts: the Service constructor degrades exactly as
+        # today — ensure() reports FAILED, cin stays None, cinbase shows
+        # the 「正在載入輸入法碼表」 message — while the asking seam,
+        # wait_until_ready(), raises TableLoadError naming the table.
+        from input_methods.chebihua import chebihua_ime, table_loaders
+        from cinbase import config as cinbase_config
+
+        class _WantsNothing:
+            # cfg.selCinType matching the holder's None keeps ensure() on
+            # the join side of its check, so the FAILED outcome is read
+            # through the interface without racing a respawn.
+            class cfg:
+                selCinType = None
+
+        def must_not_spawn(cbTS, holder):
+            self.fail("ensure() spawned a loader the caller never asked for")
+
+        empty_dir = os.path.join(self.temp_dir.name, "no-json")
+        os.makedirs(empty_dir, exist_ok=True)
+        settings = cinbase_config.CinBaseConfig
+        settings.getJsonDir = lambda: empty_dir
+        self.addCleanup(delattr, settings, "getJsonDir")
+        holder = table_loaders.CinTable
+        holder.reset()
+
+        service = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        self.assertIsNone(getattr(service, "cin", None),
+                          "a failed load left a table on the Service")
+        self.assertEqual(table_loaders.TableHolder.FAILED,
+                         holder.ensure(_WantsNothing(), must_not_spawn),
+                         "ensure must report the failed join, not raise")
+        with self.assertRaises(table_loaders.TableLoadError) as ctx:
+            holder.wait_until_ready(timeout=10)
+        self.assertIn("CnsStroke.json", str(ctx.exception))
+
+        # The constructor crosses the same join and must not raise: an
+        # exception escaping __init__ reaches serviceManager.py:87 →
+        # server.py and leaves a dead session behind. A loader that takes
+        # the flag and never fills the table stands in for upstream's
+        # swallowed FileNotFoundError, held long enough that the second
+        # construction reliably joins the first load instead of respawning.
+        class _LoaderThatNeverLoads(threading.Thread):
+            def __init__(self, cbTS, CinTable):
+                threading.Thread.__init__(self)
+                self.CinTable = CinTable
+
+            def run(self):
+                self.CinTable.loading = True
+                try:
+                    time.sleep(0.5)
+                finally:
+                    self.CinTable.loading = False
+
+        holder.reset()
+        original = chebihua_ime.LoadCinTable
+        self.addCleanup(setattr, chebihua_ime, "LoadCinTable", original)
+        chebihua_ime.LoadCinTable = _LoaderThatNeverLoads
+        first = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        second = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        self.assertIsNone(getattr(second, "cin", None),
+                          "the constructor handed a degraded Service a table")
+        self.assertEqual(1, holder.load_count,
+                         "the join after a failed load respawned instead")
+        self.assertEqual([], ime_smoke_runner.LAUNCHES)
+
+    def test_reset_refuses_a_loader_that_outruns_it(self):
+        # The seam only closes the leak if a timed-out join blocks the
+        # clear: an unfinished upstream loader still owns its handle to the
+        # holder (python/cinbase/__init__.py:3306-3307 write cin and
+        # curCinType through it), so clearing anyway would hand the next
+        # test the previous test's table, bound to the previous APPDATA.
+        # F1's promise is observable through the public surface: the join
+        # times out with the loader alive → TableLoadError naming the
+        # table, and the counter shows nothing was cleared.
+        from input_methods.chebihua import chebihua_ime, table_loaders
+
+        holder = table_loaders.CinTable
+        holder.reset()
+        service = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        with self.assertRaises(table_loaders.TableLoadError) as ctx:
+            holder.reset(timeout=0.01)
+        self.assertIn("CnsStroke.json", str(ctx.exception))
+        self.assertEqual(1, holder.load_count,
+                         "reset cleared state despite its timed-out join")
+        holder.wait_until_ready(timeout=10)
+        self.assertIsNotNone(service.cin)
+        holder.reset()
 
 
 if __name__ == "__main__":
