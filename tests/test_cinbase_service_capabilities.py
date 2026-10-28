@@ -79,6 +79,19 @@ GATE = re.compile(
     r"if\s*\(\s*\[(?P<list>[^\]]*)\]\.indexOf\(\s*imeFolderName\s*\)\s*===\s*-1\s*\)"
 )
 
+# The settings-UI seed gate: ``imeFolderName == "<name>" && typeof
+# checjConfig.<key> === "undefined"``. This is the second copy of the roster
+# decision in the same script, and the array-form guard above cannot see it —
+# which is how the two drifted apart. The keys are in fact always present in the
+# served /config payload (python/cinbase/config.py sets all three in
+# ``CinBaseConfig.__init__`` and ``load()`` only ever ``__dict__.update()``s, so
+# ``toJson()`` can never omit them), making the branch unreachable today; what it
+# must never do is seed Intelligent select for a Service the roster denies it.
+SEED_GATE = re.compile(
+    r'imeFolderName\s*==\s*"(?P<name>[a-z]+)"\s*&&\s*typeof\s+checjConfig\.'
+    r'(?P<key>intelligentSelect\w*)\s*===\s*"undefined"'
+)
+
 MENU_ITEMS_LITERAL = re.compile(r"cbTS\.smenuitems\s*=\s*\[([^\]]*)\]")
 QUOTED_NAME = re.compile(r'"([^"]+)"')
 HAS_CALL = re.compile(
@@ -232,6 +245,22 @@ class CapabilityRosterTests(unittest.TestCase):
         self.assertEqual(len(allowed), len(set(allowed)),
                          "the settings-UI allow-list must not repeat a Service")
         self.assertEqual(set(allowed), set(capabilities.CAPABILITIES))
+
+    def test_settings_ui_seed_gate_names_only_rostered_services(self):
+        """The second roster copy in config.js — the undefined-seed gate — may
+        name only rostered Services, and must seed every Intelligent-select key
+        the engine reads."""
+        js = read_text(CONFIG_JS_PATH)
+        seeds = SEED_GATE.findall(js)
+        self.assertEqual(
+            {key for _, key in seeds},
+            {"intelligentSelect", "intelligentSelectRecent", "intelligentSelectContext"},
+            "every Intelligent-select key the engine reads must have its seed gate")
+        named = {name for name, _ in seeds}
+        self.assertTrue(
+            named <= set(capabilities.CAPABILITIES),
+            "the seed gate names %s, outside the Capability roster %s"
+            % (sorted(named), sorted(capabilities.CAPABILITIES)))
 
     def test_dead_ime_name_list_is_gone(self):
         """The dead CinBase.imeNameList must not come back: CinDict in
