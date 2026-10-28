@@ -41,7 +41,12 @@ python/python3/python.exe python/cinbase/tools/cintojson.py CnsStroke.cin
 
 - `--release` is not decoration: the release version is quoted inside the
   OGDL-1.0 顯名聲明 that the data licence requires, which the generator writes
-  into the `.cin` header. Commit the regenerated `.cin` and `.json` together.
+  into the `.cin` header and — as
+  `python/cinbase/json/CnsStroke.LICENSE.txt` — beside the runtime JSON that
+  actually ships. A rebuild writes both; `--emit-license` regenerates the notice
+  alone from the same code, without the CNS raw inputs, so the committed notice
+  is never a hand-typed copy. Commit the regenerated `.cin`, `.json` and notice
+  together.
 - Table budget: full prefix closure over all ~95k CNS code points is ~16 MB of
   runtime JSON, so the generator expands prefixes only for the Big5 常用/次常用
   tiers, keeps the complete stroke code alone for the other included planes, and
@@ -91,7 +96,19 @@ the table exists:
   for a normal table; one generated on the user's machine at install time (like
   `liu`) goes into its `INSTALL_TIME_TABLES` instead, or the inventory test fails.
 - `LICENSE.txt` — the root inventory entry, whenever the table derives from
-  third-party open data and owes an attribution exhibit of its own.
+  third-party open data and owes an attribution exhibit of its own: name the
+  shipped table file, its origin, the licence, and where the exhibit ships. The
+  exhibit itself ships as `python/cinbase/json/<stem>.LICENSE.txt`, a notice the
+  generator writes beside the runtime JSON (for the Stroke table:
+  `python/cinbase/tools/cnsstroke2cin.py`), because the installer copies `json/`
+  and excludes `cin/` and the converter gives the JSON no licence key.
+  `installer/installer.nsi` installs `LICENSE.txt` into `$INSTDIR` with the
+  payload (no extra wizard page), so the inventory reaches the user too;
+  `tests/stage_installer.bat` stages it, like `version.txt` and `PSF.txt`.
+  `tests/test_cinbase_tables.py` fails if a table whose `.cin` header carries an
+  exhibit has no notice beside its JSON, if that notice no longer matches
+  `--emit-license` byte for byte, or if the inventory entry or the installer's
+  `File` of `LICENSE.txt` is gone.
 
 The 全字庫 release the stroke table was built from sits unzipped under
 `C:\Users\<user>\cns11643-opendata\` on the Windows box; re-download it when the

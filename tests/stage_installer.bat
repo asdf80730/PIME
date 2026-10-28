@@ -32,6 +32,7 @@ copy /y "%REPO%\version.txt"     "%STAGE%\version.txt"     >nul
 copy /y "%REPO%\backends.json"   "%STAGE%\backends.json"   >nul
 copy /y "%REPO%\LGPL-2.0.txt"    "%STAGE%\LGPL-2.0.txt"    >nul
 copy /y "%REPO%\PSF.txt"         "%STAGE%\PSF.txt"         >nul
+copy /y "%REPO%\LICENSE.txt"     "%STAGE%\LICENSE.txt"     >nul
 
 REM --- installer sources (copy; upstream installer\ stays untouched) ---
 copy /y "%REPO%\installer\installer.nsi" "%STAGE%\installer\installer.nsi" >nul
@@ -66,6 +67,7 @@ for %%F in (
   "%STAGE%\backends.json"
   "%STAGE%\LGPL-2.0.txt"
   "%STAGE%\PSF.txt"
+  "%STAGE%\LICENSE.txt"
   "%STAGE%\installer\installer.nsi"
   "%STAGE%\installer\macros.nsh"
   "%STAGE%\installer\StdUtils.2015-11-16\Include\StdUtils.nsh"

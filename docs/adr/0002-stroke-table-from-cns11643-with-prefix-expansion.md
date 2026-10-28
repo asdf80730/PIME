@@ -12,6 +12,6 @@ The 筆畫 (stroke) Service feeds cinbase a plain chardefs table, but cinbase ma
 ## Consequences
 
 - The generated table is large (prefix fan-out) but within committed precedent (`ezbig.json` 2.1 MB).
-- OGDL-1.0 attribution (顯名聲明) is a validity condition, not etiquette: the three-line exhibit must ship in the `.cin` header and `LICENSE.txt`, or the license is void ab initio.
+- OGDL-1.0 attribution (顯名聲明) is a validity condition, not etiquette: the three-line exhibit must reach the user's disk, or the license is void ab initio. Its carriers are the `.cin` header and — because the installer copies cinbase with `/x "cin"`, so a `.cin` never ships — a `json/<stem>.LICENSE.txt` notice beside the runtime JSON, both rendered by the generator from one function; `LICENSE.txt` is the inventory entry naming the table and where the exhibit ships, and the installer installs that inventory. The shipped half is pinned by the guard in `tests/test_cinbase_tables.py`.
 - `maxCharLength` is capped at 30 strokes; ultra-long-code characters (up to 66) are deliberately unreachable, and no `t→h`/`d→n` key remaps ship in v1.
 - 聯想字 stays off (`showPhrase: false`) and the wildcard is fixed to `*` (`selWildcardType: 1`), because `z` is the 折 root key and would shadow it.
