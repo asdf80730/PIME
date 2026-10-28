@@ -78,3 +78,10 @@ fix nothing, and it buries the real finding beside it: one review quoted
 `COMMON = list(capabilities.COMMON_MENU_ITEMS)` from a test module that never
 contained that line, while the gap that mattered — a shared menu list with no
 golden pin, one assertion away — had to be found again by the implementer.
+
+The line number carries the same duty as the quote. A finding is read by someone
+who will not open the file until they act on it, so `path:line` has to be where the
+code actually sits — re-derived from that file, not remembered from a neighbouring
+reading. One review placed `self.cbTS.cin.__del__()` at
+`python/cinbase/__init__.py:3298-3299`; the call is at `:3297`, and the wrong pair
+had already reached the round record before a grep corrected it.

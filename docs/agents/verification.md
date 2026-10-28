@@ -184,6 +184,16 @@ entry point, replace only that entry point: replacing all of `ctypes.windll` mak
 `ime_smoke_runner.under_wine()` find `wine_get_version` on the fake and report Wine,
 which silently skips every Service-level test and turns a green run into no run.
 
+A test comment that names what would turn the test red is a verification claim too,
+and it needs the same proof as a `Validation:` line: delete the guard the comment
+points at, watch the test fail, put it back. A comment can describe a race the test
+never enters — a Stroke Service round shipped a back-to-back construction test whose
+comment claimed it pinned a spawn guard, while deleting the guard left it green 8/8
+because the first load had already finished. The test that does pin it parks its
+loader *before* the loader raises its own flag, and asserts the loader was still
+parked when the second call arrived, so missing the window is a failure rather than
+a vacuous pass.
+
 Sixteen layers, and the run prints its own tally (`16 passed, 0 failed`) — quote
 that line rather than a counted number: the AI-declaration check, the PR scope-gate
 self-test, the AI-declaration self-test and the local issue-tracker layout check
