@@ -25,3 +25,31 @@ Stroke-order and other attribute tables derive from the 全字庫 open-data rele
 - Join keys: `CNS2UNICODE_Unicode*.txt` TSVs under the release's MappingTables.
 - Field spec ships inside the same zip (`全字庫屬性資料說明文件.txt`).
 - Older citations pointing at `cns11643.gov.tw/AIDB/Open_Data.zip` are **dead links** (site rebuilt); rewrite them to the URL above.
+
+### Stroke table (筆畫表)
+
+`python/cinbase/cin/CnsStroke.cin` is generated, never hand-edited. To rebuild it
+against a new release, unzip `Properties.zip` and `MapingTables.zip` and read the
+version out of `release.txt`, then:
+
+```
+python/python3/python.exe python/cinbase/tools/cnsstroke2cin.py \
+    <unzipped>/CNS_strokes_sequence.txt <unzipped>/Unicode \
+    -o python/cinbase/cin/CnsStroke.cin --release 20260805
+python/python3/python.exe python/cinbase/tools/cintojson.py CnsStroke.cin
+```
+
+- `--release` is not decoration: the release version is quoted inside the
+  OGDL-1.0 顯名聲明 that the data licence requires, which the generator writes
+  into the `.cin` header. Commit the regenerated `.cin` and `.json` together.
+- Table budget: full prefix closure over all ~95k CNS code points is ~16 MB of
+  runtime JSON, so the generator expands prefixes only for the Big5 常用/次常用
+  tiers, keeps the complete stroke code alone for the other included planes, and
+  leaves out anything longer than `MAX_STROKES` (30 strokes — the Service declares
+  `maxCharLength` 30, so such a code could never be typed), the CJK Ext-B planes
+  and the private use areas. The knobs are `CLOSURE_TIERS`, `FULLCODE_TIERS` and
+  `EXCLUDED_TIERS` at the top of `python/cinbase/tools/cnsstroke2cin.py`, and a
+  tier name the converter starts returning that none of the three lists covers is
+  an error rather than a silent omission.
+  `tests/test_cinbase_stroke_table.py` fails if the shipped JSON leaves the size
+  class of the largest other table or the common planes lose their prefix closure.
