@@ -172,12 +172,17 @@ shipped `GOOS=windows GOARCH=386` build, `PIMELauncher` tests / `cargo fmt
 --check` / `cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
 `CompositionCursor`) built with mingw g++.
 
+A run reads this script as it goes: leave `tests/verify_windows.sh` untouched while
+a background run is still going, or run a copy. A failing layer keeps its output
+under `.tools/.run/` rather than deleting it, so the traceback is there to read
+without rerunning the step.
+
 Commits on this checkout also pass a pre-commit gate that runs the Python backend
-suite on the shipped interpreter: about 21 s, because the gate skips the suite's
-slow layer — regenerating all 35 committed cinbase tables through the converter,
-~3.5 min — unless a staged path touches `python/cinbase/cin|json|tools` or the
-check itself, in which case it pays for it and the commit takes ~4 min. It skips
-by exporting `PIME_SKIP_TABLE_REGEN=1`, which only
+suite on the shipped interpreter: a ~25 s commit, because the gate skips the
+suite's slow layer — regenerating all 35 committed cinbase tables through the
+converter, ~3 min — unless a staged path touches `python/cinbase/cin|json|tools`
+or the check itself, in which case the commit takes ~3½ min.
+It skips by exporting `PIME_SKIP_TABLE_REGEN=1`, which only
 `tests/test_cinbase_tables.py` honours; `tests/verify_windows.sh` never sets it,
 so the full gate always regenerates. The gate is versioned at
 `tests/hooks/pre-commit`; recreate it with
