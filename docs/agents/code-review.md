@@ -67,3 +67,14 @@ Stroke-table worked example: a review flagged
 recorded the design — an ADR describing an artifact's shape does not make the
 file human-authored. The maintainer's standing choice for that feature is the
 autonomous form everywhere, headers and commit messages alike.
+
+## A quoted line must be the line the implementer wrote
+
+A finding that quotes code is evidence only if the quote is from the file as the
+implementer last saved it. Re-read the file, then cite `path:line` with the quoted
+text actually present at that line; if the quote will not match, the finding is
+`[INFERENCE]` and gets said so. A stale quote costs implementation a round trip to
+fix nothing, and it buries the real finding beside it: one review quoted
+`COMMON = list(capabilities.COMMON_MENU_ITEMS)` from a test module that never
+contained that line, while the gap that mattered — a shared menu list with no
+golden pin, one assertion away — had to be found again by the implementer.
