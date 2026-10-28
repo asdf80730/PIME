@@ -79,3 +79,14 @@ _Avoid_: wubi (五筆 refers to the 五筆字型 shape method), five strokes (am
 **Stroke table (筆畫表)**:
 The chardefs mapping every stroke sequence, and every prefix of one, to the characters written with exactly those strokes; the sole table backing the stroke Service.
 _Avoid_: stroke dictionary (a Rime artifact), stroke dict
+
+**Capability roster (能力名冊)**:
+The single declaration of which engine capabilities a Service may use; a Service outside the roster gets
+neither the behaviour nor its 功能開關 menu items, whatever its own configuration package says. Today the
+only rostered capability is Intelligent select.
+_Avoid_: feature flag, capability flag, feature list, whitelist
+
+**Intelligent select (智慧選字)**:
+The engine capability that reorders the Candidate set for a composition key by the user's own selection
+counts, optionally weighted by recent picks and the preceding character.
+_Avoid_: learning mode, smart selection, frequency sorting
