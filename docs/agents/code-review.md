@@ -37,3 +37,33 @@ disagrees with the runner's, and upstream files ride their own formatting
 fix is restoring it and re-running the formatter over the touched files
 only. A diff where unrelated lines ride along breaks the reviewer's one
 job: every line earning its review.
+
+## A quoted number must be reproducible
+
+A count written into a ticket, doc or commit body is a claim the next agent can
+only re-derive from the command that produced it, or from a test that asserts it.
+Bind every number to one of the two — quote the one-liner beside it, or name the
+assertion — and re-run it before you write it down.
+
+Stroke-table worked example: a ticket comment recorded "the 111,379 keys that lack
+a prefix belong to 4,734 rare-plane-only characters". The shipped table measures
+11,114 and 14,408. The prose read confidently, the numbers had been copied off an
+unrelated probe, and only a reviewer re-running the query over the committed
+`.cin` caught it.
+
+## Judge an AI header by the file's category
+
+`AGENTS.md` §4 grades a new file's header by its **category**: a script, a lookup
+table or a test is machine-generated and carries the autonomous form (`Generated
+by <agent> (<model>) without human creative authorship.` + SPDX); a
+human-designed product file carries human copyright plus the design credit. Read
+the category first, so demanding the human-design header for a generator tool, a
+committed `.cin`/`.json` pair or a test module is a false positive. The design
+credit lives in the commit message and the PR body, in whatever form the effort's
+ticket records under `.scratch/<effort>/`.
+
+Stroke-table worked example: a review flagged
+`python/cinbase/tools/cnsstroke2cin.py` for the autonomous header because an ADR
+recorded the design — an ADR describing an artifact's shape does not make the
+file human-authored. The maintainer's standing choice for that feature is the
+autonomous form everywhere, headers and commit messages alike.

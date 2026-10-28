@@ -53,3 +53,26 @@ python/python3/python.exe python/cinbase/tools/cintojson.py CnsStroke.cin
   an error rather than a silent omission.
   `tests/test_cinbase_stroke_table.py` fails if the shipped JSON leaves the size
   class of the largest other table or the common planes lose their prefix closure.
+
+## Where a new table or Service has to register
+
+Committing the pair is not the whole delivery. Everything else that has to know
+the table exists:
+
+- `python/cinbase/json/<stem>.json` is the only file the engine reads, and the
+  installer copies `cinbase/` excluding `cin/`, so a committed pair ships with no
+  installer edit (`installer/installer.nsi`).
+- `python/cinbase/debug.py` — `jsonNameDict` maps a JSON name to the display name
+  the debug log prints; without an entry the log shows the raw file name.
+- `tests/ime_smoke_runner.py` and the expected-roster assertion in
+  `tests/test_input_methods_smoke.py` — when the table reaches users through a
+  Service directory under `python/input_methods/`.
+- `tests/test_cinbase_tables.py` discovers pairs from `cin/`, so it needs nothing
+  for a normal table; one generated on the user's machine at install time (like
+  `liu`) goes into its `INSTALL_TIME_TABLES` instead, or the inventory test fails.
+- `LICENSE.txt` — the root inventory entry, whenever the table derives from
+  third-party open data and owes an attribution exhibit of its own.
+
+The 全字庫 release the stroke table was built from sits unzipped under
+`C:\Users\<user>\cns11643-opendata\` on the Windows box; re-download it when the
+release version quoted in the `.cin` header has to change.
