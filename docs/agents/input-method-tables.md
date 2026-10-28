@@ -72,6 +72,18 @@ the table exists:
   joins that roster, and a Service outside it gets neither the behaviour nor
   its menu items, whatever its own configuration package says. `CinDict` and
   the roster are the rosters that bite.
+- The settings dialog is split across two directories, and the route table in
+  `python/cinbase/configtool.py` (`ConfigApp.__init__`) decides which one serves
+  a request: `*.html` and `config.js` come from the Service's own `config/`, so
+  `config.html` is per-Service and its `config.js` declares `imeFolderName`, the
+  table list and `disableConfigItem`; `*.htm` and `css|fonts|images|js/*` come
+  from `python/cinbase/config/`, which is where the shared
+  `python/cinbase/config/js/config.js` and the `config.htm` fragments it loads
+  into the page live. So a checkbox that behaves wrong for one Service is
+  usually a bug in the shared script (it gates blocks on `imeFolderName`), not
+  in the Service copy. `tests/test_config_tool_js.py` parse-checks both kinds
+  with the shipped `node/node.exe` and fails when a `config.html` has no
+  `config.js` beside it.
 - `tests/ime_smoke_runner.py` and the expected-roster assertion in
   `tests/test_input_methods_smoke.py` — when the table reaches users through a
   Service directory under `python/input_methods/`.
