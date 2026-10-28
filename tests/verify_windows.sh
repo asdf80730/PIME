@@ -6,6 +6,8 @@
 # touches nothing outside the checkout.
 #
 # Layers it covers:
+#   - Repo conventions: AI-declaration header, PR scope-gate self-test,
+#     local issue-tracker layout (.scratch/ is gitignored, so no CI job can)
 #   - GitHub/AppVeyor YAML parse (Bun)
 #   - Python backend suite on the shipped interpreter
 #   - Node backend suite on the shipped node.exe
@@ -20,6 +22,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
 set -u
+
+# Discovery would otherwise leave __pycache__ trees in the checkout, ready for a
+# later `git add` to sweep into a commit: the product .gitignore does not cover
+# them and tests/check_pr_scope.sh fails a branch that carries them. Mirrors
+# tests/run_local_tests.sh.
+export PYTHONDONTWRITEBYTECODE=1
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 TOOLS="$ROOT/.tools"
@@ -121,6 +129,19 @@ run_native 'Added files carry an AI declaration' \
 # pinned by a self-test on both boxes, not only under the Linux gate.
 run_native 'PR scope gate self-test' \
 	'bash.exe tests/check_pr_scope_test.sh'
+
+# The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
+# it: the layout check belongs on the box that holds the tickets. Exit 125 means
+# "no .scratch here", which is not a failure.
+write_step 'bash.exe tests/check_tracker_layout.sh'
+if "$RUN_DIR/step.bat" >"$RUN_DIR/step.log" 2>&1; then
+	pass 'Local issue tracker layout'
+elif [ $? -eq 125 ]; then
+	pass 'Local issue tracker layout (no .scratch)'
+else
+	fail 'Local issue tracker layout'
+	tail -n 15 "$RUN_DIR/step.log" | sed 's/^/      /'
+fi
 
 # --- Python ---------------------------------------------------------------
 run_native_verbose 'Python backend tests (bundled python.exe)' \

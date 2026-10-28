@@ -163,16 +163,23 @@ bash tests/install_windows_toolchain.sh   # once
 bash tests/verify_windows.sh              # every time
 ```
 
-Fourteen layers: the AI-declaration check and the PR scope-gate self-test,
-the GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the
-shipped `python/python3/python.exe`, three Node backend suites on the
-shipped `node/node.exe`, the Go backend tests plus the shipped
-`GOOS=windows GOARCH=386` build, `PIMELauncher` tests / `cargo fmt --check` /
-`cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
+Fifteen layers: the AI-declaration check, the PR scope-gate self-test and the
+local issue-tracker layout check (`.scratch/` is gitignored, so no CI job can
+ever run it — the Windows box holds the tickets), the GitHub/AppVeyor YAML parse
+(Bun), the Python backend suite on the shipped `python/python3/python.exe`, three
+Node backend suites on the shipped `node/node.exe`, the Go backend tests plus the
+shipped `GOOS=windows GOARCH=386` build, `PIMELauncher` tests / `cargo fmt
+--check` / `cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
 `CompositionCursor`) built with mingw g++.
 
-Commits on this checkout also pass a pre-commit gate that runs the Python
-backend suite on the shipped interpreter (~5 s). It is versioned at
+Commits on this checkout also pass a pre-commit gate that runs the Python backend
+suite on the shipped interpreter: about 21 s, because the gate skips the suite's
+slow layer — regenerating all 35 committed cinbase tables through the converter,
+~3.5 min — unless a staged path touches `python/cinbase/cin|json|tools` or the
+check itself, in which case it pays for it and the commit takes ~4 min. It skips
+by exporting `PIME_SKIP_TABLE_REGEN=1`, which only
+`tests/test_cinbase_tables.py` honours; `tests/verify_windows.sh` never sets it,
+so the full gate always regenerates. The gate is versioned at
 `tests/hooks/pre-commit`; recreate it with
 `cp tests/hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit`.
 Product worktrees skip it (they carry no `tests/`), and
