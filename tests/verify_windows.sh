@@ -136,6 +136,11 @@ run_native 'Added files carry an AI declaration' \
 run_native 'PR scope gate self-test' \
 	'bash.exe tests/check_pr_scope_test.sh'
 
+# Same contract pinning for the declaration gate: its staged mode is what the
+# pre-commit hook trusts to judge a commit still in the index.
+run_native 'AI declaration self-test' \
+	'bash.exe tests/check_ai_declarations_test.sh'
+
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
 # "no .scratch here", which is not a failure.
