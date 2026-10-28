@@ -177,6 +177,14 @@ a background run is still going, or run a copy. A failing layer keeps its output
 under `.tools/.run/` rather than deleting it, so the traceback is there to read
 without rerunning the step.
 
+Two tracked trees are vendored third-party code and make a repo-wide search time
+out before it reaches anything you wrote: `python/python3/` (the bundled
+interpreter plus its `site-packages`) and `node/`. Name the trees you actually want
+— `python/cinbase`, `python/input_methods`, `PIMETextService`, `libIME2`,
+`go-backend`, `PIMELauncher`, `tests`, `docs`, `installer` — and a whole-tree grep
+is unnecessary; `.tools/` is excluded through `.git/info/exclude`, so a search that
+does reach it is looking for a toolchain you are not supposed to edit anyway.
+
 Commits on this checkout also pass a pre-commit gate that runs the Python backend
 suite on the shipped interpreter: a ~25 s commit, because the gate skips the
 suite's slow layer — regenerating all 35 committed cinbase tables through the
