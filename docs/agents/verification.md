@@ -125,9 +125,23 @@ Individual commands, if you want to narrow the loop:
   `python3 -m http.server 8765 -d docs`, open
   `http://127.0.0.1:8765/tour/` with `browser.open` (headless Chromium), and
   check layout, console errors, and tab behaviour. Screenshot only the changed
-  region. If the prelude reports "Shared browser daemon unavailable", the daemon's
-  Chrome profile holds a lock from a dead PID (exit 21): remove
+  region, then `tab.close` — this is the only sanctioned browser use, and a tab
+  left open is the user's memory. If the prelude reports "Shared browser daemon
+  unavailable", the daemon's Chrome profile holds a lock from a dead PID (exit 21):
+  remove
   `~/.omp/run/daemons/*/omp.browser.headless.profile/Singleton*` and retry.
+- **Nothing opens a window from a test or a probe** — the local suite must never
+  reach the desktop. `ime_smoke_runner.install_windows_shims()` records
+  `os.startfile` and `shell32.ShellExecuteW`/`ShellExecute` into
+  `ime_smoke_runner.LAUNCHES` instead of performing them, on every platform.
+  Without that, a test at the wrong seam opens real tabs: `python/cinbase/__init__.py`
+  `os.startfile`s a GitHub URL for the 語言列選單 items (:2352-2364) and
+  `ShellExecuteW`s `python/cinbase/configtool.py` for 「功能設定」 (:2527), which then
+  `os.startfile`s the settings page (`python/cinbase/configtool.py:249`) — and
+  because the pre-commit hook runs the suite, that happened on every commit. Any
+  test that drives a menu or a command asserts `LAUNCHES == []`; to check
+  settings-page semantics, read the script and the route table rather than
+  starting `python/cinbase/configtool.py`.
 - **GitHub YAML (workflows, issue forms, AppVeyor)** — `tests/run_local_tests.sh`
   parses every file under `.github/` plus `appveyor.yml` with Bun
   (`Bun.YAML.parse`), because `python3` has no PyYAML and GitHub reports a broken
