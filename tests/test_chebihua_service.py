@@ -29,7 +29,8 @@ for path in (PYTHON_DIR, TESTS_DIR):
 import ime_smoke_runner  # noqa: E402 - located after ROOT is known
 ime_smoke_runner.install_windows_shims()
 
-from keycodes import VK_NEXT, VK_OEM_3, VK_SHIFT, VK_SPACE  # noqa: E402
+from keycodes import (  # noqa: E402
+    VK_HOME, VK_NEXT, VK_OEM_3, VK_RIGHT, VK_SHIFT, VK_SPACE)
 
 VK_8 = 0x38  # Shift+8 is the * wildcard key
 
@@ -54,6 +55,7 @@ class ChebihuaServiceTests(unittest.TestCase):
         self.temp_dir = tempfile.TemporaryDirectory(prefix="pime-chebihua-")
         os.environ["APPDATA"] = self.temp_dir.name
         os.chdir(self.temp_dir.name)
+        ime_smoke_runner.LAUNCHES.clear()
 
     def tearDown(self):
         os.chdir(self.old_cwd)
@@ -83,6 +85,17 @@ class ChebihuaServiceTests(unittest.TestCase):
             return filtered
         return ChebihuaServiceTests._request(service, "onKeyDown",
                                              char_code, key_code, shift, vk_down)
+
+    @staticmethod
+    def force_press(service, char_code, key_code):
+        """Filter and down, unconditionally.
+
+        The `` ` `` menu is handled in onKeyDown alone, and press() stops early
+        when the filter declines a key — which the arrow keys do. The real
+        client sends both messages for every key, so this mirrors it.
+        """
+        ChebihuaServiceTests._request(service, "filterKeyDown", char_code, key_code)
+        return ChebihuaServiceTests._request(service, "onKeyDown", char_code, key_code)
 
     def activate_chebihua(self):
         from input_methods.chebihua import chebihua_ime
@@ -189,18 +202,51 @@ class ChebihuaServiceTests(unittest.TestCase):
         self.assertEqual("一", reply.get("compositionString"))
 
     def test_learning_can_be_toggled_off_from_the_function_menu(self):
-        # The 功能開關 switch list is how a user turns the shipped-on
-        # learning counts off; chebihua must carry the 智慧選字 items.
+        # The 功能開關 menu is how a user turns the shipped-on learning counts
+        # off, so the switch has to be reached the way a user reaches it: `` ` ``
+        # opens the menu, the arrows walk the candidate view, Space picks the
+        # highlighted item. Picking 功能開關 moves to that page, and picking
+        # 智慧選字 is what the engine answers with onMenuCommand(i, 1).
+        #
+        # This used to press `` ` `` and then dispatch
+        # onCommand(smenuitems.index("intelligentSelect"), 1) — but the line
+        # protocol has no menu command (textService.py maps "onCommand" to
+        # onCommand alone, whose ids are the language-bar constants), so the
+        # index 6 landed on ID_BUGREPORT and opened
+        # https://github.com/EasyIME/PIME/issues, while the Space below picked
+        # 功能設定, the item still highlighted in the menu the test had opened,
+        # and ShellExecuteW'd the settings tool. The count-file assertion below
+        # then passed because nothing had ever been committed, not because the
+        # switch worked.
         service = self.activate_chebihua()
+        self.assertTrue(service.intelligentSelect, "智慧選字 ships on")
+
+        # `` ` `` then Shift+M composes the composition string the 功能選單 opens
+        # on (python/cinbase/__init__.py:718) — the only route a user has.
         self.press(service, ord("`"), VK_OEM_3, vk_down=(VK_OEM_3,))
         self.press(service, ord("M"), shift=True)
+        # smenuitems and smenucandidates are filled as the menu opens, in parallel.
         self.assertIn("intelligentSelect", service.smenuitems)
-        service.handleRequest({"method": "onCommand",
-                               "id": service.smenuitems.index("intelligentSelect"),
-                               "type": 1, "seqNum": 2})
+        self.assertEqual(0, service.menutype, "the 功能選單 did not open")
+
+        for _ in range(service.candidateList.index("功能開關")):
+            self.force_press(service, 0, VK_RIGHT)
+        self.assertEqual("功能開關", service.candidateList[service.candidateView.cursor])
+        self.force_press(service, VK_SPACE, VK_SPACE)
+        self.assertEqual(1, service.menutype, "the 功能開關 page did not open")
+
+        index = service.smenuitems.index("intelligentSelect")
+        self.force_press(service, 0, VK_HOME)
+        for _ in range(index):
+            self.force_press(service, 0, VK_RIGHT)
+        self.force_press(service, VK_SPACE, VK_SPACE)
+        self.assertFalse(service.intelligentSelect,
+                         "智慧選字 stayed on after being picked from the menu")
+        self.assertEqual([], ime_smoke_runner.LAUNCHES,
+                         "the menu route reached the desktop")
+
         service.handleRequest({"method": "onCompositionTerminated",
                                "forced": True, "seqNum": 3})
-
         reply = self.type_strokes(service, "h", "h")
         self.assertTrue(reply.get("candidateList"))
         self.press(service, VK_SPACE)
