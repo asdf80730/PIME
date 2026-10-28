@@ -244,6 +244,11 @@ It skips by exporting `PIME_SKIP_TABLE_REGEN=1`, which only
 so the full gate always regenerates. The gate is versioned at
 `tests/hooks/pre-commit`; recreate it with
 `cp tests/hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit`.
+A manual `unittest discover` inherits that variable from whatever shell you typed
+it in, and the suite reports the difference only as one extra skip in its
+`OK (skipped=N)` line. So a `Validation` line names the skip count it actually
+observed, and a commit touching a cinbase table or the converter is claimed green
+only after a run with the variable explicitly unset.
 Product worktrees skip it (they carry no `tests/`), and
 `git commit --no-verify` carries a deliberately mid-refactor commit that the
 next commit makes green.
