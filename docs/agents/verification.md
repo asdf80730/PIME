@@ -177,6 +177,13 @@ bash tests/install_windows_toolchain.sh   # once
 bash tests/verify_windows.sh              # every time
 ```
 
+Probe discipline here: a command whose stderr you discard with `2>/dev/null` is not
+evidence — a `tasklist` whose `/FI` quoting Git Bash mangled printed an empty process
+list, and the discarded half was the error saying so. When a probe disarms a Win32
+entry point, replace only that entry point: replacing all of `ctypes.windll` makes
+`ime_smoke_runner.under_wine()` find `wine_get_version` on the fake and report Wine,
+which silently skips every Service-level test and turns a green run into no run.
+
 Sixteen layers, and the run prints its own tally (`16 passed, 0 failed`) — quote
 that line rather than a counted number: the AI-declaration check, the PR scope-gate
 self-test, the AI-declaration self-test and the local issue-tracker layout check
