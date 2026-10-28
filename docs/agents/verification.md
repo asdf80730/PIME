@@ -177,6 +177,20 @@ a background run is still going, or run a copy. A failing layer keeps its output
 under `.tools/.run/` rather than deleting it, so the traceback is there to read
 without rerunning the step.
 
+Narrowing the Python layer to one file on the shipped interpreter needs
+`discover`: `python/python3/python.exe` is an embedded distribution whose
+`python3*._pth` pins `sys.path` to the interpreter directory and ignores
+`PYTHONPATH`, so `python/python3/python.exe -m unittest tests.test_x` fails with
+`No module named tests`, and dropping a package marker into the `tests` directory
+is not the fix. What works from the repo root:
+
+```
+python/python3/python.exe -m unittest discover -s tests -p "test_x.py" -v
+```
+
+Passing the dotted name to `discover` is not needed — the `-p` pattern is the
+selector, and it is the same interpreter and the same tests the umbrella runs.
+
 Two tracked trees are vendored third-party code and make a repo-wide search time
 out before it reaches anything you wrote: `python/python3/` (the bundled
 interpreter plus its `site-packages`) and `node/`. Name the trees you actually want
