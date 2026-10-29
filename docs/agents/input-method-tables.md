@@ -53,9 +53,12 @@ python/python3/python.exe python/cinbase/tools/cintojson.py CnsStroke.cin
   leaves out anything longer than `MAX_STROKES` (30 strokes — the Service declares
   `maxCharLength` 30, so such a code could never be typed), the CJK Ext-B planes
   and the private use areas. The knobs are `CLOSURE_TIERS`, `FULLCODE_TIERS` and
-  `EXCLUDED_TIERS` at the top of `python/cinbase/tools/cnsstroke2cin.py`, and a
-  tier name the converter starts returning that none of the three lists covers is
-  an error rather than a silent omission.
+  `EXCLUDED_TIERS` at the top of `python/cinbase/tools/cnsstroke2cin.py`, and
+  a tier the converter starts filing characters under that none of the three lists
+  covers is an error rather than a silent omission. The tier is read from that
+  filing — which of the converter's tier dicts gained the character — not from the
+  name `getCharSet` returns, because the two can disagree: its Big5 符號 branch files
+  in `big5S` and answers `"big5LF"`.
   `tests/test_cinbase_stroke_table.py` fails if the shipped JSON leaves the size
   class of the largest other table or the common planes lose their prefix closure.
 

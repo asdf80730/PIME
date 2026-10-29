@@ -193,6 +193,20 @@ COLLIDING_MAPPINGS = {
     ],
 }
 
+
+# 卄 (U+5344) encodes in Big5 inside charsetRange['big5S'] — the 符號 tier
+# EXCLUDED_TIERS leaves out. Its real CNS字碼 is beside the point: an invented one
+# carrying the three-stroke code 111 stands in for the three lines it once shipped
+# (h / hs / hss), so "excluded" has to mean absent at every length, not merely
+# un-prefixed.
+SYMBOL_CNS = "9-0009"
+SYMBOL_STROKES = COMMON_CNS + [(SYMBOL_CNS, "111")]
+SYMBOL_MAPPINGS = {
+    "CNS2UNICODE_Unicode BMP.txt":
+        COMMON_MAPPINGS["CNS2UNICODE_Unicode BMP.txt"] + [(SYMBOL_CNS, "5344")],
+}
+
+
 # 政府資料開放授權條款-第1版 附件：顯名聲明, filled in for the CNS11643 release
 # this table is derived from. Omitting it voids the data license ab initio, so
 # the exhibit is quoted verbatim here rather than paraphrased.
@@ -202,6 +216,43 @@ ATTRIBUTION_EXHIBIT = [
     "# 2. 此開放資料依政府資料開放授權條款 (Open Government Data License) 進行公眾釋出，使用者於遵守本條款各項規定之前提下，得利用之。",
     "# 3. 政府資料開放授權條款：https://data.gov.tw/license",
 ]
+
+
+# 收錄範圍 spelled out: the closure tiers are expanded over every prefix, the
+# full-code tiers contribute their complete stroke order only. Quoted here rather
+# than imported from the generator, so the committed header is checked against the
+# tier policy instead than against itself: renaming a tier or moving one between
+# CLOSURE_TIERS and FULLCODE_TIERS stops this matching.
+SCOPE_LINE = ("# 收錄範圍：Big5 常用／Big5 次常用字展開全部前綴；"
+              "Big5 其他漢字／注音符號／CJK 基本區／CJK 擴展 A 區等字級僅收完整筆順；")
+
+
+def classifier_override(characters, tiers=(), label="cjkExtZ"):
+    """The real classifier, except that ``characters`` are filed in ``tiers``.
+
+    Everything else is delegated to the converter's own instance, whose tier dicts
+    are shared so its accounting still moves for them. The join therefore yields a
+    non-empty table, and a refusal cannot be the generator's "no stroke code
+    survived the join" complaint instead of the tier rule under test.
+    """
+    real = load_generator().load_charset_classifier()
+
+    class ClassifierOverride:
+        def __init__(self):
+            self.__dict__.update(vars(real))
+            for tier in tiers:
+                # setdefault, not setattr: an existing tier keeps the real dict, so
+                # filing there moves the accounting the generator reads.
+                self.__dict__.setdefault(tier, {})
+
+        def getCharSet(self, key, root):
+            if root in characters:
+                for tier in tiers:
+                    getattr(self, tier).setdefault(key, []).append(root)
+                return label
+            return real.getCharSet(key, root)
+
+    return ClassifierOverride
 
 
 class GeneratorSeamTests(unittest.TestCase):
@@ -328,22 +379,73 @@ class GeneratorSeamTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 generate(fixture)
 
-    def test_a_tier_the_generator_does_not_know_is_an_error(self):
-        """A charset tier cintojson.py adds must not silently drop characters."""
-        class UnknownTierClassifier:
-            def getCharSet(self, key, root):
-                return "cjkExtZ"
+    def assert_generator_refuses(self, characters, tiers, label, names):
+        """generate_cin must refuse a classifier that misfiles ``characters``.
 
+        The rest of the fixture keeps its real tier (classifier_override), so the
+        ValueError is the tier rule's and not the empty-join one; ``names`` is what
+        the message has to say about it, which keeps each guard's own error the one
+        that is asserted.
+        """
         module = load_generator()
         original = module.load_charset_classifier
-        module.load_charset_classifier = UnknownTierClassifier
+        module.load_charset_classifier = classifier_override(characters, tiers, label)
         try:
             with StrokeCinFixture(COMMON_CNS, COMMON_MAPPINGS) as fixture:
-                with self.assertRaises(ValueError):
+                with self.assertRaisesRegex(ValueError, names):
                     module.generate_cin(fixture.strokes_path,
                                         fixture.mapping_paths, RELEASE)
         finally:
             module.load_charset_classifier = original
+
+    def test_a_tier_the_generator_does_not_know_is_an_error(self):
+        """A character filed in no tier dict is refused, not classified by guesswork.
+
+        The tier is read from the converter's bookkeeping, so a getCharSet that
+        files nowhere while answering a label no set covers has to raise; 打 is the
+        overridden character and the other three keep their real tier.
+        """
+        self.assert_generator_refuses("打", (), "cjkExtZ", "under 0 tier dicts")
+
+    def test_big5_symbol_plane_characters_are_excluded(self):
+        """The tier EXCLUDED_TIERS names never reaches the table, at any length.
+
+        getCharSet files 卄 in its big5S dict yet answers "big5LF", so a tier read
+        off that label counted it as 次常用 and fanned h/hs/hss out; read from the
+        accounting it is excluded, which also means it leaves no key of its own.
+        """
+        self.assertTrue(is_big5_symbol_plane("卄"),
+                        "the fixture character no longer sits in the Big5 符號 plane")
+        with StrokeCinFixture(SYMBOL_STROKES, SYMBOL_MAPPINGS) as fixture:
+            cin = generate(fixture)
+        _heads, _keynames, chardefs = parse_cin(cin)
+        self.assertIn("打", chardefs.get("hzhhz", []),
+                      "the join stopped working; an absent 卄 would prove nothing")
+        self.assertNotIn("卄", [c for chars in chardefs.values() for c in chars],
+                         "a Big5 符號 character shipped")
+        self.assertEqual(sorted(chardefs),
+                         ["h", "hh", "hs", "hz", "hzh", "hzhh", "hzhhz"],
+                         "the excluded character left a key of its own behind")
+
+    def test_a_tier_dict_the_converter_gains_is_an_error(self):
+        """A tier none of the three sets covers is an error, not a silent omission.
+
+        That is how the converter gains a tier: it files characters in a dict this
+        generator has never heard of. accounted_tier() names it from that dict and
+        collect_chardefs() refuses it by name.
+        """
+        self.assert_generator_refuses("打", ("cjkExtZ",), "cjkExtZ",
+                                      "does not classify: cjkExtZ")
+
+    def test_a_character_filed_in_two_tier_dicts_is_an_error(self):
+        """One character, one tier: the accounting must name exactly one dict.
+
+        A character 打-sized enough to satisfy the real big5F branch and a second
+        dict as well cannot be classified, and silently taking the first one would
+        decide its inclusion by attribute order.
+        """
+        self.assert_generator_refuses("打", ("big5F", "big5S"), "big5F",
+                                      "under 2 tier dicts")
 
 
 # Transcribed from CNS_strokes_sequence.txt; the committed table must say the
@@ -362,14 +464,30 @@ SAMPLED_CNS_SEQUENCES = {
 # against the plain definition of "common", not against the tool's own table.
 BIG5_COMMON_PLANES = ((0xA440, 0xC67F), (0xC940, 0xF9D6))
 
+# The Big5 符號 plane, same plain definition (the converter's
+# charsetRange['big5S']): the tier EXCLUDED_TIERS leaves out of the table entirely.
+BIG5_SYMBOL_PLANE = (0xA140, 0xA3C0)
+
+
+def big5_code(char):
+    """The character's two-byte Big5 code, or None where Big5 cannot encode it."""
+    try:
+        return int(char.encode("big5").hex(), 16)
+    except UnicodeEncodeError:
+        return None
+
 
 def is_common_plane(char):
     """True for a character in the Big5 常用/次常用 planes."""
-    try:
-        code = int(char.encode("big5").hex(), 16)
-    except UnicodeEncodeError:
-        return False
-    return any(low <= code < high for low, high in BIG5_COMMON_PLANES)
+    code = big5_code(char)
+    return (code is not None and
+            any(low <= code < high for low, high in BIG5_COMMON_PLANES))
+
+
+def is_big5_symbol_plane(char):
+    """True for a character the converter files in its Big5 符號 tier."""
+    code = big5_code(char)
+    return code is not None and BIG5_SYMBOL_PLANE[0] <= code < BIG5_SYMBOL_PLANE[1]
 
 
 class ShippedStrokeTableTests(unittest.TestCase):
@@ -469,6 +587,48 @@ class ShippedStrokeTableTests(unittest.TestCase):
             self.assertEqual(runtime[key], candidates,
                              "candidate order of key %r differs between the "
                              "committed .cin and the runtime .json" % key)
+
+    def test_no_committed_character_is_big5_symbol_plane(self):
+        """The excluded tier stayed out of the table that ships.
+
+        卄 (U+5344) encodes inside charsetRange['big5S'] and was committed at h, hs
+        and hss while the generator called it 次常用; the tier sets say it is
+        excluded, so no chardef line may carry such a character at all.
+        """
+        offenders = {char for candidates in self.chardefs.values() for char in candidates
+                     if is_big5_symbol_plane(char)}
+        self.assertEqual(offenders, set(),
+                         "the committed table ships Big5 符號 characters: %s"
+                         % "".join(sorted(offenders)))
+
+    def test_header_scope_line_matches_the_tier_sets(self):
+        """The header may state no scope but the one the tier sets implement.
+
+        Its prose used to promise prefix expansion for a tier the table excludes;
+        the line is now rendered from CLOSURE_TIERS/FULLCODE_TIERS, so the committed
+        header, the tier sets and this file's own copy of the sentence must agree.
+        The half that is still prose — the stroke cap and the planes left out — is
+        quoted against MAX_STROKES, and the pair keeps its place in the header.
+        """
+        lines = self.text.splitlines()
+        stated = [line for line in lines if line.startswith("# 收錄範圍：")]
+        self.assertEqual(stated, [SCOPE_LINE],
+                         "the committed header's 收錄範圍 no longer says what the "
+                         "tier sets do")
+        module = load_generator()
+        self.assertEqual(lines[lines.index(SCOPE_LINE) - 1],
+                         "#           經 CNS2UNICODE_Unicode*.txt 對映至 Unicode 碼位",
+                         "the 收錄範圍 line left its place in the header")
+        cap_and_planes = ("#           超過 %d 畫者、CJK Ext-B 以後字面及私用區字一概不收"
+                          % module.MAX_STROKES)
+        self.assertEqual(lines[lines.index(SCOPE_LINE) + 1], cap_and_planes,
+                         "the 收錄範圍 continuation no longer states the stroke cap "
+                         "and the planes the table leaves out")
+        self.assertLess(lines.index(SCOPE_LINE), lines.index("%gen_inp"),
+                        "the 收錄範圍 line left the header comment block")
+        self.assertEqual(module.scope_line(), SCOPE_LINE,
+                         "a tier was renamed or moved between the tier sets; the "
+                         "committed header no longer states the scope it generates")
 
 
 if __name__ == "__main__":
