@@ -8,6 +8,10 @@ Issues are not used as our work tracker. Tickets stay local to the checkout.
 ## Conventions
 
 - One feature per directory: `.scratch/<feature-slug>/`
+- Loose single files (PR body/comment drafts, saved evidence) stay **flat** at the
+  top of `.scratch/`, named after their target: `.scratch/pr-<n>-body.md`,
+  `.scratch/pr-<n>-review.md`. A directory under `.scratch/` reads as a feature,
+  and the layout check then demands its spec/map/ARCHIVE.
 - The spec is `.scratch/<feature-slug>/spec.md`
 - Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
