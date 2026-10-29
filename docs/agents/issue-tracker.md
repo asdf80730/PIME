@@ -15,6 +15,10 @@ Issues are not used as our work tracker. Tickets stay local to the checkout.
 - Non-feature holdings (rescued WIP, snapshots) live in `.scratch/<name>/` carrying an
   `ARCHIVE.md` that records the origin and restore target; the layout check skips those
 
+The layout is machine-checked: `bash tests/check_tracker_layout.sh` exits 0 when
+every feature directory carries its spec (or wayfinder map) — or an `ARCHIVE.md`
+when it is a holding — and every ticket is `NN-<slug>.md` with a `Status:` line.
+
 ## Parking an effort
 
 When the maintainer parks a feature — the code stays on a branch, nothing is pushed —
