@@ -207,6 +207,24 @@ Counting `run_native` call sites comes out at 15: the tracker check is dispatche
 inline (`write_step` plus its own `pass`/`fail`, so its exit 125 can read as
 "no .scratch" rather than a failure), so it is not one of those calls.
 
+**The agent docs have their own check, and it is not a layer.**
+`tests/test_agent_docs.py` resolves every backticked or linked token ending in md, sh,
+py, yaml, yml, nsi or ns inside `AGENTS.md` and `docs/agents/*.md` against the doc's
+own directory, the repo root and the source roots, and fails when `AGENTS.md` leaves a
+file under `docs/agents/` unnamed. Nothing in the gate runs it, so deleting or renaming
+a file those docs cite is only caught if the same change runs
+`python/python3/python.exe -m unittest discover -s tests -p test_agent_docs.py` — do it
+before the stale doc reaches a reviewer, not after.
+
+**The scope self-test's throwaway refs are not sediment.** While `bash
+tests/verify_windows.sh` runs, `git branch` and `git worktree list` also show
+`selftest/scope-dirty.$$`, `selftest/scope-clean.$$` and `selftest/scope-pyc.$$` with
+worktrees under the temp directory; the self-test's EXIT trap removes them, so they are
+the gate running, not a branch someone left behind. They are real `refs/heads/`
+branches on purpose: the gate reads the checked-out name through `git symbolic-ref` and
+skips on integration names, so a detached worktree would turn those assertions into
+skips that still report as passing.
+
 A run reads this script as it goes: leave `tests/verify_windows.sh` untouched while
 a background run is still going, or run a copy. A failing layer keeps its output
 under `.tools/.run/` rather than deleting it, so the traceback is there to read
