@@ -93,6 +93,12 @@ Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/a
 
 cinbase tables are `.cin` sources run through the converter into committed runtime JSON; the installer ships only the JSON, so sources and JSON are committed as a pair and must stay in sync. Adding or re-deriving a table: see `docs/agents/input-method-tables.md`.
 
+### Cinbase configuration
+
+Adding a cinbase setting touches four places and hides an eight-file trap in the
+shipped defaults. `docs/agents/cinbase-config.md` names the files and the working
+example PR.
+
 ### Verification
 
 `tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled
