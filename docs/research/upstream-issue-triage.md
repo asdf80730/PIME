@@ -327,6 +327,22 @@ CIN IME modules). Its completion callback still ends in `except Exception: pass`
 the loading architecture but does not yet surface a failed table; the silent-death half of #355
 remains open inside that PR. A competing patch would still collide, so wait for #1004.
 
+**Update 2026-10-30:** the review landed — [comment on #1004](https://github.com/EasyIME/PIME/pull/1004#issuecomment-6506773490),
+executed against head `b74d6a2` with the bundled Python 3.15.1 (PR suite `tests/test_cintablebase.py` 5/5,
+#355's corrupt-table repro run against the PR tree). Four failure modes measured: the completion
+callback still ends `except Exception: pass` (`cinbase/__init__.py:3401-3402`, no log line); the
+`cin`/`wait()` surface of `CinTableBase` re-raises into the plain None-guards
+(`:3292`/`:3299`/`:3324-3325`) and into the IME `__init__` `CinTable.wait()` (`checj_ime.py:65`) —
+fatal, not visible; the config mirror written at submit (`:3389-3392`) makes a failed load
+un-retryable via `checkConfigChange`; and a failed reload leaves the still-serving table with
+`chardefs == {}` (`Cin.__del__` ran at submit, `:3386-3387`), i.e. zero candidates, no message.
+The #355 merge condition (failed table visible — logged to `python_backend.log` and user-visible,
+not fatal, retryable) is stated on the PR. Async loading itself is confirmed preserved: `start()`
+submits and returns, and the busy-wait is gone in all 8 modules. #1004 remains OPEN as of this
+writing; tickets 13–20 keep waiting on the merge-or-abandon, and no competing loader patch is
+proposed yet — #1004 was opened 2026-10-25T03:44Z, five days ago as of this writing, which is
+not yet "indefinitely" under the ticket's takeover condition.
+
 [#355](https://github.com/EasyIME/PIME/issues/355) ("copying a `.cin` renamed to `.json` hangs the
 system") still reproduces in kind. `Cin.__init__` does `self.__dict__.update(json.load(fs))`
 (`python/cinbase/cin.py:55`), and the loader thread swallows everything:
