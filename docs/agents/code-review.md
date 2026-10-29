@@ -134,3 +134,16 @@ character kept one key, the chain held trivially, and it reported green in a col
 reds that meant something. Its harness aborts when a pattern does not match exactly
 once, which is not the same as the mutation biting: a toothless mutation reads as
 coverage, and nobody re-tests the assertion it appears to guard.
+
+## A third-party return convention is quoted from the pinned source
+
+When the diff branches on the return of a pinned third-party library (a ctypes
+binding, a submodule), the implementation's premise and the reviewer's agreement
+both cite that library's source at the pinned SHA, or the claim stays
+`[INFERENCE]`. `git submodule status` names the checkout; a leading `-` means
+initialize it first (`git submodule update --init <path>`). The #393/#417/#456
+user-phrase fix hinged on this: most `chewing_*` setup calls return 0 for
+success, while `chewing_userphrase_remove` returns rows deleted and 0 means
+nothing was removed — a reviewer that accepted the analogy would have blessed
+the success-default it was reviewing. The measured userphrase table lives in
+`docs/agents/chewing-api.md`.
