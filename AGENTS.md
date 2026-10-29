@@ -99,6 +99,14 @@ Adding a cinbase setting touches four places and hides an eight-file trap in the
 shipped defaults. `docs/agents/cinbase-config.md` names the files and the working
 example PR.
 
+### Chewing backend
+
+Return conventions of the pinned libchewing submodule — which ships
+**uninitialized** — are settled from that pinned source, never guessed or
+analogy-carried between neighbouring APIs. `docs/agents/chewing-api.md` has
+the init command, the files that answer what, and the verified userphrase
+return table.
+
 ### Verification
 
 `tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled
