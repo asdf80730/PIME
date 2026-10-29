@@ -124,8 +124,11 @@ and hand the compare URL plus body to the human.
   narrow command in `docs/agents/verification.md` when that loop is too slow.
 - Commit messages follow `AGENTS.md` §2, including the AI declaration.
 - Deliver: push the branch to `fork`, write the PR body to
-  `.scratch/pr-<number>-body.md`, then open the browser compare URL and paste the
-  body. A PR opened as a draft stays a draft until the human clicks "Ready for review".
+  `.scratch/pr-<number>-body.md`, then **print** the compare URL below for the
+  human to open — never open it yourself, and never open a GitHub tab: a page left
+  open is memory the user pays for, and `pr://`/`issue://` read the same
+  discussion without a browser.
+  A PR opened as a draft stays a draft until the human clicks "Ready for review".
   `gh api notifications` is 403 as well: list the work with
   `gh search prs --author @me --state open` and read discussion through
   `gh api repos/EasyIME/PIME/issues/<n>/comments`.

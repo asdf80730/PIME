@@ -187,7 +187,7 @@ nsis_smoke() {
     local tmp status
     tmp=$(mktemp -d)
     cp -r "$ROOT/installer" "$tmp/"
-    cp "$ROOT/version.txt" "$ROOT/LGPL-2.0.txt" "$ROOT/PSF.txt" "$tmp/"
+    cp "$ROOT/version.txt" "$ROOT/LGPL-2.0.txt" "$ROOT/PSF.txt" "$ROOT/LICENSE.txt" "$tmp/"
     sed -E -i 's/^([[:space:]]*)File /\1File \/nonfatal /' "$tmp/installer/installer.nsi"
     (cd "$tmp" && makensis -V1 installer/installer.nsi) >"$tmp/makensis.log" 2>&1
     status=$?

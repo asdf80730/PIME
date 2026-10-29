@@ -37,3 +37,100 @@ disagrees with the runner's, and upstream files ride their own formatting
 fix is restoring it and re-running the formatter over the touched files
 only. A diff where unrelated lines ride along breaks the reviewer's one
 job: every line earning its review.
+
+## A quoted number must be reproducible
+
+A count written into a ticket, doc or commit body is a claim the next agent can
+only re-derive from the command that produced it, or from a test that asserts it.
+Bind every number to one of the two — quote the one-liner beside it, or name the
+assertion — and re-run it before you write it down.
+
+Stroke-table worked example — that feature is parked on `archive/chebihua-2026-10-29`,
+the lesson outlived it: a ticket comment recorded "the 111,379 keys that lack a prefix
+belong to 4,734 rare-plane-only characters". The table as then shipped measures 11,114
+and 14,408. The prose read confidently, the numbers had been copied off an unrelated
+probe, and only a reviewer re-running the query over the committed `.cin` caught it.
+
+Reading a *name* is not measuring, even when the command runs. Round 2's scan
+recorded this mislabel's blast radius as "0 characters in the shipped table": it
+counted characters filed under the tier name, and the 符號 branch files by one name
+while answering another, so that name never appears in the artifact. Two more rounds
+passed before a probe counted `chardef` lines and found one character shipping at
+three prefixes, offered by a single keypress. An impact number must name the
+observable the user receives — the committed artifact, the settings page, the
+candidate list — and a claim of *zero* impact carries both the command and what that
+command inspects.
+
+## Judge an AI header by the file's category
+
+`AGENTS.md` §4 grades a new file's header by its **category**: a script, a lookup
+table or a test is machine-generated and carries the autonomous form (`Generated
+by <agent> (<model>) without human creative authorship.` + SPDX); a
+human-designed product file carries human copyright plus the design credit. Read
+the category first, so demanding the human-design header for a generator tool, a
+committed `.cin`/`.json` pair or a test module is a false positive. The design
+credit lives in the commit message and the PR body, in whatever form the effort's
+ticket records under `.scratch/<effort>/`.
+
+Stroke-table worked example: a review flagged the feature's table generator for the
+autonomous header because an ADR recorded the design — an ADR describing an artifact's
+shape does not make the file human-authored. The maintainer's standing choice for that
+feature is the autonomous form everywhere, headers and commit messages alike.
+
+## A quoted line must be the line the implementer wrote
+
+A finding that quotes code is evidence only if the quote is from the file as the
+implementer last saved it. Re-read the file, then cite `path:line` with the quoted
+text actually present at that line; if the quote will not match, the finding is
+`[INFERENCE]` and gets said so. A stale quote costs implementation a round trip to
+fix nothing, and it buries the real finding beside it: one review quoted
+`COMMON = list(capabilities.COMMON_MENU_ITEMS)` from a test module that never
+contained that line, while the gap that mattered — a shared menu list with no
+golden pin, one assertion away — had to be found again by the implementer.
+
+The line number carries the same duty as the quote. A finding is read by someone
+who will not open the file until they act on it, so `path:line` has to be where the
+code actually sits — re-derived from that file, not remembered from a neighbouring
+reading. One review placed `self.cbTS.cin.__del__()` at
+`python/cinbase/__init__.py:3298-3299`; the call is at `:3297`, and the wrong pair
+had already reached the round record before a grep corrected it.
+
+## A comment that documents a divergence is a finding
+
+`X says A although the code does B` is not an accepted state; it is a defect with a
+paper trail. Treat it as a finding and ask for the decision record that tolerates
+it. Three scan rounds of the Stroke table read *"big5S is listed although getCharSet
+presently answers big5LF"* in the parked table's own generator and let it
+stand: the comment reads as a known upstream limitation, no ADR recorded it, and no
+test covered what it conceded — so the exclusion it described was inert while every
+review treated it as settled. Accept the divergence only when a record names the
+reason; otherwise the comment is the one thing the next agent trusts and nothing
+asserts.
+
+## A claim about the input data needs the measurement over it
+
+What the code says is one thing; what a comment or a record says about the *data* the
+code reads carries the same duty. `Because X does Y, this code handles it` either names
+the file, the loader and what was counted, or it is `[INFERENCE]` and gets said so.
+Round 5 of the parked 筆畫 effort shipped a code comment, a record paragraph and a
+commit-message draft all asserting that CNS carries variant encodings, so one
+character arrives through two
+stroke orders — the stated reason `file()` keeps the shortest of two. Measured over the
+pinned release with the generator's own loaders, 104,680 join rows give 104,680 distinct
+code points and no code point is reached by a second 字碼: the case never occurs in
+anything the product ships, the fold is defensive, and three artifacts had been read as
+justifying code that is load-bearing. A reviewer that measures the inputs can tell the
+two apart; one that trusts the prose cannot, and the next agent keeps the code believing
+the prose.
+
+## A mutation earns its place by naming what it reddened
+
+``Eight mutations were run`` proves nothing; the assertion each one reddened is the
+proof, so demand the pair — mutation, reddened test — and score a mutation with no red
+as absence of evidence rather than as a check that passed. Round 5's harness files a
+character under a key it is not a prefix of, to show the artifact test guards that chain;
+the first attempt *moved* the chardef line instead of adding a second filing, so the
+character kept one key, the chain held trivially, and it reported green in a column of
+reds that meant something. Its harness aborts when a pattern does not match exactly
+once, which is not the same as the mutation biting: a toothless mutation reads as
+coverage, and nobody re-tests the assertion it appears to guard.

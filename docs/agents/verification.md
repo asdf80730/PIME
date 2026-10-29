@@ -125,9 +125,23 @@ Individual commands, if you want to narrow the loop:
   `python3 -m http.server 8765 -d docs`, open
   `http://127.0.0.1:8765/tour/` with `browser.open` (headless Chromium), and
   check layout, console errors, and tab behaviour. Screenshot only the changed
-  region. If the prelude reports "Shared browser daemon unavailable", the daemon's
-  Chrome profile holds a lock from a dead PID (exit 21): remove
+  region, then `tab.close` — this is the only sanctioned browser use, and a tab
+  left open is the user's memory. If the prelude reports "Shared browser daemon
+  unavailable", the daemon's Chrome profile holds a lock from a dead PID (exit 21):
+  remove
   `~/.omp/run/daemons/*/omp.browser.headless.profile/Singleton*` and retry.
+- **Nothing opens a window from a test or a probe** — the local suite must never
+  reach the desktop. `ime_smoke_runner.install_windows_shims()` records
+  `os.startfile` and `shell32.ShellExecuteW`/`ShellExecute` into
+  `ime_smoke_runner.LAUNCHES` instead of performing them, on every platform.
+  Without that, a test at the wrong seam opens real tabs: `python/cinbase/__init__.py`
+  `os.startfile`s a GitHub URL for the 語言列選單 items (:2352-2364) and
+  `ShellExecuteW`s `python/cinbase/configtool.py` for 「功能設定」 (:2527), which then
+  `os.startfile`s the settings page (`python/cinbase/configtool.py:249`) — and
+  because the pre-commit hook runs the suite, that happened on every commit. Any
+  test that drives a menu or a command asserts `LAUNCHES == []`; to check
+  settings-page semantics, read the script and the route table rather than
+  starting `python/cinbase/configtool.py`.
 - **GitHub YAML (workflows, issue forms, AppVeyor)** — `tests/run_local_tests.sh`
   parses every file under `.github/` plus `appveyor.yml` with Bun
   (`Bun.YAML.parse`), because `python3` has no PyYAML and GitHub reports a broken
@@ -142,8 +156,8 @@ Individual commands, if you want to narrow the loop:
   preprocesses and assembles `installer/installer.nsi` in full, vendored
   plugins included. The only failures are `File` directives whose Windows
   build output is absent. `tests/run_local_tests.sh` therefore copies
-  `installer/` plus `version.txt`, `LGPL-2.0.txt` and `PSF.txt` into a temp
-  directory, rewrites each `File ` to `File /nonfatal`, and compiles, so a
+  `installer/` plus `version.txt`, `LGPL-2.0.txt`, `PSF.txt` and `LICENSE.txt`
+  into a temp directory, rewrites each `File ` to `File /nonfatal`, and compiles, so a
   broken script, include or LogicLib block fails locally. What that does not
   prove: packaging and signing, plugin behaviour at install time, and the
   payload, since the installer packages the JavaScript input methods
@@ -163,18 +177,78 @@ bash tests/install_windows_toolchain.sh   # once
 bash tests/verify_windows.sh              # every time
 ```
 
-Fourteen layers: the AI-declaration check and the PR scope-gate self-test,
-the GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the
-shipped `python/python3/python.exe`, three Node backend suites on the
-shipped `node/node.exe`, the Go backend tests plus the shipped
-`GOOS=windows GOARCH=386` build, `PIMELauncher` tests / `cargo fmt --check` /
-`cargo clippy`, and the two pure-C++ helpers (`JsonUtils` gtest,
-`CompositionCursor`) built with mingw g++.
+Probe discipline here: a command whose stderr you discard with `2>/dev/null` is not
+evidence — a `tasklist` whose `/FI` quoting Git Bash mangled printed an empty process
+list, and the discarded half was the error saying so. When a probe disarms a Win32
+entry point, replace only that entry point: replacing all of `ctypes.windll` makes
+`ime_smoke_runner.under_wine()` find `wine_get_version` on the fake and report Wine,
+which silently skips every Service-level test and turns a green run into no run.
 
-Commits on this checkout also pass a pre-commit gate that runs the Python
-backend suite on the shipped interpreter (~5 s). It is versioned at
+A test comment that names what would turn the test red is a verification claim too,
+and it needs the same proof as a `Validation:` line: delete the guard the comment
+points at, watch the test fail, put it back. A comment can describe a race the test
+never enters — a Stroke Service round shipped a back-to-back construction test whose
+comment claimed it pinned a spawn guard, while deleting the guard left it green 8/8
+because the first load had already finished. The test that does pin it parks its
+loader *before* the loader raises its own flag, and asserts the loader was still
+parked when the second call arrived, so missing the window is a failure rather than
+a vacuous pass.
+
+Sixteen layers, and the run prints its own tally (`16 passed, 0 failed`) — quote
+that line rather than a counted number: the AI-declaration check, the PR scope-gate
+self-test, the AI-declaration self-test and the local issue-tracker layout check
+(`.scratch/` is gitignored, so no CI job can ever run it — the Windows box holds
+the tickets), the GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the
+shipped `python/python3/python.exe`, three Node backend suites on the shipped
+`node/node.exe`, the Go backend tests plus the shipped `GOOS=windows GOARCH=386`
+build, `PIMELauncher` tests / `cargo fmt --check` / `cargo clippy`, and the two
+pure-C++ helpers (`JsonUtils` gtest, `CompositionCursor`) built with mingw g++.
+Counting `run_native` call sites comes out at 15: the tracker check is dispatched
+inline (`write_step` plus its own `pass`/`fail`, so its exit 125 can read as
+"no .scratch" rather than a failure), so it is not one of those calls.
+
+A run reads this script as it goes: leave `tests/verify_windows.sh` untouched while
+a background run is still going, or run a copy. A failing layer keeps its output
+under `.tools/.run/` rather than deleting it, so the traceback is there to read
+without rerunning the step.
+
+Narrowing the Python layer to one file on the shipped interpreter needs
+`discover`: `python/python3/python.exe` is an embedded distribution whose
+`python3*._pth` pins `sys.path` to the interpreter directory and ignores
+`PYTHONPATH`, so `python/python3/python.exe -m unittest tests.test_x` fails with
+`No module named tests`, and dropping a package marker into the `tests` directory
+is not the fix. What works from the repo root:
+
+```
+python/python3/python.exe -m unittest discover -s tests -p "test_x.py" -v
+```
+
+Passing the dotted name to `discover` is not needed — the `-p` pattern is the
+selector, and it is the same interpreter and the same tests the umbrella runs.
+
+Two tracked trees are vendored third-party code and make a repo-wide search time
+out before it reaches anything you wrote: `python/python3/` (the bundled
+interpreter plus its `site-packages`) and `node/`. Name the trees you actually want
+— `python/cinbase`, `python/input_methods`, `PIMETextService`, `libIME2`,
+`go-backend`, `PIMELauncher`, `tests`, `docs`, `installer` — and a whole-tree grep
+is unnecessary; `.tools/` is excluded through `.git/info/exclude`, so a search that
+does reach it is looking for a toolchain you are not supposed to edit anyway.
+
+Commits on this checkout also pass a pre-commit gate that runs the Python backend
+suite on the shipped interpreter: a ~25 s commit, because the gate skips the
+suite's slow layer — regenerating every committed cinbase table through the
+converter, ~3 min — unless a staged path touches `python/cinbase/cin|json|tools`
+or the check itself, in which case the commit takes ~3½ min.
+It skips by exporting `PIME_SKIP_TABLE_REGEN=1`, which only
+`tests/test_cinbase_tables.py` honours; `tests/verify_windows.sh` never sets it,
+so the full gate always regenerates. The gate is versioned at
 `tests/hooks/pre-commit`; recreate it with
 `cp tests/hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit`.
+A manual `unittest discover` inherits that variable from whatever shell you typed
+it in, and the suite reports the difference only as one extra skip in its
+`OK (skipped=N)` line. So a `Validation` line names the skip count it actually
+observed, and a commit touching a cinbase table or the converter is claimed green
+only after a run with the variable explicitly unset.
 Product worktrees skip it (they carry no `tests/`), and
 `git commit --no-verify` carries a deliberately mid-refactor commit that the
 next commit makes green.

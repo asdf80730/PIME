@@ -28,7 +28,14 @@ if [[ ! -x "$MAKENSIS" ]]; then
 fi
 
 echo "=== Staging the installer payload ==="
-cmd.exe //c "call $(cygpath -w "$ROOT/tests/stage_installer.bat")"
+# Exec the batch file directly. Invoking it as `cmd.exe //c "call ...bat"` from
+# inside a shell script does not run it: cmd opens interactively, reads EOF and
+# exits 0, so `set -e` cannot see the failure, staging silently does nothing,
+# and makensis then builds whatever stale tree .tools/stage already held --
+# including a PIME-*-setup.exe from an earlier run, which the check below would
+# happily report as this build's output. MSYS launches a .bat and propagates its
+# exit code, which is what tests/verify_windows.sh relies on.
+"$ROOT/tests/stage_installer.bat"
 
 echo
 echo "=== Running makensis ==="

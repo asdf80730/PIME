@@ -113,6 +113,34 @@ class AgentDocTests(unittest.TestCase):
                     any(os.path.basename(reference) == name for reference in named),
                     f"AGENTS.md does not reference docs/agents/{name}")
 
+    def test_glossary_terms_follow_the_format(self):
+        """GLOSSARY.md is a glossary: every term is **Term**: + definition + _Avoid_."""
+        path = os.path.join(ROOT, "GLOSSARY.md")
+        if not os.path.isfile(path):
+            self.skipTest("no GLOSSARY.md yet")
+        with open(path, encoding="utf-8") as glossary:
+            lines = glossary.read().splitlines()
+        term = None
+        for number, line in enumerate(lines, start=1):
+            if line.startswith("**") and line.endswith("**:"):
+                self._require_avoid(term, number)
+                term = (number, line[2:-2], False)
+            elif line.startswith("_Avoid_:"):
+                self.assertIsNotNone(
+                    term, f"GLOSSARY.md:{number}: _Avoid_ without a **Term**: header")
+                term = None
+            elif line and not line.startswith(("#", "_", " ")) and term is not None:
+                if not term[2]:
+                    term = (term[0], term[1], True)
+        self._require_avoid(term, len(lines) + 1)
+
+    @staticmethod
+    def _require_avoid(term, seen_at):
+        if term is not None:
+            raise AssertionError(
+                f"GLOSSARY.md:{term[0]}: term {term[1]!r} has no _Avoid_ line "
+                f"before line {seen_at}")
+
 
 if __name__ == "__main__":
     unittest.main()

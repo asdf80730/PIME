@@ -12,6 +12,7 @@ import ctypes
 import errno
 import importlib
 import json
+import os
 import sys
 import traceback
 import types
@@ -55,6 +56,41 @@ BASE_EVENT = {
 }
 
 
+LAUNCHES = []
+
+
+class _BlockedLaunch:
+    """Records a call that would open a window instead of performing it."""
+
+    def __init__(self, path):
+        self._path = path
+
+    def __call__(self, *args, **kwargs):
+        LAUNCHES.append((self._path, tuple(str(arg) for arg in args)))
+        return 0
+
+
+def disarm_launch_surface():
+    """No test may open a browser window or spawn the settings tool.
+
+    Two engine branches reach the desktop: the 語言列選單 items ``os.startfile``
+    a GitHub URL, and 「功能設定」 ``ShellExecuteW``'s ``configtool.py``, which
+    then ``os.startfile``'s the settings page. Neither is guarded by a command
+    type at the call site, so a test that dispatches the wrong numeric id, or
+    presses Space while the `` ` `` menu is still open with the cursor on the
+    first item, used to open real browser tabs on the developer's machine once
+    per suite run and leave a ``configtool`` process behind. Recording keeps the
+    accident inside the process; a test that genuinely means to launch asserts
+    against ``LAUNCHES``.
+    """
+    os.startfile = _BlockedLaunch("os.startfile")
+    for name in ("ShellExecuteW", "ShellExecute"):
+        try:
+            setattr(ctypes.windll.shell32, name, _BlockedLaunch("shell32.%s" % name))
+        except (AttributeError, OSError):
+            pass  # no WinDLL surface here (Linux, or the fakes installed below)
+
+
 class FakeDLL:
     """Returns a no-op for every Win32 function the services call at load time."""
 
@@ -71,15 +107,17 @@ class FakeClient:
 
 def install_windows_shims():
     if sys.platform == "win32":
-        return
-    sys.modules.setdefault(
-        "winsound",
-        types.SimpleNamespace(PlaySound=lambda *args, **kwargs: None, SND_ASYNC=1),
-    )
-    if not hasattr(ctypes, "windll"):
-        ctypes.windll = FakeDLL()
-    if not hasattr(ctypes, "WinDLL"):
-        ctypes.WinDLL = lambda *args, **kwargs: FakeDLL()
+        pass  # the real Win32 surface stays real, apart from what is armed below
+    else:
+        sys.modules.setdefault(
+            "winsound",
+            types.SimpleNamespace(PlaySound=lambda *args, **kwargs: None, SND_ASYNC=1),
+        )
+        if not hasattr(ctypes, "windll"):
+            ctypes.windll = FakeDLL()
+        if not hasattr(ctypes, "WinDLL"):
+            ctypes.WinDLL = lambda *args, **kwargs: FakeDLL()
+    disarm_launch_surface()
 
 
 def opencc_available():
