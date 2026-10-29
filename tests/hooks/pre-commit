@@ -46,10 +46,15 @@ if ! (cd "$root" && bash tests/check_ai_declarations.sh staged); then
     exit 1
 fi
 
-if ! (cd "$root" && "$py" -m unittest discover -s tests -p 'test_*.py' >/dev/null 2>&1); then
-    printf 'pre-commit: Python backend suite failed. Reproduce with:\n' >&2
-    printf '  python/python3/python.exe -m unittest discover -s tests -p "test_*.py" -v\n' >&2
+suite_log="$root/.git/pime-pre-commit-suite.log"
+if ! (cd "$root" && "$py" -m unittest discover -s tests -p 'test_*.py' >"$suite_log" 2>&1); then
+    printf 'pre-commit: Python backend suite failed. Failing tests:\n' >&2
+    grep -E '^(FAIL|ERROR): ' "$suite_log" | head -n 10 >&2
+    printf 'Full log: %s\n' "$suite_log" >&2
+    printf 'Reproduce one file with:\n' >&2
+    printf '  python/python3/python.exe -m unittest discover -s tests -p "test_<name>.py" -v\n' >&2
     printf 'Commit through it with git commit --no-verify only for a deliberately\n' >&2
     printf 'mid-refactor commit that the next commit makes green.\n' >&2
     exit 1
 fi
+rm -f "$suite_log"
