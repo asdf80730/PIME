@@ -77,8 +77,17 @@ The five stroke classes used as input keys for stroke input — 橫、豎、撇�
 _Avoid_: wubi (五筆 refers to the 五筆字型 shape method), five strokes (ambiguous with stroke count)
 
 **Stroke table (筆畫表)**:
-The chardefs mapping every stroke sequence, and every prefix of one, to the characters written with exactly those strokes; the sole table backing the stroke Service.
+The chardefs mapping every stroke sequence, and every prefix of one, to characters: under a
+complete code, the characters whose own sequence is it; under a prefix, those whose sequence
+merely begins with it and still await strokes. The sole table backing the stroke Service.
 _Avoid_: stroke dictionary (a Rime artifact), stroke dict
+
+**Complete code (打完的字)**:
+A character's own full stroke sequence; a candidate is complete at a key when the keys typed are
+exactly its code, so choosing it needs no further stroke. The candidates under a key that are not
+complete still await strokes. Which of the two a candidate is, the typist sees only through its
+position in the key's candidate set.
+_Avoid_: exact match, finished character, longest code (full-code tier in ADR 0002 is a different thing)
 
 **Table holder (碼表承載器)**:
 The in-process copy of a table that every instance of a Service shares, together with whether a load of

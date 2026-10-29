@@ -193,6 +193,33 @@ COLLIDING_MAPPINGS = {
     ],
 }
 
+# Where a character is finished and where it merely passes through is the fact
+# candidate order has to carry: a chardef line holds a key and a character and nothing
+# else.  一 finishes at the single 橫, 打 passes through it on the way to five strokes,
+# and the CJK Ext-A character here (invented字碼, real plane) finishes at that same
+# first stroke.  Tier and code point order both bury it; the typist's first page must not.
+COMPLETE_FIRST_CNS = "9-0010"
+COMPLETE_FIRST_STROKES = COMMON_CNS + [(COMPLETE_FIRST_CNS, "1")]
+COMPLETE_FIRST_MAPPINGS = {
+    "CNS2UNICODE_Unicode BMP.txt":
+        COMMON_MAPPINGS["CNS2UNICODE_Unicode BMP.txt"] + [(COMPLETE_FIRST_CNS, "3405")],
+}
+
+# One character, two字碼 — a shape the shipped data does not contain. Measured over the
+# pinned 20260805 join the generator itself reads: 104,680 rows over 104,680 distinct
+# code points, none reached by a second 字碼, so no character arrives through two stroke
+# orders today and file()'s shortest-wins fold is inert on the shipped table. It is the
+# fold a release that introduces variant encodings needs, and this fixture is the only
+# thing that exercises it: 一 keeps its real one-stroke code and gains an invented
+# three-stroke one, both passing through the single 橫 where the shorter code decides
+# that the character is finished.
+ONE_CHAR_EXTRA_CNS = "9-0011"
+ONE_CHAR_STROKES = COMMON_CNS + [(ONE_CHAR_EXTRA_CNS, "111")]
+ONE_CHAR_MAPPINGS = {
+    "CNS2UNICODE_Unicode BMP.txt":
+        COMMON_MAPPINGS["CNS2UNICODE_Unicode BMP.txt"] + [(ONE_CHAR_EXTRA_CNS, "4E00")],
+}
+
 
 # 卄 (U+5344) encodes in Big5 inside charsetRange['big5S'] — the 符號 tier
 # EXCLUDED_TIERS leaves out. Its real CNS字碼 is beside the point: an invented one
@@ -322,6 +349,40 @@ class GeneratorSeamTests(unittest.TestCase):
             cin = generate(fixture)
         _heads, _keynames, chardefs = parse_cin(cin)
         self.assertEqual(chardefs.get("hhh"), ["打", "万", "㐅"])
+
+    def test_a_character_finished_at_a_key_leads_that_key(self):
+        """Completeness outranks the ladder; the ladder orders within each group.
+
+        一 (Big5 常用) and 㐅 (CJK Ext-A) are both finished at the single 橫, while
+        二 十 打 merely pass through it on their way to two and five strokes.  The
+        ladder alone put the Ext-A character last — behind 打, which still needs four
+        more strokes — so the first page after one stroke would offer nothing the
+        typist can pick.  test_common_plane_candidates_come_first_within_a_key holds
+        the other half: characters equally complete keep the ladder's order.
+        """
+        with StrokeCinFixture(COMPLETE_FIRST_STROKES, COMPLETE_FIRST_MAPPINGS) as fixture:
+            cin = generate(fixture)
+        _heads, _keynames, chardefs = parse_cin(cin)
+        self.assertEqual(chardefs.get("h"), ["一", "㐅", "二", "十", "打"])
+        self.assertEqual(chardefs.get("hzhhz"), ["打"],
+                         "the fixture's five-stroke character no longer completes its own key")
+
+    def test_a_second_code_cannot_unfinish_a_character(self):
+        """Two字碼 for one character: the shorter code decides where it is finished.
+
+        一 is filed under the single 橫 by its real code and reaches the same key as a
+        prefix of the invented three-stroke one.  Recording the longer length there
+        would rank it behind 二 and 十, which still need a stroke apiece.  No character
+        of the shipped table has two codes (the pinned join is 1:1, see the fixture), so
+        this rule is exercised nowhere else.
+        """
+        with StrokeCinFixture(ONE_CHAR_STROKES, ONE_CHAR_MAPPINGS) as fixture:
+            cin = generate(fixture)
+        _heads, _keynames, chardefs = parse_cin(cin)
+        self.assertEqual(chardefs.get("h"), ["一", "二", "十", "打"])
+        self.assertIn("一", chardefs.get("hhh", []),
+                      "the second code no longer reaches a key of its own; the "
+                      "fixture has stopped exercising two codes for one character")
 
     def test_attribution_exhibit_ships_in_the_generated_header(self):
         """The OGDL-1.0 顯名聲明 is present, and stays a comment block.
@@ -587,6 +648,57 @@ class ShippedStrokeTableTests(unittest.TestCase):
             self.assertEqual(runtime[key], candidates,
                              "candidate order of key %r differs between the "
                              "committed .cin and the runtime .json" % key)
+
+    def test_committed_keys_lead_with_the_characters_they_complete(self):
+        """The shipped list puts what you can pick now before what still needs strokes.
+
+        Prefix expansion (ADR 0002) mixes every longer code into a key's list, and a
+        chardef line carries no stroke count, so position is the only channel the fact
+        has.  A character's own stroke count needs no CNS inputs to read back off the
+        artifact: every prefix of its code is a key, so the longest key it appears
+        under is its complete code — the converse of that, that nothing else it appears
+        under is longer than a prefix of it, is asserted below rather than assumed.
+        Before this ordering shipped, typing 橫豎 opened
+        on characters all needing a third stroke with 十 — complete at two — at index
+        33 of 1,684; 2,301 keys interleaved the two groups, and 217 keys of length 2
+        or more put their first complete character past the Service's 9-candidate
+        page (config.json's candPerPage).
+        """
+        longest_key = {}
+        for key, candidates in self.chardefs.items():
+            for char in candidates:
+                if len(key) > len(longest_key.get(char, "")):
+                    longest_key[char] = key
+        # The predicate below reads completeness off position, which is only sound while
+        # every key a character sits under is a prefix of its longest one. A release that
+        # mapped one code point through two different stroke orders would break that and
+        # label a finished character as still awaiting strokes, so the property is
+        # asserted here; weakening it has to be a deliberate edit to this line.
+        off_chain = {}
+        for key, candidates in self.chardefs.items():
+            for char in candidates:
+                if not longest_key[char].startswith(key):
+                    off_chain.setdefault(char, (key, longest_key[char]))
+        self.assertEqual(off_chain, {},
+                         "%d characters sit under a key that is not a prefix of their "
+                         "longest one, e.g. %r; the completeness check below assumes the "
+                         "prefix chain and must be rethought with it"
+                         % (len(off_chain), next(iter(off_chain.items()), None)))
+        complete_length = {char: len(key) for char, key in longest_key.items()}
+        interleaved = {}
+        for key, candidates in self.chardefs.items():
+            complete = [index for index, char in enumerate(candidates)
+                        if complete_length[char] == len(key)]
+            longer = [index for index, char in enumerate(candidates)
+                      if complete_length[char] > len(key)]
+            if complete and longer and max(complete) > min(longer):
+                interleaved[key] = (max(complete), min(longer))
+        self.assertEqual(interleaved, {},
+                         "%d keys bury a complete character behind one still awaiting "
+                         "strokes, worst first: %s"
+                         % (len(interleaved), sorted(interleaved.items())[:5]))
+        self.assertEqual(self.chardefs["hs"][0], "十",
+                         "the two-stroke 十 no longer leads the list its own code opens")
 
     def test_no_committed_character_is_big5_symbol_plane(self):
         """The excluded tier stayed out of the table that ships.
