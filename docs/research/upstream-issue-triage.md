@@ -8,6 +8,11 @@ retained as that snapshot; every state and every "still present" claim was re-ch
 (`git cat-file -t origin/master:docs` fails); this checkout's `master` carries local-only tests and
 `docs/`.
 
+This note ranks candidates in the recent window. For the full census of all 239 open
+`bug`-labeled issues — age structure, per-issue verdicts, the 20 source-fixable defects —
+see [upstream-bug-backlog-2026-10.md](upstream-bug-backlog-2026-10.md) (snapshot 2026-10-29,
+`upstream/master` = `3697f88`).
+
 Scope at the 2026-10-20 snapshot: all 351 open issues and the 18 open PRs in EasyIME/PIME, plus
 every issue closed after 2026-07-20 (90 days), with a per-issue adjudication of the 14 issues PCMan
 filed on 2026-10-17/18. "Suitable" here means: unclaimed (no open PR doing the same work), small,
