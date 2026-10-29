@@ -28,6 +28,7 @@ import unittest
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 NODE = os.path.join(ROOT, "node", "node.exe")
 CINBASE_CONFIG_JS = os.path.join(ROOT, "python", "cinbase", "config", "js", "config.js")
+CHEWING_PHRASE_JS = os.path.join(ROOT, "python", "input_methods", "chewing", "js", "user_phrase.js")
 INPUT_METHODS_DIR = os.path.join(ROOT, "python", "input_methods")
 
 TIMEOUT_SECONDS = 60
@@ -46,7 +47,7 @@ def service_config_scripts():
 
 
 def settings_scripts():
-    return [CINBASE_CONFIG_JS] + service_config_scripts()
+    return [CINBASE_CONFIG_JS, CHEWING_PHRASE_JS] + service_config_scripts()
 
 
 class SettingsScriptParseTests(unittest.TestCase):
