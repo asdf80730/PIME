@@ -75,8 +75,9 @@ expect() {
     fi
 }
 
-# 1. Integration branch names skip, whatever the checkout looks like.
+# 1. Integration and local record branch names skip, whatever the checkout looks like.
 expect 125 'integration branch name skips' "$root" local/linux-master
+expect 125 'local record branch skips' "$root" local/stroke-parked
 
 # 2. Detached HEAD with no argument is not applicable, not a silent pass.
 git worktree add --detach "$work_detached" HEAD >/dev/null 2>&1
