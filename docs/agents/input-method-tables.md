@@ -39,6 +39,13 @@ python/python3/python.exe python/cinbase/tools/cnsstroke2cin.py \
 python/python3/python.exe python/cinbase/tools/cintojson.py CnsStroke.cin
 ```
 
+The tree the shipped table was built from is kept unzipped at
+`C:\Users\<user>\cns11643-opendata\` — `Properties\CNS_strokes_sequence.txt` plus
+`MapingTables\Unicode\CNS2UNICODE_Unicode*.txt`. Pass Windows-form paths: the bundled
+interpreter resolves a POSIX `/c/...` argument against `C:\c`. Before concluding the
+inputs are unavailable, look here and check `release.txt` against the version the
+`.cin` header quotes — the live release moves ahead of the pinned one.
+
 - `--release` is not decoration: the release version is quoted inside the
   OGDL-1.0 顯名聲明 that the data licence requires, which the generator writes
   into the `.cin` header and — as

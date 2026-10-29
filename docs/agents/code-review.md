@@ -51,6 +51,16 @@ a prefix belong to 4,734 rare-plane-only characters". The shipped table measures
 unrelated probe, and only a reviewer re-running the query over the committed
 `.cin` caught it.
 
+Reading a *name* is not measuring, even when the command runs. Round 2's scan
+recorded this mislabel's blast radius as "0 characters in the shipped table": it
+counted characters filed under the tier name, and the 符號 branch files by one name
+while answering another, so that name never appears in the artifact. Two more rounds
+passed before a probe counted `chardef` lines and found one character shipping at
+three prefixes, offered by a single keypress. An impact number must name the
+observable the user receives — the committed artifact, the settings page, the
+candidate list — and a claim of *zero* impact carries both the command and what that
+command inspects.
+
 ## Judge an AI header by the file's category
 
 `AGENTS.md` §4 grades a new file's header by its **category**: a script, a lookup
@@ -85,3 +95,15 @@ code actually sits — re-derived from that file, not remembered from a neighbou
 reading. One review placed `self.cbTS.cin.__del__()` at
 `python/cinbase/__init__.py:3298-3299`; the call is at `:3297`, and the wrong pair
 had already reached the round record before a grep corrected it.
+
+## A comment that documents a divergence is a finding
+
+`X says A although the code does B` is not an accepted state; it is a defect with a
+paper trail. Treat it as a finding and ask for the decision record that tolerates
+it. Three scan rounds of the Stroke table read *"big5S is listed although getCharSet
+presently answers big5LF"* in `python/cinbase/tools/cnsstroke2cin.py` and let it
+stand: the comment reads as a known upstream limitation, no ADR recorded it, and no
+test covered what it conceded — so the exclusion it described was inert while every
+review treated it as settled. Accept the divergence only when a record names the
+reason; otherwise the comment is the one thing the next agent trusts and nothing
+asserts.
