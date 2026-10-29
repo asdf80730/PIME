@@ -36,8 +36,12 @@ RUN_DIR="$TOOLS/.run"
 failures=0
 passed=0
 
-pass() { printf 'PASS  %s\n' "$1"; passed=$((passed + 1)); }
-fail() { printf 'FAIL  %s\n' "$1"; failures=$((failures + 1)); }
+# What a layer just cost, so the run itself is the source for the cost figures
+# a doc would otherwise carry by hand (docs/agents/verification.md).
+step_start=$SECONDS
+
+pass() { printf 'PASS  %s (%ds)\n' "$1" "$((SECONDS - step_start))"; passed=$((passed + 1)); }
+fail() { printf 'FAIL  %s (%ds)\n' "$1" "$((SECONDS - step_start))"; failures=$((failures + 1)); }
 
 mkdir -p "$RUN_DIR"
 
@@ -82,6 +86,7 @@ write_step() {
 run_native() {
 	local label="$1"
 	shift
+	step_start=$SECONDS
 	write_step "$*"
 	if "$RUN_DIR/step.bat" >"$RUN_DIR/step.log" 2>&1; then
 		pass "$label"
@@ -96,6 +101,7 @@ run_native() {
 run_native_verbose() {
 	local label="$1"
 	shift
+	step_start=$SECONDS
 	write_step "$*"
 	local log rc
 	log=$("$RUN_DIR/step.bat" 2>&1)
@@ -144,6 +150,7 @@ run_native 'AI declaration self-test' \
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
 # "no .scratch here", which is not a failure.
+step_start=$SECONDS
 write_step 'bash.exe tests/check_tracker_layout.sh'
 if "$RUN_DIR/step.bat" >"$RUN_DIR/step.log" 2>&1; then
 	pass 'Local issue tracker layout'

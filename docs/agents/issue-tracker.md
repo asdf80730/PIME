@@ -15,6 +15,24 @@ Issues are not used as our work tracker. Tickets stay local to the checkout.
 - Non-feature holdings (rescued WIP, snapshots) live in `.scratch/<name>/` carrying an
   `ARCHIVE.md` that records the origin and restore target; the layout check skips those
 
+## Parking an effort
+
+When the maintainer parks a feature — the code stays on a branch, nothing is pushed —
+the records travel with it, and a branch switch is the moment they go missing: the
+branch tracks them, so checking out any other branch deletes the directory.
+
+- Commit the directory onto the branch that carries the feature: `git add -f` it there.
+  `.scratch/` is excluded from git, so plain `git add` reaches nothing.
+- Carry `ARCHIVE.md` in the directory: the branch, what the directory holds, and the
+  restore command. The layout check skips a directory carrying it, which is what keeps
+  a half-restored one from failing the gate.
+- Restore after switching back with
+  `git archive <branch> .scratch/<feature-slug> | tar -x`, then re-run
+  `bash tests/check_tracker_layout.sh` before calling the gate green.
+
+Done when the parked branch holds the records, and this checkout's
+`.scratch/<feature-slug>/` either holds them or carries `ARCHIVE.md`.
+
 ## When a skill says "publish to the issue tracker"
 
 Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).

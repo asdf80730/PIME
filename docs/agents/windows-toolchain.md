@@ -15,6 +15,13 @@ The toolchain is installed **inside the checkout**, under `.tools/`:
 so it stays out of every commit. Deleting the directory restores the machine's
 previous state exactly.
 
+A **linked worktree** carries no `.tools/`, so resolve that path from the main checkout
+when a command needs it. To run one vendored tool, use
+`bash tests/run_windows_tool.sh [<subdir>] '<command>'`: Git Bash cannot exec
+`.tools/**/*.exe` directly — rc 127 whichever way the path is spelled — and the script
+is what hands the program a Windows-form `PATH`. `write_step` in
+`tests/verify_windows.sh` is the same shape.
+
 ## Install
 
 ```

@@ -235,10 +235,11 @@ is unnecessary; `.tools/` is excluded through `.git/info/exclude`, so a search t
 does reach it is looking for a toolchain you are not supposed to edit anyway.
 
 Commits on this checkout also pass a pre-commit gate that runs the Python backend
-suite on the shipped interpreter: a ~25 s commit, because the gate skips the
-suite's slow layer — regenerating every committed cinbase table through the
-converter, ~3 min — unless a staged path touches `python/cinbase/cin|json|tools`
-or the check itself, in which case the commit takes ~3½ min.
+suite on the shipped interpreter, skipping the suite's slow layer — regenerating
+every committed cinbase table through the converter — unless a staged path touches
+`python/cinbase/cin|json|tools` or the check itself, which is the case that pays
+for it. `tests/verify_windows.sh` prints the seconds each layer took; quote that
+line rather than a figure copied into a doc.
 It skips by exporting `PIME_SKIP_TABLE_REGEN=1`, which only
 `tests/test_cinbase_tables.py` honours; `tests/verify_windows.sh` never sets it,
 so the full gate always regenerates. The gate is versioned at
