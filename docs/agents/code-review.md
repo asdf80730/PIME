@@ -107,3 +107,30 @@ test covered what it conceded — so the exclusion it described was inert while 
 review treated it as settled. Accept the divergence only when a record names the
 reason; otherwise the comment is the one thing the next agent trusts and nothing
 asserts.
+
+## A claim about the input data needs the measurement over it
+
+What the code says is one thing; what a comment or a record says about the *data* the
+code reads carries the same duty. `Because X does Y, this code handles it` either names
+the file, the loader and what was counted, or it is `[INFERENCE]` and gets said so.
+Round 5 shipped a code comment, a record paragraph and a commit-message draft all
+asserting that CNS carries variant encodings, so one character arrives through two
+stroke orders — the stated reason `file()` keeps the shortest of two. Measured over the
+pinned release with the generator's own loaders, 104,680 join rows give 104,680 distinct
+code points and no code point is reached by a second 字碼: the case never occurs in
+anything the product ships, the fold is defensive, and three artifacts had been read as
+justifying code that is load-bearing. A reviewer that measures the inputs can tell the
+two apart; one that trusts the prose cannot, and the next agent keeps the code believing
+the prose.
+
+## A mutation earns its place by naming what it reddened
+
+``Eight mutations were run`` proves nothing; the assertion each one reddened is the
+proof, so demand the pair — mutation, reddened test — and score a mutation with no red
+as absence of evidence rather than as a check that passed. Round 5's harness files a
+character under a key it is not a prefix of, to show the artifact test guards that chain;
+the first attempt *moved* the chardef line instead of adding a second filing, so the
+character kept one key, the chain held trivially, and it reported green in a column of
+reds that meant something. Its harness aborts when a pattern does not match exactly
+once, which is not the same as the mutation biting: a toothless mutation reads as
+coverage, and nobody re-tests the assertion it appears to guard.
