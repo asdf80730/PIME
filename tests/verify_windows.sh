@@ -147,6 +147,11 @@ run_native 'PR scope gate self-test' \
 run_native 'AI declaration self-test' \
 	'bash.exe tests/check_ai_declarations_test.sh'
 
+# The worktree driver decides what code a PR review's test run exercises,
+# so its discovery form and abort contract get the same pinning.
+run_native 'Worktree test driver self-test' \
+	'bash.exe tests/run_worktree_tests_test.sh'
+
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
 # "no .scratch here", which is not a failure.

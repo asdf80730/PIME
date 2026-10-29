@@ -21,6 +21,9 @@ if not os.path.isdir(wp):
 sys.path.insert(0, root)
 sys.path.insert(0, os.path.join(root, 'tests'))
 sys.path.insert(0, wp)
+# A test can live only in the worktree (one the PR itself ships); discover it
+# from its own directory so that invocation binds too.
+sys.path.insert(0, os.path.dirname(test_file))
 # Test modules re-insert the integration python/ at position 0 on import, so
 # cinbase must already sit in sys.modules from the worktree by then.
 # The shipped interpreter's _pth also reaches the integration python/, so
