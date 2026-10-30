@@ -211,10 +211,12 @@ inline (`write_step` plus its own `pass`/`fail`, so its exit 125 can read as
 `tests/test_agent_docs.py` resolves every backticked or linked token ending in md, sh,
 py, yaml, yml, nsi or ns inside `AGENTS.md` and `docs/agents/*.md` against the doc's
 own directory, the repo root and the source roots, and fails when `AGENTS.md` leaves a
-file under `docs/agents/` unnamed. Nothing in the gate runs it, so deleting or renaming
-a file those docs cite is only caught if the same change runs
-`python/python3/python.exe -m unittest discover -s tests -p test_agent_docs.py` — do it
-before the stale doc reaches a reviewer, not after.
+file under `docs/agents/` unnamed. The bundled-`python.exe` layer runs it as part of
+its `discover -s tests -p test_*.py` sweep (as does the pre-commit hook), so a stale
+doc citation reddens the everyday gate; the narrow run
+`python/python3/python.exe -m unittest discover -s tests -p test_agent_docs.py` is the
+fast loop while editing the docs themselves — do it before the stale doc reaches a
+reviewer, not after.
 
 **The scope self-test's throwaway refs are not sediment.** While `bash
 tests/verify_windows.sh` runs, `git branch` and `git worktree list` also show
