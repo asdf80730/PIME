@@ -88,6 +88,17 @@ and hand the compare URL plus body to the human.
   paths (`docs/agents/`, `GLOSSARY.md`, `.scratch/`). Push only after it
   prints `PASS`; recover with `git rebase --onto <product-base> <base>` or a fresh
   worktree plus cherry-picks.
+- Cut the branch and lift the product commits in one motion:
+  `git worktree add -q -b pr/<topic> .worktrees/<topic> <product>/master` (`-q` keeps the
+  800-line checkout progress out of the transcript), then `git cherry-pick -n <sha>` per
+  commit and `git rm -f <path>` for every harness path the pick staged, then `git commit`.
+  A harness file upstream never carried conflicts as **deleted in HEAD**, and `git rm` is
+  the resolution; `git cherry-pick` returns non-zero for that conflict, so do not chain
+  the cleanup behind `&&`. Write the message yourself (`git commit -F <file>`): a
+  `git commit -C <local-sha>` inherits the integration message, which describes the test
+  and parse-check work the branch deliberately does not carry, and
+  `tests/check_pr_commit_claims.sh <branch>` fails it for exactly that — run it next to
+  `check_pr_scope.sh` before the push.
 - Before any push to the fork — branch or PR — run
   `tests/check_fork_ci_noise.sh <branch>`: the pushed tree's own workflow files
   decide what GitHub runs, so refs cut before the ci.yaml hardening mail the
@@ -113,8 +124,11 @@ and hand the compare URL plus body to the human.
   question for a fix no human input touched at all. Do
   not write the pre-#996 one-liner (`Generated with assistance from …`) on a new PR.
 - The first workflow run from a fork PR sits in `action_required` until a maintainer
-  approves it. Check `gh api repos/EasyIME/PIME/commits/<sha>/check-runs` before claiming
-  CI evidence, and ask for the approval in the PR conversation.
+  approves it. The API calls that state `"status": "queued"`, so the tell for a held run
+  rather than a running one is `jobs: 0` from
+  `gh api repos/EasyIME/PIME/actions/runs/<id>`. Check
+  `gh api repos/EasyIME/PIME/commits/<sha>/check-runs` before claiming CI evidence, and
+  ask for the approval in the PR conversation.
 - Write each `Validation:` line only after its run is green on the exact tree being
   committed: run `tests/verify_windows.sh` first, then compose the commit message.
   A green claim written before the run is credit taken before the sale; if the run
@@ -134,8 +148,12 @@ and hand the compare URL plus body to the human.
   `gh api repos/EasyIME/PIME/issues/<n>/comments`.
   Check the body gate after writing the body: `bash tests/check_pr_bodies.sh` on this
   box (both `tests/verify_windows.sh` and `tests/run_local_tests.sh` carry the step;
-  `bash tests/check_pr_bodies_test.sh` pins its contract). A body kept outside
-  `.scratch` is judged without moving it: `PR_BODY=<path> bash tests/check_pr_bodies.sh`.
+  `bash tests/check_pr_bodies_test.sh` pins its contract). It reads more than the
+  declaration: a paragraph emitted twice fails, and so does a `Validation:` line citing
+  a path no tree or ref carries — the artefacts of a hand-edited draft and of a claim
+  written before its run. `PR_BODY_SKIP_PATHS=1` waives the path rule for a path this
+  branch deletes. A body kept outside `.scratch` is judged without moving it:
+  `PR_BODY=<path> bash tests/check_pr_bodies.sh`.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
 
