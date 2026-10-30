@@ -158,6 +158,19 @@ nothing was removed — a reviewer that accepted the analogy would have blessed
 the success-default it was reviewing. The measured userphrase table lives in
 `docs/agents/chewing-api.md`.
 
+
+## A test that reads real OS state pins it at every read site
+
+When an assertion depends on desktop state (`GetKeyState`, `GetAsyncKeyState`,
+the clipboard), the pin must cover every site the product code reads it from,
+activation included. Worked example: cinbase's `onActivate` copies the real
+`GetKeyState(VK_CAPITAL)` into `capsStates`, while the small-letter test
+patched `CinBase.getKeyState` only around the keystroke — with the physical
+CapsLock on, activation cached True first and `'h'` came back `'H'`, red only
+on days the shared desktop had CapsLock on. The fixed test builds the service
+inside the patched window; the reviewer's check is that the patch covers every
+read site, not just the obvious one.
+
 ## The standing rules: the fork's upstream prose, verbatim
 
 §2–§4 of the agent rules upstream added to `AGENTS.md` in commit `487cb45`

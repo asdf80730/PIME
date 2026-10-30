@@ -186,6 +186,12 @@ entry point, replace only that entry point: replacing all of `ctypes.windll` mak
 `ime_smoke_runner.under_wine()` find `wine_get_version` on the fake and report Wine,
 which silently skips every Service-level test and turns a green run into no run.
 
+The shared machine's desktop state is a run input: when a cinbase behaviour
+test disagrees between runs, read the toggle state before chasing logic —
+`python/python3/python.exe -c "import ctypes; print(bool(ctypes.WinDLL('User32.dll').GetKeyState(0x14) & 1))"`
+for CapsLock (0x14). Tests pin such reads at every site; the reviewer rule is
+in `docs/agents/code-review.md`.
+
 A test comment that names what would turn the test red is a verification claim too,
 and it needs the same proof as a `Validation:` line: delete the guard the comment
 points at, watch the test fail, put it back. A comment can describe a race the test
