@@ -152,6 +152,14 @@ run_native 'AI declaration self-test' \
 run_native 'Worktree test driver self-test' \
 	'bash.exe tests/run_worktree_tests_test.sh'
 
+# The tracker is git-excluded, so a .scratch/ citation committed into shipped
+# or executed code is a dead link on every fresh clone; the gate scans the
+# code tree and its self-test pins the allowlist boundary.
+run_native 'Tracked code cites no .scratch/' \
+	'bash.exe tests/check_scratch_refs.sh'
+run_native 'Scratch-ref gate self-test' \
+	'bash.exe tests/check_scratch_refs_test.sh'
+
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
 # "no .scratch here", which is not a failure.
