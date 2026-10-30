@@ -113,7 +113,7 @@ return table.
 Python, Node, Go tests plus Windows cross-build, C++ helpers, Rust tests/fmt/clippy
 under Wine) and skips missing toolchains. C++/TSF and installer changes still need
 Windows CI. On a Windows checkout the same layers run natively through
-`tests/verify_windows.sh` (toolchain under `.tools/`, installed by
+`bash tests/verify_windows.sh` (direct exec dies rc 193; toolchain under `.tools/`, installed by
 `tests/install_windows_toolchain.sh`, excluded locally). See
 `docs/agents/verification.md`, `docs/agents/windows-toolchain.md`, the Wine
 path in `docs/agents/wine.md`, and the issue-triage labels in
