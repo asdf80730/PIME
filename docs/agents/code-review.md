@@ -123,6 +123,16 @@ justifying code that is load-bearing. A reviewer that measures the inputs can te
 two apart; one that trusts the prose cannot, and the next agent keeps the code believing
 the prose.
 
+## A regeneration-drift claim runs the generator
+
+That a generated artifact drifted from its source — keys reordered, entries reshuffled,
+counters off — is settled by running the committed generator over the source and
+byte-comparing the output. For cinbase pairs the repo's sync test already does exactly
+this (`tests/test_cinbase_tables.py` names `python/cinbase/tools/cintojson.py`), so the review's cheapest
+move is running the tool or quoting that test. A drift claim the review did not run
+stays `[INFERENCE]`: an imagined drift costs implementation measurement rounds to
+refute.
+
 ## A mutation earns its place by naming what it reddened
 
 ``Eight mutations were run`` proves nothing; the assertion each one reddened is the
