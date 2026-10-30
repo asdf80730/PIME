@@ -78,6 +78,12 @@ components actually spell, the references are:
   (https://raw.githubusercontent.com/solomonhuang/gcin/master/data/cj5.cin), decoded with
   `errors='replace'` (stray bytes). gcin's `cj.cin` is Big5-only: it answers nothing
   about the extension planes.
+- **簡五 (`simplex5`) codes are two keys: the character's full 第五代 code's
+  first and last key.** Only the first key carries radical information, and a
+  character's bucket is derived, never copied: 㤘's full code 心弓尸一 files it
+  at `pm` with its 忄 siblings, not beside any `qn…` bucket. Before auditing
+  this table, re-derive — compare each two-key line against the character's
+  codes in `cj5.cin`.
 - **字典 倉頡 fields are not authority.** The dictionary pages (zidian.kxue.com, zdic's
   仓颉 field) carry special cases — the #390 `qnsm 㤘` entry traces to exactly one. Settle
   component position with Unihan plus the two code sources. zdic's page still supplies
