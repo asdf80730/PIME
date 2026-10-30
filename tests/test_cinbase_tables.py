@@ -187,5 +187,48 @@ class CheCjWrongRadicalCodesTests(unittest.TestCase):
         self.assertIn("㤘", self.chardefs.get("pnsm", []))
 
 
+class CjSiblingsWrongRadicalCodesTests(unittest.TestCase):
+    """Ticket 23 (follow-up to upstream #390, fixed for 酷倉 by ticket 08):
+    the same 忄-radical 㤘 (U+3918, Unihan kRSUnicode 61.5) also shipped
+    under a 手-root-key code in the sibling Cangjie tables of the same
+    第五代倉頡 lineage. cnscj.cin (CNS official 倉頡) codes it 心弓尸一
+    only, so no table may offer it under 手:
+
+      cj5     㤘 sat under qnsm alone — moved to pnsm, the CNS code
+      thcj    qnsm dropped; pnsm already carried it
+      newcj3  qnsm dropped; pnsm already carried it
+      simplex5 (two-key first+last scheme) sat under qm — moved to pm,
+              the bucket its full code pnsm derives to
+
+    Same seam as CheCjWrongRadicalCodesTests: the committed runtime JSON
+    the engine loads, kept honest against cin/*.cin by the sync tests above.
+    """
+
+    # (json name, 手-key code that must drop 㤘, 忄 code that must offer it)
+    SIBLING_TABLES = [
+        ("cj5.json", "qnsm", "pnsm"),
+        ("thcj.json", "qnsm", "pnsm"),
+        ("newcj3.json", "qnsm", "pnsm"),
+        ("simplex5.json", "qm", "pm"),
+    ]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.chardefs = {
+            name: load_json(name)["chardefs"]
+            for name, _, _ in cls.SIBLING_TABLES}
+
+    def test_hand_key_does_not_offer_the_heart_radical_character(self):
+        for name, wrong, _ in self.SIBLING_TABLES:
+            with self.subTest(table=name, code=wrong):
+                self.assertNotIn("㤘", self.chardefs[name].get(wrong, []))
+
+    def test_heart_code_still_offers_the_character(self):
+        # Guards against "fixing" the tables by deleting the character.
+        for name, _, right in self.SIBLING_TABLES:
+            with self.subTest(table=name, code=right):
+                self.assertIn("㤘", self.chardefs[name].get(right, []))
+
+
 if __name__ == "__main__":
     unittest.main()
