@@ -72,6 +72,9 @@ Windows CI. On a Windows checkout the same layers run natively through
 `docs/agents/verification.md`, `docs/agents/windows-toolchain.md`, the Wine
 path in `docs/agents/wine.md`, and the issue-triage labels in
 `docs/agents/triage-labels.md`.
+Narrow a Python run to one test file with the command in
+`docs/agents/verification.md`; the bundled interpreter is an embedded
+distribution, so plain `-m unittest tests.test_x` fails there.
 
 ### Upstream PRs
 
