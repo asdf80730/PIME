@@ -1,0 +1,4 @@
+# Linked worktrees live here (docs/agents/shared-checkout.md). Each entry is
+# a full checkout, so track only this file and ignore every tree below it.
+*
+!/.gitignore

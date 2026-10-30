@@ -113,3 +113,10 @@ A second agent works from a Windows 11 machine against the same fork, and the
 Windows-only harness lives there. Read `docs/agents/windows-box.md` before
 pushing any branch to `fork`: one writer per ref, `win/*` is the box's only ref,
 and results are reported against a SHA.
+
+### Shared checkout
+
+Two environments can work this repo at once, asymmetrically: one edits a checkout in
+place, sessions like this one use a worktree off the integration ref. Read
+`docs/agents/shared-checkout.md` before touching a worktree, a shared `HEAD`, or any
+path you did not create.
