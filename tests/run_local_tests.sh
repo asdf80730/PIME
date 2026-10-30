@@ -302,6 +302,16 @@ step 'Scratch-ref gate self-test' "$ROOT/tests/check_scratch_refs_test.sh"
 step 'PR bodies carry the AI declaration' "$ROOT/tests/check_pr_bodies.sh"
 step 'PR body gate self-test' "$ROOT/tests/check_pr_bodies_test.sh"
 
+# Product PR branches carry no tests/, so a commit message carried over by
+# `git commit -C` promises a test the upstream reviewer cannot find. The gate
+# skips (125) on an integration branch; its contract is pinned either way.
+step 'PR commit messages claim only their own diff' "$ROOT/tests/check_pr_commit_claims.sh"
+step 'Commit-claims gate self-test' "$ROOT/tests/check_pr_commit_claims_test.sh"
+# The gate needs a ref to read, so it runs at delivery time; the contract that
+# keeps it able to catch the unhardened workflows lives here.
+step 'Fork CI noise gate self-test' "$ROOT/tests/check_fork_ci_noise_test.sh"
+step 'Integration ref candidates' "$ROOT/tests/check_integration_ref.sh"
+
 if command -v shellcheck >/dev/null 2>&1; then
     step 'Harness shell scripts lint' shellcheck_all
 else

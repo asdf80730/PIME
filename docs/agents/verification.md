@@ -18,7 +18,9 @@ Windows path.
 
 One command runs every layer below, skips toolchains the machine lacks, and
 exits nonzero on failure. It also checks that a `pr/*` branch starts at
-`origin/master`; local `master` commits in a product PR fail the run.
+`origin/master`, and that a product commit message promises nothing its own diff does not
+carry (`tests/check_pr_commit_claims.sh`, contract pinned by `tests/check_pr_commit_claims_test.sh`
+next to `tests/check_fork_ci_noise_test.sh`); local `master` commits in a product PR fail the run.
 
 ```
 tests/run_local_tests.sh

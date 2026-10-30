@@ -97,6 +97,25 @@ run_native() {
 	fi
 }
 
+# A gate that answers 125 when the branch it would judge does not live here (the
+# commit-claims gate on an integration branch) is a skip, not a failure — same
+# reasoning as the tracker layer below.
+run_or_skip() {
+	local label="$1"
+	shift
+	step_start=$SECONDS
+	write_step "$*"
+	if "$RUN_DIR/step.bat" >"$RUN_DIR/step.log" 2>&1; then
+		pass "$label"
+	elif [ $? -eq 125 ]; then
+		pass "$label (not applicable)"
+	else
+		fail "$label"
+		tail -n 30 "$RUN_DIR/step.log" | sed 's/^/      /'
+		cp "$RUN_DIR/step.log" "$RUN_DIR/fail-${label//[^A-Za-z0-9]/-}.log"
+	fi
+}
+
 # Same, but keeps the step output visible (for failing or noisy steps).
 run_native_verbose() {
 	local label="$1"
@@ -167,6 +186,28 @@ run_native 'PR bodies carry the AI declaration' \
 	'bash.exe tests/check_pr_bodies.sh'
 run_native 'PR body gate self-test' \
 	'bash.exe tests/check_pr_bodies_test.sh'
+
+# A product PR branch carries no tests/, so a commit message copied from the
+# integration branch by `git commit -C` ends up promising a test the reviewer
+# cannot find. The gate judges the branch under delivery, so here it runs against
+# the current branch and skips on the integration branch; its contract is pinned
+# by the self-test either way.
+run_or_skip 'PR commit messages claim only their own diff' \
+	'bash.exe tests/check_pr_commit_claims.sh'
+run_native 'Commit-claims gate self-test' \
+	'bash.exe tests/check_pr_commit_claims_test.sh'
+
+# Pushing a ref that still carries the unhardened workflows mails the fork owner
+# one failure per push; the gate needs a ref to read, so the gate itself runs at
+# delivery time (docs/agents/upstream-pr.md) and only its contract runs here.
+run_native 'Fork CI noise gate self-test' \
+	'bash.exe tests/check_fork_ci_noise_test.sh'
+
+# Which `local/*` branch is the integration ref is a fact two sessions have got
+# wrong by remembering a name; the report names the candidates every run and never
+# fails (docs/agents/shared-checkout.md).
+run_native 'Integration ref candidates' \
+	'bash.exe tests/check_integration_ref.sh'
 
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
