@@ -154,6 +154,12 @@ else
 	tail -n 15 "$RUN_DIR/step.log" | sed 's/^/      /'
 fi
 
+# The Documents top level must stay free of agent folders: the 2026-10 litter
+# of sibling worktrees came from the old `../<repo>-<agent>` convention, so
+# every linked tree must live under the main checkout's .worktrees/.
+run_native 'Worktrees stay under .worktrees/' \
+	'bash.exe tests/check_worktree_hygiene.sh'
+
 # --- Python ---------------------------------------------------------------
 run_native_verbose 'Python backend tests (bundled python.exe)' \
 	'python\python3\python.exe -m unittest discover -s tests -p test_*.py'
