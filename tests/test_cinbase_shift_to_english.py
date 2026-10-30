@@ -157,15 +157,17 @@ class CinbaseShiftToEnglishTests(CinbaseKeyHarness):
         self.assertEqual(commit, "H")
 
     def test_small_letter_policy_applies_on_switch(self):
-        service = self.activate_chesimplex()
-        service.shiftLetterSwitchToEnglish = True
-        service.outputSmallLetterWithShift = True
-        # Pin CapsLock off: native runs read the real keyboard state.
+        # onActivate reads the real GetKeyState(VK_CAPITAL) into capsStates
+        # (cinbase/__init__.py onActivate), so pin CapsLock off before
+        # activation, not only before the keystroke.
         import cinbase
 
         original = cinbase.CinBase.getKeyState
         cinbase.CinBase.getKeyState = lambda *args: False
         try:
+            service = self.activate_chesimplex()
+            service.shiftLetterSwitchToEnglish = True
+            service.outputSmallLetterWithShift = True
             commit = self.send(service, ord("H"), ord("H"), printable=True, shift=True)
         finally:
             cinbase.CinBase.getKeyState = original
