@@ -53,6 +53,37 @@ for f in "${files[@]}"; do
         printf 'generic template headings in %s; follow docs/agents/upstream-pr.md\n' "$f"
         bad=1
     fi
+
+    # The body is pasted into GitHub by hand, so what a bad edit leaves behind is
+    # what the maintainer reads: one paragraph emitted twice reads as intentional.
+    dup=$(awk 'length($0) > 60 { c[$0]++ } END { for (l in c) if (c[l] > 1) { print l; exit } }' "$f")
+    if [ -n "$dup" ]; then
+        printf 'duplicated paragraph in %s: %s\n' "$f" "${dup:0:70}"
+        bad=1
+    fi
+
+    # A Validation: line names the runs that earned the PR its evidence; a
+    # command path no tree and no ref has ever carried is credit taken before
+    # the sale (docs/agents/upstream-pr.md). PR_BODY_SKIP_PATHS=1 waives the
+    # rule for a body that legitimately cites a path this branch deletes.
+    if [ "${PR_BODY_SKIP_PATHS:-0}" != 1 ]; then
+        while read -r cited; do
+            [ -n "$cited" ] || continue
+            # A citation may carry a line range (`main.rs:143,146`) and may be
+            # written relative to the module it lives under, so a trailing
+            # segment or a directory both count as the same fact.
+            cited=${cited%%:*}
+            [ -e "$cited" ] && continue
+            [ -n "$(git ls-files -- "$cited" "*$cited" "*$cited/*" | head -n 1)" ] && continue
+            if ! git log --all --format= --name-only -- "$cited" "*$cited" "*$cited/*" 2>/dev/null \
+                    | head -n 1 | grep -q .; then
+                printf 'Validation: cites a path no tree or ref carries: %s (%s)\n' "$cited" "$f"
+                bad=1
+            fi
+        done < <(awk '{ t = tolower($0); gsub(/[*_` ]/, "", t)
+                        if (t == "validation:") v = 1 } v' "$f" \
+                    | grep -oE '`[^` ]+/[^`]*`' | grep -v '://' | tr -d '`' | sort -u)
+    fi
 done
 printf 'checked %d PR bodies\n' "${#files[@]}"
 [ "$bad" -eq 0 ]
