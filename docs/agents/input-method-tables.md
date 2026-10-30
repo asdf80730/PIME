@@ -1,6 +1,6 @@
 # Input method tables (cinbase)
 
-Consult when adding a table, re-deriving one, or touching anything under `python/cinbase/`.
+Consult when adding a table, re-deriving one, auditing a table's codes, or touching anything under `python/cinbase/`.
 
 ## Pipeline
 
@@ -58,6 +58,35 @@ built-in Traditional IMEs keep their dictionaries only as binary blobs under
 The #520 audit's cached `ref/` copies, machine-readable diff, and dated
 write-up sit under the local-only `.scratch/upstream-bug-backlog/` — never
 tracked, so the two URLs above are the fresh-clone path.
+
+## Cangjie canonical coordinates
+
+For auditing the Cangjie family — `checj` 酷倉, `cj5` 倉五, `thcj` 泰瑞倉頡, `newcj3`
+亂倉打鳥, `simplex5` 簡五, `scj6` 快倉 — checking that a character sits under codes its
+components actually spell, the references are:
+
+- **In-repo authority**: `cin/cnscj.cin` (中標倉頡, the CNS official codes). Every line
+  carries its decomposition as a comment (`pnsm    㤘    # 心弓尸一`), so codes are
+  greppable by radical name. Covers CNS11643, not Ext-C/D.
+- **Unihan** `kRSUnicode` (https://www.unicode.org/Public/UNIDATA/Unihan.zip): the
+  radical an IRG assigned. Members sit at the zip's top level (`Unihan_IRGSources.txt`,
+  no directory prefix). A 忄/扌/月-left character must take the p/q/b first key; a
+  心/手-at-the-bottom character legitimately takes its first key from the top component,
+  so a radical-vs-key mismatch alone only *flags* — corroboration by a code source
+  settles it.
+- **Fifth-gen reference**: gcin `data/cj5.cin`
+  (https://raw.githubusercontent.com/solomonhuang/gcin/master/data/cj5.cin), decoded with
+  `errors='replace'` (stray bytes). gcin's `cj.cin` is Big5-only: it answers nothing
+  about the extension planes.
+- **字典 倉頡 fields are not authority.** The dictionary pages (zidian.kxue.com, zdic's
+  仓颉 field) carry special cases — the #390 `qnsm 㤘` entry traces to exactly one. Settle
+  component position with Unihan plus the two code sources. zdic's page still supplies
+  筆順, which places components (忄-left opens with strokes 442, 心-bottom closes with
+  4544); its img.zdic.net glyph SVGs hotlink-block with 403.
+
+Tickets name tables by `%cname` display name, which never matches the file stem (酷倉 is
+`checj`, 亂倉打鳥 is `newcj3`); grep `%cname` in `cin/` to map a name the list above
+lacks.
 
 ## Where a new table or Service has to register
 
