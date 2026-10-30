@@ -43,6 +43,22 @@ tiers, nothing past 30 strokes), and the rule that a character's tier is read fr
 which of the converter's tier dicts gained it — not from the name `getCharSet`
 returns, because its Big5 符號 branch files in `big5S` and answers `"big5LF"`.
 
+## 大易 canonical coordinates
+
+For 校對 (auditing) `dayi3`/`dayi4` or re-deriving official codes, the reference is
+the 太易資訊-licensed table — the Windows IME data cannot be mined from disk (the
+built-in Traditional IMEs keep their dictionaries only as binary blobs under
+`C:\Windows\System32\IME\IMETC\*.DLL`). Fetch from:
+
+- Official licensed table, as distributed by gcin:
+  `https://raw.githubusercontent.com/solomonhuang/gcin/master/data/dayi3.cin`
+- Windows built-in 大易三碼 (plain-text archive, plus branch variants):
+  `https://github.com/righthandabacus/dayi_table`, file `7_gcin-dayi-win.cin`
+
+The #520 audit's cached `ref/` copies, machine-readable diff, and dated
+write-up sit under the local-only `.scratch/upstream-bug-backlog/` — never
+tracked, so the two URLs above are the fresh-clone path.
+
 ## Where a new table or Service has to register
 
 Committing the pair is not the whole delivery. Everything else that has to know
