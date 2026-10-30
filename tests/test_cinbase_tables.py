@@ -16,6 +16,7 @@ SPDX-License-Identifier: LGPL-2.1-or-later
 """
 
 import importlib.util
+import json
 import os
 import shutil
 import tempfile
@@ -41,6 +42,11 @@ def load_converter():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def load_json(name):
+    with open(os.path.join(JSON_DIR, name), encoding="utf-8") as handle:
+        return json.load(handle)
 
 
 def cin_stems():
@@ -112,6 +118,50 @@ class CinbaseTableSyncTests(unittest.TestCase):
                         "rerun the converter and commit the pair")
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
+
+
+class Dayi3OfficialCodesTests(unittest.TestCase):
+    """Upstream #520 and the audit it triggered: 大易三碼 must keep the codes
+    the official TaiYi-licensed table assigns.
+
+    The runtime JSON is what the engine loads, so these expectations read the
+    committed json/ side of the pair the sync tests above already keep honest
+    against cin/dayi3.cin.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.chardefs = load_json("dayi3.json")["chardefs"]
+
+    def test_tf8_offers_xu_next_to_ji_and_xie(self):
+        # Issue #520: the 2019 report, verified against the Windows built-in
+        # 大易三碼 table, whose candidate order for tf8 is 績續纈.
+        self.assertEqual(self.chardefs["tf8"], ["績", "續", "纈"])
+
+    # Reporter's standing request in #520: audit 大易三碼 for further missing
+    # entries. Each expectation below was taken from the two references the
+    # audit compares against — the Windows built-in 大易三碼 table and the
+    # TaiYi-licensed official table as distributed by gcin — not from PIME's
+    # own data. Most are corroborated by PIME's sibling dayi4 table, which
+    # never dropped them. Upstream issue #520 carries the reporter's request.
+    AUDITED_CODES = {
+        "to8": "縜",   # Windows table: to8 = 繢縜 (dayi4 keeps to38)
+        "tka": "絯",   # Windows table (dayi4 keeps tkla)
+        ".m": "．",    # Windows table: .m = ．; PIME also offers 。 here
+        "cc": "廘",    # official table: cc = 比庀麀廘 (dayi4 keeps cc = 廘)
+        "me.": "冢",   # official table: me. = 冠冢 (dayi4 keeps me.)
+        "pf1": "阱",   # official table (dayi4 keeps pf1)
+        "uvf": "菶",   # official table has 菶 under uvf; PIME keeps 董 as top candidate
+        "xko": "涪",   # official table has 涪 under xko; PIME keeps 滴 as top candidate
+        "zz": "憶",    # official table (dayi4 keeps zz = 憶)
+    }
+
+    def test_audit_found_codes_are_offered(self):
+        for code, char in self.AUDITED_CODES.items():
+            with self.subTest(code=code, char=char):
+                self.assertIn(
+                    char, self.chardefs.get(code, []),
+                    f"dayi3 lost official code {code} -> {char}")
 
 
 if __name__ == "__main__":
