@@ -55,6 +55,27 @@ def agent_doc_files():
     return files
 
 
+def citation_scanned_files():
+    """Files whose AGENTS.md citations the stale-citation ban judges: the agent
+    docs, the research notes, and the harness scripts whose comments and failure
+    messages carry a citation to whoever reads one.
+    """
+    files = [os.path.join(ROOT, "AGENTS.md")]
+    for subdir in (os.path.join(ROOT, "docs", "agents"),
+                   os.path.join(ROOT, "docs", "research")):
+        for name in sorted(os.listdir(subdir)):
+            if name.endswith(".md"):
+                files.append(os.path.join(subdir, name))
+    tests_dir = os.path.join(ROOT, "tests")
+    for name in sorted(os.listdir(tests_dir)):
+        if name.endswith(".sh"):
+            files.append(os.path.join(tests_dir, name))
+    hooks_dir = os.path.join(tests_dir, "hooks")
+    for name in sorted(os.listdir(hooks_dir)):
+        files.append(os.path.join(hooks_dir, name))
+    return files
+
+
 def references(text):
     """Yield every file reference found in `text`."""
     for match in PATH_REFERENCE.finditer(text):
@@ -112,6 +133,25 @@ class AgentDocTests(unittest.TestCase):
                 self.assertTrue(
                     any(os.path.basename(reference) == name for reference in named),
                     f"AGENTS.md does not reference docs/agents/{name}")
+
+    def test_agents_md_is_cited_by_heading_not_by_number(self):
+        """The rules prose moved to the standing rules of docs/agents/code-review.md
+        on 2026-10-30, and the citations naming AGENTS.md by section or line number
+        went dangling in one commit, caught only by hand. Cite headings by name:
+        numbers and lines are banned in every file that carries a citation, so the
+        next move reddens this check instead of stranding references silently.
+        """
+        pattern = re.compile(r"AGENTS\.md`?\s*§|AGENTS\.md:\d")
+        offenders = []
+        for path in citation_scanned_files():
+            with open(path, encoding="utf-8") as doc:
+                for number, line in enumerate(doc, 1):
+                    if pattern.search(line):
+                        offenders.append(
+                            f"{os.path.relpath(path, ROOT)}:{number}: {line.strip()}")
+        self.assertEqual([], offenders,
+                         "cite AGENTS.md headings by name, never by section or "
+                         "line number")
 
     def test_glossary_terms_follow_the_format(self):
         """GLOSSARY.md is a glossary: every term is **Term**: + definition + _Avoid_."""
