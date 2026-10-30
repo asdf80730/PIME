@@ -164,5 +164,28 @@ class Dayi3OfficialCodesTests(unittest.TestCase):
                     f"dayi3 lost official code {code} -> {char}")
 
 
+class CheCjWrongRadicalCodesTests(unittest.TestCase):
+    """Upstream #390: the 酷倉 table mapped the 忄-radical 㤘 (U+3918) under
+    the 手弓尸一 code qnsm, where Unihan files the character under radical
+    61 (心) +5 and the CNS official 倉頡 table (cnscj.cin) codes it only
+    心弓尸一 (pnsm).
+
+    Same seam as the dayi3 tests: the committed runtime JSON the engine
+    loads, kept honest against cin/checj.cin by the sync tests above.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.chardefs = load_json("checj.json")["chardefs"]
+
+    def test_qnsm_does_not_offer_the_heart_radical_character(self):
+        # The 2017 report: typing 手弓尸一 offered 㤘, a 忄部 character.
+        self.assertNotIn("㤘", self.chardefs.get("qnsm", []))
+
+    def test_pnsm_still_offers_the_character(self):
+        # Guards against "fixing" #390 by deleting the character outright.
+        self.assertIn("㤘", self.chardefs.get("pnsm", []))
+
+
 if __name__ == "__main__":
     unittest.main()
