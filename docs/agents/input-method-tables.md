@@ -7,7 +7,7 @@ Consult when adding a table, re-deriving one, or touching anything under `python
 `.cin` source → converter → committed runtime JSON → engine.
 
 - **Source of truth**: one `.cin` per table (CMIME format: `%ename`/`%cname`/`%selkey`, a `%keyname begin/end` block mapping each root key to its display glyph, and a `%chardef begin/end` block of `key<separator>root` lines). Sources live in the cinbase table source directory; the engine never parses them.
-- **Converter**: `python/cinbase/tools/cintojson.py` — `cintojson.py <file.cin> [sort]` for one table, no argument for the whole batch. It writes compact JSON (`sort_keys`, no whitespace) into the cinbase `json/` directory.
+- **Converter**: `python/cinbase/tools/cintojson.py` — `cintojson.py <file.cin> [sort]` for one table, no argument for the whole batch. It writes compact JSON (`sort_keys`, no whitespace) into the cinbase `json/` directory. For tables outside the batch's `sortList` in the converter's `main()`, the candidate list order in the JSON is the `.cin` line order verbatim — an insertion's position is a product decision; `sort` instead merges the tier dicts (big5F → big5LF → … → privateuse).
 - **Runtime**: the engine loads only the JSON. The installer ships `json/` and **excludes** the `cin/` source directory, so a `.cin` edit alone changes nothing a user receives.
 
 ## Rules
