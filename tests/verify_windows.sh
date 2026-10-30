@@ -160,6 +160,14 @@ run_native 'Tracked code cites no .scratch/' \
 run_native 'Scratch-ref gate self-test' \
 	'bash.exe tests/check_scratch_refs_test.sh'
 
+# The PR body is pasted by hand on the box that delivers the PR — this one —
+# and .scratch/ is gitignored, so no CI job can ever read the draft: the
+# declaration gate has to run here, pinned by its own self-test.
+run_native 'PR bodies carry the AI declaration' \
+	'bash.exe tests/check_pr_bodies.sh'
+run_native 'PR body gate self-test' \
+	'bash.exe tests/check_pr_bodies_test.sh'
+
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
 # "no .scratch here", which is not a failure.

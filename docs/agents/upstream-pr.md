@@ -132,9 +132,10 @@ and hand the compare URL plus body to the human.
   `gh api notifications` is 403 as well: list the work with
   `gh search prs --author @me --state open` and read discussion through
   `gh api repos/EasyIME/PIME/issues/<n>/comments`.
-  Rerun `tests/run_local_tests.sh` after writing the body: its `PR bodies carry the AI
-  declaration` step fails when the last line is missing. A body kept outside `.scratch`
-  can be checked without moving it: `PR_BODY=/tmp/pr-<number>-body.md tests/run_local_tests.sh`.
+  Check the body gate after writing the body: `bash tests/check_pr_bodies.sh` on this
+  box (both `tests/verify_windows.sh` and `tests/run_local_tests.sh` carry the step;
+  `bash tests/check_pr_bodies_test.sh` pins its contract). A body kept outside
+  `.scratch` is judged without moving it: `PR_BODY=<path> bash tests/check_pr_bodies.sh`.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
 
