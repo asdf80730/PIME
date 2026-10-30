@@ -45,7 +45,7 @@ for dir in .scratch/*/; do
             bad=1
         fi
         if ! head -n 20 "$issue" | grep -Eq '^Status:[[:space:]]*[a-z]+'; then
-            printf 'missing Status: line near the top of %s\n' "$issue"
+            printf 'missing Status: line within the first 20 lines of %s\n' "$issue"
             bad=1
         fi
     done
