@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# AGENTS.md §2 puts the AI declaration at the end of the message, and the
-# body is pasted by hand: a missing last line makes the human add it.
+# The standing rules in docs/agents/code-review.md put the AI declaration at
+# the end of the message, and the body is pasted by hand: a missing last line
+# makes the human add it.
 # #996 split the declaration three ways; the pre-#996 one-liner is still
 # accepted for bodies written before it and posted already.
 #

@@ -42,7 +42,7 @@ fi
 # milliseconds and the suite does not.
 if ! (cd "$root" && bash tests/check_ai_declarations.sh staged); then
     printf 'pre-commit: every added file needs its AI declaration header\n' >&2
-    printf '(AGENTS.md §4); copy the two-line form from any sibling file.\n' >&2
+    printf '(the standing rules in docs/agents/code-review.md); copy the two-line form from any sibling file.\n' >&2
     exit 1
 fi
 

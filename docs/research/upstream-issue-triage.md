@@ -288,7 +288,7 @@ Useful when writing a PR into this repo:
 3. **Replies to user reports are bilingual, name the commit/PR, and ask the reporter to retest the
    released beta** — e.g. #893 ("fixed in commit 0dc301d7"), #904 (PR #905 + #913), #903 (PR #931),
    #691 ("如果已能正常開啟，我們將會關閉此 Issue"). Several such replies are marked as
-   AI-assisted, so an AI-assisted PR is acceptable if the declaration is present (`AGENTS.md:19`).
+   AI-assisted, so an AI-assisted PR is acceptable if the declaration is present (the standing rules in `docs/agents/code-review.md`).
 4. **Closed-as-fixed does not always mean fixed in the reporter's build**: #893/#908/#904 were all
    closed against beta3, and #895's analysis (2026-10-19) shows the remaining Cantonese failure is
    a third-party `json.loads(..., encoding=...)` call under Python 3.12, not a PIME bug.
