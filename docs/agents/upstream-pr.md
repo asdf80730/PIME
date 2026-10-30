@@ -38,8 +38,11 @@ Conflicts land in the same places every sync:
   under `node/tests/` merges its file into that list the same way.
 - Rust: run `cargo fmt` after taking their hunks; upstream's formatting fails the local
   `cargo fmt --check` step.
-- `AGENTS.md` and the workflows: keep upstream's text and re-add the local sections and
-  steps below it.
+- `AGENTS.md` and the workflows: re-add the local steps below upstream's workflow
+  triggers. The upstream rules prose no longer rides in `AGENTS.md` — it lives
+  verbatim in the standing rules of `code-review.md` (2026-10-30) — so fold
+  upstream `AGENTS.md` rule edits into that block, and keep `AGENTS.md` itself
+  the write-time floor plus the index.
 
 ## Before picking up an upstream issue
 
