@@ -237,9 +237,13 @@ skips on integration names, so a detached worktree would turn those assertions i
 skips that still report as passing.
 
 A run reads this script as it goes: leave `tests/verify_windows.sh` untouched while
-a background run is still going, or run a copy. A failing layer keeps its output
-under `.tools/.run/` rather than deleting it, so the traceback is there to read
-without rerunning the step.
+a background run is still going, or run a copy. Anything else the run covers is
+stale by the same rule if it changes mid-run, so the gate snapshots HEAD and
+`git status --porcelain` at start and end and prints a `WARN ... during the run`
+line naming the drifted paths: a green tally under a WARN validated the tree the
+run started in, and the honest move is rerunning the gate (or the affected layers)
+on the final bytes. A failing layer keeps its output under `.tools/.run/` rather
+than deleting it, so the traceback is there to read without rerunning the step.
 
 Narrowing the Python layer to one file on the shipped interpreter needs
 `discover`: `python/python3/python.exe` is an embedded distribution whose

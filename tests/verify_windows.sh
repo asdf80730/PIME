@@ -36,6 +36,12 @@ RUN_DIR="$TOOLS/.run"
 failures=0
 passed=0
 
+# A run takes eleven minutes: a file edited while it runs leaves every PASS
+# above predating that edit, invisibly. Snapshot the tree the run speaks for so
+# the tally can say which layers the reader may no longer trust.
+HEAD_BEFORE=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)
+STATUS_BEFORE=$(git -C "$ROOT" status --porcelain 2>/dev/null || echo unknown)
+
 # What a layer just cost, so the run itself is the source for the cost figures
 # a doc would otherwise carry by hand (docs/agents/verification.md).
 step_start=$SECONDS
@@ -257,6 +263,22 @@ run_native 'C++ JsonUtils tests (gtest, mingw g++)' \
 	"g++.exe -std=c++17 -O1 -pthread -I PIMETextService -I json/single_include -I $gtest/include -I $gtest tests\\json_utils_test.cpp $gtest/src/gtest-all.cc $gtest/src/gtest_main.cc -o .tools\\json_utils_test.exe && .tools\\json_utils_test.exe"
 run_native 'C++ CompositionCursor test (mingw g++)' \
 	'g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\composition_cursor_test.cpp -o .tools\\composition_cursor_test.exe && .tools\\composition_cursor_test.exe'
+
+# Trust anchor: if HEAD or the worktree moved while the layers ran, the PASS
+# lines speak for the old tree — say so instead of letting a green tally hide
+# the drift; the reader reruns the affected layers on the final bytes.
+HEAD_NOW=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)
+STATUS_NOW=$(git -C "$ROOT" status --porcelain 2>/dev/null || echo unknown)
+if [ "$HEAD_NOW" != "$HEAD_BEFORE" ]; then
+	printf 'WARN  HEAD moved during the run (%s -> %s): no layer above validated the new commits\n' "${HEAD_BEFORE:0:7}" "${HEAD_NOW:0:7}"
+fi
+if [ "$STATUS_NOW" != "$STATUS_BEFORE" ]; then
+	printf '%s\n' "$STATUS_BEFORE" >"$RUN_DIR/status.before"
+	printf '%s\n' "$STATUS_NOW" >"$RUN_DIR/status.now"
+	printf 'WARN  worktree changed during the run; these paths may predate your edits:\n'
+	comm -3 "$RUN_DIR/status.before" "$RUN_DIR/status.now" | sed 's/^/      /'
+	rm -f "$RUN_DIR/status.before" "$RUN_DIR/status.now"
+fi
 
 # A failing layer's own output is what has to be read; deleting it here sends the
 # reader into a rerun of a three-minute step.

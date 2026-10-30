@@ -40,6 +40,13 @@ trap 'exit 130' INT TERM
 failures=0
 skipped=0
 
+# The run is long: a file edited while it goes leaves every PASS above
+# predating that edit, invisibly. Snapshot the tree the run speaks for so the
+# tally can say which layers the reader may no longer trust. Mirrors
+# tests/verify_windows.sh.
+HEAD_BEFORE=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)
+STATUS_BEFORE=$(git -C "$ROOT" status --porcelain 2>/dev/null || echo unknown)
+
 pass() { printf 'PASS  %s\n' "$1"; }
 skip() { printf 'SKIP  %s (%s)\n' "$1" "$2"; skipped=$((skipped + 1)); }
 
@@ -394,6 +401,21 @@ else
     skip 'Rust launcher tests' 'cargo or wine missing; see docs/agents/wine.md'
 fi
 
+# Trust anchor: if HEAD or the worktree moved while the layers ran, the PASS
+# lines speak for the old tree — say so instead of letting a green tally hide
+# the drift; the reader reruns the affected layers on the final bytes.
+HEAD_NOW=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)
+STATUS_NOW=$(git -C "$ROOT" status --porcelain 2>/dev/null || echo unknown)
+if [ "$HEAD_NOW" != "$HEAD_BEFORE" ]; then
+    printf 'WARN  HEAD moved during the run (%s -> %s): no layer above validated the new commits\n' "${HEAD_BEFORE:0:7}" "${HEAD_NOW:0:7}"
+fi
+if [ "$STATUS_NOW" != "$STATUS_BEFORE" ]; then
+    printf '%s\n' "$STATUS_BEFORE" >"$BUILD_DIR/status.before"
+    printf '%s\n' "$STATUS_NOW" >"$BUILD_DIR/status.now"
+    printf 'WARN  worktree changed during the run; these paths may predate your edits:\n'
+    comm -3 "$BUILD_DIR/status.before" "$BUILD_DIR/status.now" | sed 's/^/    /'
+    rm -f "$BUILD_DIR/status.before" "$BUILD_DIR/status.now"
+fi
 printf '\n%d failed, %d skipped\n' "$failures" "$skipped"
 if [ "$failures" -ne 0 ]; then
     exit 1
