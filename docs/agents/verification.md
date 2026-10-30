@@ -102,6 +102,14 @@ Individual commands, if you want to narrow the loop:
   command through the script, so a missing package or registration fails PR CI.
   The script also cross-compiles the shipped target:
   `CGO_ENABLED=0 GOOS=windows GOARCH=386 go build ./...`.
+  The rime package's `TestRealRime*` tests are the Go layer's machine-dependent
+  corner: the engine they drive is the committed x64
+  `go-backend/input_methods/rime/rime.dll`, so they need an amd64 test process
+  (`GOARCH=amd64`), and the brise-driven form also wants an initialised
+  `python/input_methods/rime/brise`. `tests/verify_windows.sh` pins `APPDATA=`
+  and `-count=1` for that step so both the skip and the non-skipped set are
+  deterministic, and the runtime pass is driven per-SHA at PR-delivery time —
+  never inherited from a test cache.
 - **C++ pure helpers** — `PIMETextService/JsonUtils.h` and
   `CompositionCursor.h` have no Windows dependencies, so they are testable here:
   - `JsonUtils`: host g++ links the vendored gtest:

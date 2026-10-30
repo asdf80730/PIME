@@ -101,7 +101,10 @@ and hand the compare URL plus body to the human.
   `git commit -C <local-sha>` inherits the integration message, which describes the test
   and parse-check work the branch deliberately does not carry, and
   `tests/check_pr_commit_claims.sh <branch>` fails it for exactly that — run it next to
-  `check_pr_scope.sh` before the push.
+  `check_pr_scope.sh` before the push, and run
+  `tests/check_pr_commit_declarations.sh <branch>` beside them: it fails any commit
+  whose message holds none of the #996 declaration forms, the omission PR #1010's
+  two commits slipped through unnoticed.
 - Before any push to the fork — branch or PR — run
   `tests/check_fork_ci_noise.sh <branch>`: the pushed tree's own workflow files
   decide what GitHub runs, so refs cut before the ci.yaml hardening mail the
@@ -156,7 +159,10 @@ and hand the compare URL plus body to the human.
   a path no tree or ref carries — the artefacts of a hand-edited draft and of a claim
   written before its run. `PR_BODY_SKIP_PATHS=1` waives the path rule for a path this
   branch deletes. A body kept outside `.scratch` is judged without moving it:
-  `PR_BODY=<path> bash tests/check_pr_bodies.sh`.
+  `PR_BODY=<path> bash tests/check_pr_bodies.sh`. The path rule extracts the whole
+  backtick span whose first token contains a slash, so cite a pure path inside the
+  backticks (`python/python3/python.exe`) and leave the command arguments outside
+  the span — the shape every accepted body uses.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
 

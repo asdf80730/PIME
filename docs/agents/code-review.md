@@ -61,6 +61,19 @@ observable the user receives — the committed artifact, the settings page, the
 candidate list — and a claim of *zero* impact carries both the command and what that
 command inspects.
 
+## A Validation line is settled by a re-run on the head SHA
+
+A `Validation:` line is a claim about one tree — the head SHA — so re-run every
+command it names at that SHA (the fetch-and-detach recipe in
+`docs/agents/windows-box.md`) before believing it. A line that does not
+reproduce there is a finding, whatever it survived on when it was written.
+Commands whose scope sweeps packages the branch never touches (`go build ./...`,
+a repo-wide suite) are where stale claims hide: PR #1010's body cited a 386
+`go build ./...` that had passed on a tree carrying another PR's fix, while on
+the branch's own tree the main package still died on its dead imports. The
+honest line names the package scope it really ran, and says what the base still
+fails beside the PR that fixes it.
+
 ## Judge an AI header by the file's category
 
 The standing rules (below) grade a new file's header by its **category**: a script, a lookup
@@ -187,6 +200,7 @@ design.
 | Every added file's header carries its AI declaration | `check_ai_declarations.sh` (staged mode backs the pre-commit hook) |
 | PR body carries the declaration, #996 three-way split | `check_pr_bodies.sh` |
 | Commit message claims only its own diff | `check_pr_commit_claims.sh` |
+| Commit message carries its AI declaration, #996 three-way split | `check_pr_commit_declarations.sh` |
 | One topic per PR / branch scope | `check_pr_scope.sh` |
 | No unhardened workflows on a pushed ref | `check_fork_ci_noise.sh` |
 

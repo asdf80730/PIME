@@ -203,6 +203,16 @@ run_or_skip 'PR commit messages claim only their own diff' \
 run_native 'Commit-claims gate self-test' \
 	'bash.exe tests/check_pr_commit_claims_test.sh'
 
+# The same carried-over commit can also lose the #996 declaration outright:
+# PR #1010 shipped two commits whose messages carry none and no gate noticed.
+# This gate judges every commit on a product-bound branch, so here it runs
+# against the current branch and skips on the integration branch; its
+# contract is pinned by the self-test either way.
+run_or_skip 'PR commit messages carry the AI declaration' \
+	'bash.exe tests/check_pr_commit_declarations.sh'
+run_native 'Commit-declaration gate self-test' \
+	'bash.exe tests/check_pr_commit_declarations_test.sh'
+
 # Pushing a ref that still carries the unhardened workflows mails the fork owner
 # one failure per push; the gate needs a ref to read, so the gate itself runs at
 # delivery time (docs/agents/upstream-pr.md) and only its contract runs here.
@@ -242,7 +252,14 @@ run_native 'Node backend tests (loadServices)' \
 	'node\node.exe node\test\loadServices.test.js'
 
 # --- Go -------------------------------------------------------------------
-run_native 'Go backend tests' 'cd go-backend && go.exe test ./...'
+# -count=1: a cached `ok` is not evidence — the rime runtime tests once sat
+# cached-green while a fresh run failed them on this arm64 box, because the
+# bundled x64 rime.dll cannot load into an arm64 process. APPDATA is cleared
+# so those tests reach their own skip deterministically instead of riding on
+# whatever %APPDATA%\Rime an installed PIME left behind; the real rime pass is
+# the GOARCH=amd64 brise run at PR-delivery time (docs/agents/verification.md).
+run_native 'Go backend tests' \
+	'cd go-backend && set "APPDATA=" && go.exe test -count=1 ./...'
 run_native 'Go backend Windows/386 build' \
 	'cd go-backend && set "CGO_ENABLED=0" && set "GOOS=windows" && set "GOARCH=386" && go.exe build ./...'
 
