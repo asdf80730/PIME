@@ -92,6 +92,12 @@ expect 0 'head mode ignores uncommitted adds' head
 
 # Declared files pass; the vendored tree is skipped even when undeclared.
 expect 0 'staged declared and vendored files pass' staged
+
+# The product's own header form counts: an upstream merge brings files that
+# open with "# API design and architecture by …" and nothing else.
+printf '# Copyright (C) 2026 Hong Jen Yee (PCMan) <pcman.tw@gmail.com>\n#\n# API design and architecture by Hong Jen Yee (PCMan).\n# SPDX-License-Identifier: LGPL-2.1-or-later\n\nx = 1\n' > "$sandbox/upstream_form.py"
+git -C "$sandbox" add upstream_form.py
+expect 0 'staged upstream header form is accepted' staged
 git -C "$sandbox" add python/python3/vendored.py
 expect 0 'staged vendored file stays skipped' staged
 
