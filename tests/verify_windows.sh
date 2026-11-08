@@ -35,6 +35,8 @@ RUN_DIR="$TOOLS/.run"
 
 failures=0
 passed=0
+# Per-step bat/log numbering, see write_step.
+step_no=0
 
 # A run takes eleven minutes: a file edited while it runs leaves every PASS
 # above predating that edit, invisibly. Snapshot the tree the run speaks for so
@@ -50,6 +52,8 @@ pass() { printf 'PASS  %s (%ds)\n' "$1" "$((SECONDS - step_start))"; passed=$((p
 fail() { printf 'FAIL  %s (%ds)\n' "$1" "$((SECONDS - step_start))"; failures=$((failures + 1)); }
 
 mkdir -p "$RUN_DIR"
+rm -f "$RUN_DIR/step.bat" "$RUN_DIR/step.log" "$RUN_DIR"/step-*.bat \
+	"$RUN_DIR"/step-*.log "$RUN_DIR"/fail-*.log
 
 # Preflight: the toolchain lives under .tools/ (excluded from git), so a fresh
 # clone has to install it before this script can run.
@@ -72,10 +76,19 @@ fi
 # toolchains look for (cargo is a rustup proxy and needs RUSTUP_HOME).
 # CARGO_TARGET_DIR is shared so every worktree reuses one dependency cache.
 write_step() {
-	local bat="$RUN_DIR/step.bat"
+	# One bat per step, never reused: cmd.exe reads a batch file through the
+	# handle's shared file position, and a child that inherits the pipes
+	# (every bash.exe here does) can leave that position mid-line, so the
+	# next step's file appears to cmd as leftover single-letter tokens — the
+	# 'h'/'st'/'ude' is-not-recognized noise. A fresh file per step keeps each
+	# read starting at 0. Trailing backslashes are stripped for the same
+	# reason: a "\" before a closing quote escapes it in cmd.
+	step_no=$((step_no + 1))
+	bat_path="$RUN_DIR/step-$step_no.bat"
+	log_path="$RUN_DIR/step-$step_no.log"
 	local win_tools win_root
-	win_tools=$(cygpath -w "$TOOLS")
-	win_root=$(cygpath -w "$ROOT")
+	win_tools=$(cygpath -w "$TOOLS" | sed 's/\\\*$//')
+	win_root=$(cygpath -w "$ROOT" | sed 's/\\\*$//')
 	{
 		printf '%s\r\n' '@echo off'
 		printf '%s\r\n' "set \"PATH=$win_tools\\mingw64\\bin;$win_tools\\go\\bin;$win_tools\\bun;$win_tools\\node;$win_tools\\cargo\\bin;$win_tools\\bin;%PATH%\""
@@ -86,7 +99,7 @@ write_step() {
 		printf '%s\r\n' "set \"CARGO_TARGET_DIR=$win_tools\\cargo-target\""
 		printf '%s\r\n' "cd /d \"$win_root\""
 		printf '%s\r\n' "$*"
-	} >"$bat"
+	} >"$bat_path"
 }
 
 run_native() {
@@ -94,12 +107,12 @@ run_native() {
 	shift
 	step_start=$SECONDS
 	write_step "$*"
-	if "$RUN_DIR/step.bat" >"$RUN_DIR/step.log" 2>&1; then
+	if "$bat_path" >"$log_path" 2>&1; then
 		pass "$label"
 	else
 		fail "$label"
-		tail -n 30 "$RUN_DIR/step.log" | sed 's/^/      /'
-		cp "$RUN_DIR/step.log" "$RUN_DIR/fail-${label//[^A-Za-z0-9]/-}.log"
+		tail -n 30 "$log_path" | sed 's/^/      /'
+		cp "$log_path" "$RUN_DIR/fail-${label//[^A-Za-z0-9]/-}.log"
 	fi
 }
 
@@ -111,14 +124,14 @@ run_or_skip() {
 	shift
 	step_start=$SECONDS
 	write_step "$*"
-	if "$RUN_DIR/step.bat" >"$RUN_DIR/step.log" 2>&1; then
+	if "$bat_path" >"$log_path" 2>&1; then
 		pass "$label"
 	elif [ $? -eq 125 ]; then
 		pass "$label (not applicable)"
 	else
 		fail "$label"
-		tail -n 30 "$RUN_DIR/step.log" | sed 's/^/      /'
-		cp "$RUN_DIR/step.log" "$RUN_DIR/fail-${label//[^A-Za-z0-9]/-}.log"
+		tail -n 30 "$log_path" | sed 's/^/      /'
+		cp "$log_path" "$RUN_DIR/fail-${label//[^A-Za-z0-9]/-}.log"
 	fi
 }
 
@@ -129,7 +142,7 @@ run_native_verbose() {
 	step_start=$SECONDS
 	write_step "$*"
 	local log rc
-	log=$("$RUN_DIR/step.bat" 2>&1)
+	log=$("$bat_path" 2>&1)
 	rc=$?
 	if [ $rc -eq 0 ]; then
 		pass "$label"
@@ -240,13 +253,13 @@ run_native 'Integration ref candidates' \
 # "no .scratch here", which is not a failure.
 step_start=$SECONDS
 write_step 'bash.exe tests/check_tracker_layout.sh'
-if "$RUN_DIR/step.bat" >"$RUN_DIR/step.log" 2>&1; then
+if "$bat_path" >"$log_path" 2>&1; then
 	pass 'Local issue tracker layout'
 elif [ $? -eq 125 ]; then
 	pass 'Local issue tracker layout (no .scratch)'
 else
 	fail 'Local issue tracker layout'
-	tail -n 15 "$RUN_DIR/step.log" | sed 's/^/      /'
+	tail -n 15 "$log_path" | sed 's/^/      /'
 fi
 
 # The Documents top level must stay free of agent folders: the 2026-10 litter
