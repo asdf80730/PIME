@@ -533,6 +533,20 @@ function pageReady() {
     }
     selWildcardType.children().eq(checjConfig.selWildcardType).prop("selected", true);
 
+    // 選字鍵順序 (issue #463/#539)：選項與 python/cinbase/config.py 的 selKeys 一致
+    var selSelKeys = [
+        "1234567890",
+        "0123456789"
+    ];
+    var selKeyType = $("#selKeyType");
+    var selKeyTypeIndex = (typeof checjConfig.selKeyType === "undefined") ? 0 : checjConfig.selKeyType;
+    for(var i = 0; i < selSelKeys.length; ++i) {
+        var selSelKey = selSelKeys[i];
+        var item = '<option value="' + i + '">' + selSelKey + '</option>';
+        selKeyType.append(item);
+    }
+    selKeyType.children().eq(selKeyTypeIndex).prop("selected", true);
+
     var keyboard_ddmenu = $("#keyboard_ddmenu");
     if(imeFolderName == "chephonetic") {
         keyboard_ddmenu.show();

@@ -22,13 +22,18 @@ import time
 import shutil
 
 DEF_FONT_SIZE = 12
+DEF_FONT_NAME = 'MingLiu'
+DEF_LEAD_IN_KEY = '`'
 
 SWITCH_LANG_WITH_BOTH_SHIFT = 0
 SWITCH_LANG_WITH_LEFT_SHIFT = 1
 SWITCH_LANG_WITH_RIGHT_SHIFT = 2
 
+# 選字鍵列 (issue #463/#539)：索引 0 是歷來的預設 1-based 列，
+# 索引 1 是 0-based 列，讓嘸蝦米这类要用 0-9 的碼表能選到第十個候選字。
 selKeys=(
-    "1234567890"
+    "1234567890",
+    "0123456789"
 )
 
 class CinBaseConfig:
@@ -54,6 +59,12 @@ class CinBaseConfig:
         self.directShowCand = False
         self.directCommitSymbol = False
         self.fontSize = DEF_FONT_SIZE
+        # 選字及訊息視窗的字型 (issue #582)
+        self.candFontName = DEF_FONT_NAME
+        # 多功能前導字元 (issue #525)
+        self.leadInKey = DEF_LEAD_IN_KEY
+        # 按住 Ctrl + 符號鍵輸入特殊符號 (issue #826)
+        self.enableCtrlSymbols = True
         self.selCinType = 0
         self.ignorePrivateUseArea = True
         self.selKeyType = 0
@@ -103,7 +114,14 @@ class CinBaseConfig:
         return os.path.join(self.getConfigDir(), name)
 
     def getSelKeys(self):
-        return selKeys[self.selKeyType]
+        # 選字鍵列的單一來源：索引超出時退回預設的 1-based 列
+        try:
+            index = int(self.selKeyType)
+        except (ValueError, TypeError):
+            index = 0
+        if index < 0 or index >= len(selKeys):
+            index = 0
+        return selKeys[index]
 
     def getLastTime(self):
         return self._lastTime
@@ -158,6 +176,32 @@ class CinBaseConfig:
         self.fontSize = _to_int(getattr(self, "fontSize", DEF_FONT_SIZE), DEF_FONT_SIZE, min_val=6, max_val=200)
         self.candMaxItems = _to_int(getattr(self, "candMaxItems", 100), 100, min_val=10, max_val=10000)
         self.messageDurationTime = _to_int(getattr(self, "messageDurationTime", 3), 3, min_val=1)
+
+        # 選字鍵列索引 (issue #463/#539)
+        self.selKeyType = _to_int(getattr(self, "selKeyType", 0), 0, min_val=0, max_val=len(selKeys) - 1)
+
+        # 選字視窗字型 (issue #582)：空白或非法值退回內定字型
+        font_name = getattr(self, "candFontName", DEF_FONT_NAME)
+        if not isinstance(font_name, str) or not font_name.strip():
+            self.candFontName = DEF_FONT_NAME
+        else:
+            self.candFontName = font_name.strip()
+
+        # 多功能前導字元 (issue #525)：只取第一個字元，非法值退回 `
+        # 設定頁的數字欄位會存成整數，這裡一併還原成數字字元
+        lead_in_key = getattr(self, "leadInKey", DEF_LEAD_IN_KEY)
+        if isinstance(lead_in_key, bool):
+            lead_in_key = ""
+        elif isinstance(lead_in_key, int):
+            lead_in_key = str(lead_in_key)
+        if not isinstance(lead_in_key, str) or not lead_in_key:
+            self.leadInKey = DEF_LEAD_IN_KEY
+        else:
+            self.leadInKey = lead_in_key[0]
+
+        # 按住 Ctrl 的符號鍵擷取 (issue #826)
+        if not isinstance(getattr(self, "enableCtrlSymbols", True), bool):
+            self.enableCtrlSymbols = True
 
     def toJson(self):
         return {key: value for key, value in self.__dict__.items() if not key.startswith("_") and not key in self.ignoreSaveList}
@@ -287,4 +331,6 @@ class CinBaseConfig:
 
 # globally shared config object
 # load configurations from a user-specific config file
+# 類別本身先另存一個名字，讓測試能建立獨立實例（類別會被單例遮蔽）
+CinBaseConfigClass = CinBaseConfig
 CinBaseConfig = CinBaseConfig()

@@ -122,6 +122,12 @@
 
                             <input type="checkbox" id="playSoundWhenNonCand" name="playSoundWhenNonCand" />
                             <label for="playSoundWhenNonCand">拆錯字碼時發出警告嗶聲提示</label><br />
+
+                            <label for="leadInKey">多功能前導字元: </label>
+                            <input type="text" id="leadInKey" name="leadInKey" /><br />
+
+                            <input type="checkbox" id="enableCtrlSymbols" name="enableCtrlSymbols" />
+                            <label for="enableCtrlSymbols">按住 Ctrl + 符號鍵輸入特殊符號 (取消後 Ctrl 組合鍵直接交給應用程式)</label><br />
                          </div>
                     </div>
                     <div class="panel panel-default">
@@ -148,6 +154,10 @@
 
                             <input type="checkbox" id="directShowCand" name="directShowCand" />
                             <label for="directShowCand">直接顯示候選字清單 (不須按空白鍵)</label><br />
+
+                            <label for="selKeyType">選字鍵順序: </label>
+                            <select name="selKeyType" id="selKeyType"></select>
+                            <br />
                         </div>
                     </div>
                 </div>
@@ -289,6 +299,10 @@
                             <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
                                 <label for="fontSize">選字及訊息視窗文字大小: </label>
                                 <input type="text" id="fontSize" name="fontSize" /><br />
+                            </div>
+                            <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+                                <label for="candFontName">選字及訊息視窗字型: </label>
+                                <input type="text" id="candFontName" name="candFontName" /><br />
                             </div>
                         </div>
                     </div>
