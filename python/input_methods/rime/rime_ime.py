@@ -114,6 +114,8 @@ class RimeTextService(TextService):
         if not (self.session_id and rime.find_session(self.session_id)):
             self.session_id = rime.create_session()
             self.style = RimeStyle(APP, self.session_id)
+            # 每應用程式的預設模式 (#403)，只在新-session 建立時套用一次
+            rimeApplyProfileOptions(self.session_id, APP)
             self.customizeUI(candFontSize = self.style.font_point,
                 candFontName = self.style.font_face,
                 candPerRow = self.style.candidate_per_row,

@@ -15,7 +15,20 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+"""PIME python backend: the stdin/stdout IPC server that hosts the text services.
+
+Log policy (#445). Every message written by this process goes through one
+size-bounded rotating handler, so the log folder holds at most
+``LOG_BACKUP_COUNT + 1`` = 4 files and ``LOG_MAX_BYTES`` = 1000000 bytes each,
+4000000 bytes in total; the numbered backups ``python_backend.log.1`` ..
+``python_backend.log.3`` are rewritten from the oldest on every rollover. The
+rime user directory has its own bounded retention pass, documented in
+``input_methods/rime/librime.py``.
+"""
+
 import json
+import logging
+import logging.handlers
 import sys
 import traceback
 import os
@@ -29,14 +42,30 @@ sys.path.append(os.path.dirname(__file__))
 from serviceManager import TextServiceManager
 
 
+# Size bound for the backend's own log, see the module docstring.
+LOG_MAX_BYTES = 1000000
+LOG_BACKUP_COUNT = 3
+
+
 def append_error_log(message):
     try:
         log_dir = os.path.join(os.path.expandvars("%LOCALAPPDATA%"), "PIME", "Logs")
         os.makedirs(log_dir, exist_ok=True)
-        with open(os.path.join(log_dir, "python_backend.log"), "a", encoding="utf-8") as log_file:
-            log_file.write(message)
-            if not message.endswith("\n"):
-                log_file.write("\n")
+        handler = logging.handlers.RotatingFileHandler(
+            os.path.join(log_dir, "python_backend.log"),
+            mode="a",
+            maxBytes=LOG_MAX_BYTES,
+            backupCount=LOG_BACKUP_COUNT,
+            encoding="utf-8")
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        # Match the old writer exactly: one newline per message, no more.
+        handler.terminator = ""
+        line = message if message.endswith("\n") else message + "\n"
+        try:
+            handler.handle(logging.LogRecord(
+                "PIME", logging.WARNING, __file__, 0, line, None, None))
+        finally:
+            handler.close()
     except Exception:
         pass
 

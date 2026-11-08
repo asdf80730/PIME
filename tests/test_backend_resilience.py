@@ -156,6 +156,69 @@ class ServerResilienceTests(unittest.TestCase):
         self.assertEqual(stdout.getvalue(), "")
         append_error_log.assert_called_once()
 
+    # --- bounded retention on the real start path (#445) -----------------
+    def test_protocol_errors_leave_a_bounded_log(self):
+        server_mod = self.import_server()
+        server = server_mod.Server(PYTHON_DIR)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with mock.patch.dict(os.environ, {"LOCALAPPDATA": temp_dir}), \
+                    mock.patch("builtins.input", side_effect=self.input_then_eof(
+                        ["malformed-%d" % index for index in range(6)])), \
+                    contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(io.StringIO()):
+                server.run()
+
+            log_dir = os.path.join(temp_dir, "PIME", "Logs")
+            files = sorted(os.listdir(log_dir))
+            # One active file plus the numbered backups, never a longer chain.
+            self.assertLessEqual(len(files), server_mod.LOG_BACKUP_COUNT + 1)
+            self.assertEqual(files[0], "python_backend.log")
+            with open(os.path.join(log_dir, "python_backend.log"),
+                      encoding="utf-8") as handle:
+                self.assertTrue(handle.read().startswith("ERROR: malformed request"))
+
+    def test_backend_start_prunes_the_rime_directories_once(self):
+        rime_librime = self.load_rime_bindings()
+        if rime_librime is None:
+            self.skipTest("librime bindings are not available")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            log_dir = os.path.join(temp_dir, "logs")
+            os.makedirs(log_dir)
+            for index in range(rime_librime.RIME_LOG_MAX_FILES + 4):
+                with open(os.path.join(log_dir, "Rime.PIME.log.INFO.%d" % index),
+                          "w", encoding="utf-8") as handle:
+                    handle.write("x")
+            before = len(os.listdir(log_dir))
+
+            calls = []
+            shared_dir = os.path.join(PYTHON_DIR, "input_methods", "rime", "data")
+            with mock.patch.object(rime_librime, "prune_rime_user_data",
+                                   side_effect=lambda *a, **kw: calls.append(1)) as prune:
+                rime_librime.rimeInit(datadir=shared_dir, userdir=temp_dir,
+                                      fullcheck=False, appname="PIME", appver="0.01")
+                rime_librime.rimeInit(datadir=shared_dir, userdir=temp_dir,
+                                      fullcheck=False, appname="PIME", appver="0.01")
+
+            # One retention pass per start call, and the engine keeps running.
+            self.assertEqual(len(calls), 2)
+            prune.assert_called()
+            self.assertEqual(before, rime_librime.RIME_LOG_MAX_FILES + 4)
+            # The real pass is idempotent, so a second start changes nothing.
+            report = rime_librime.prune_rime_user_data(
+                temp_dir, app_name="PIME", log_dir=log_dir)
+            self.assertEqual(report["log_before"], before)
+            self.assertEqual(report["log_after"], rime_librime.RIME_LOG_MAX_FILES)
+            again = rime_librime.prune_rime_user_data(
+                temp_dir, app_name="PIME", log_dir=log_dir)
+            self.assertEqual(again["log_before"], rime_librime.RIME_LOG_MAX_FILES)
+            self.assertEqual(again["log_after"], rime_librime.RIME_LOG_MAX_FILES)
+
+    def load_rime_bindings(self):
+        try:
+            return importlib.import_module("input_methods.rime.librime")
+        except Exception:
+            return None
+
 
 if __name__ == "__main__":
     unittest.main()
