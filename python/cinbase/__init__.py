@@ -1282,6 +1282,25 @@ class CinBase:
                     else:
                         cbTS.compositionChar += '*'
                         cbTS.setCompositionString(cbTS.compositionString + keyname)
+                # Shift + 字母直接切換成英文模式(issue #890，與新酷音 shiftLetterSwitchToEnglish 同設定)
+                # 按下的鍵不在 CIN 字根表時也要切換，優先於全形標點
+                elif (cbTS.shiftLetterSwitchToEnglish and self.isLetterChar(keyCode)
+                        and not cbTS.isComposing() and not cbTS.showCandidates):
+                    CommitStr = charStr
+                    if cbTS.outputSmallLetterWithShift:
+                        CommitStr = charStr.upper() if cbTS.capsStates else charStr.lower()
+                    cbTS.langMode = ENGLISH_MODE
+                    self.updateLangButtons(cbTS)
+                    if cbTS.compositionBufferMode:
+                        RemoveStringLength = 0
+                        if not cbTS.compositionChar == '':
+                            RemoveStringLength = self.calcRemoveStringLength(cbTS)
+                        self.setCompositionBufferString(cbTS, CommitStr, RemoveStringLength)
+                        cbTS.compositionBufferType = "english"
+                        self.setCompositionBufferChar(cbTS, cbTS.compositionBufferType, charStr, cbTS.compositionBufferCursor)
+                    else:
+                        cbTS.setCommitString(CommitStr)
+                    self.resetComposition(cbTS)
                 # 如果停用 Shift 輸入全形標點
                 elif not cbTS.fullShapeSymbols:
                     # 如果是全形模式，將字串轉為全形再輸出

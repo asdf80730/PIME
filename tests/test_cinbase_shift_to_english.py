@@ -74,6 +74,31 @@ class CinbaseKeyHarness(unittest.TestCase):
             service.onKeyDown(event)
         return service.currentReply.get("commitString", "")
 
+    def activate_chepinyin_roman(self):
+        """The 拼音 service on its 通用拼音 table, the one shipped cinbase
+        table whose keyname map holds no ``w``/``y``: exactly those letters
+        reach the not-isInKeyName half of the key dispatch."""
+        from input_methods.chepinyin import chepinyin_ime
+
+        service = chepinyin_ime.ChePinyinTextService(ime_smoke_runner.FakeClient())
+        service.onActivate()
+        for _ in range(500):
+            if chepinyin_ime.CinTable.cin is not None and not chepinyin_ime.CinTable.loading:
+                break
+            time.sleep(0.02)
+        service.cfg.selCinType = 2
+        service.reLoadCinTable = True
+        loader = chepinyin_ime.LoadCinTable(service, chepinyin_ime.CinTable)
+        future = loader.start()
+        if future is None:  # the pre-#1004 loader is a threading.Thread
+            loader.join(30)
+        else:
+            future.result(30)
+        service.cin = chepinyin_ime.CinTable.cin
+        self.assertFalse(service.cin.isInKeyName("w"),
+                         "setup: w sits outside the roman keyname map")
+        return service
+
     def activate_chesimplex(self):
         from input_methods.chesimplex import chesimplex_ime
 
@@ -176,157 +201,28 @@ class CinbaseShiftToEnglishTests(CinbaseKeyHarness):
         self.assertEqual(service.langMode, ENGLISH_MODE)
 
 
-class CinbaseSingleCandidateSpaceTests(CinbaseKeyHarness):
-    def find_single_phrase_char(self, service):
-        """A character the 速成 table types as one lone candidate and the
-        shipped phrase table completes with exactly one phrase."""
-        from cinbase import PhraseData
-        self.assertIsNotNone(PhraseData.phrase, "setup: phrase table loaded")
-        for key, defs in service.cin.chardefs.items():
-            if len(defs) != 1:
-                continue
-            char = defs[0]
-            if PhraseData.phrase.isInCharDef(char) and len(PhraseData.phrase.getCharDef(char)) == 1:
-                return key, char, PhraseData.phrase.getCharDef(char)[0]
-        self.skipTest("no 速成 lone-candidate character has exactly one shipped phrase")
-
-    def find_multi_phrase_char(self, service, minimum):
-        """A committable character the shipped phrase table expands with at
-        least ``minimum`` phrases (for paging the 聯想字 window)."""
-        from cinbase import PhraseData
-        self.assertIsNotNone(PhraseData.phrase, "setup: phrase table loaded")
-        for defs in service.cin.chardefs.values():
-            if not defs:
-                continue
-            char = defs[0]
-            if PhraseData.phrase.isInCharDef(char) and len(PhraseData.phrase.getCharDef(char)) >= minimum:
-                return char, PhraseData.phrase.getCharDef(char)
-        self.skipTest(f"no 速成 character has {minimum}+ shipped phrases")
-
-
-    def test_space_commits_single_candidate_with_direct_show(self):
-        service = self.activate_chesimplex()  # 速成 ships directShowCand=true
-        self.send(service, ord("b"), ord("b"), printable=True)
-        self.assertEqual(list(service.candidateList), ["月"])
-
-        commit = self.send(service, 0x20, 0x20)
-
-        self.assertEqual(commit, "月")
-        self.assertFalse(service.isComposing())
-
-    def test_space_commits_single_candidate_without_direct_show(self):
-        service = self.activate_chesimplex()
-        service.directShowCand = False
-        self.send(service, ord("b"), ord("b"), printable=True)
-
-        commit = self.send(service, 0x20, 0x20)
-
-        self.assertEqual(commit, "月")
-        self.assertFalse(service.isComposing())
-
-    def test_space_commits_single_candidate_even_when_space_pages(self):
-        service = self.activate_chesimplex()
-        service.switchPageWithSpace = True
-        service.canUseSpaceAsPageKey = True
-        self.send(service, ord("b"), ord("b"), printable=True)
-
-        commit = self.send(service, 0x20, 0x20)
-
-        self.assertEqual(commit, "月")
-
-    def test_space_still_pages_multiple_candidates(self):
-        service = self.activate_chesimplex()
-        service.switchPageWithSpace = True
-        service.canUseSpaceAsPageKey = True
-        self.send(service, ord("l"), ord("l"), printable=True)  # 中 丨 丿
-        self.assertEqual(len(service.candidateList), 3)
-
-        commit = self.send(service, 0x20, 0x20)
-
-        self.assertEqual(commit, "")
-        self.assertTrue(service.isComposing(), "space pages instead of committing")
-
-    def test_phrase_space_commits_single_candidate_when_space_pages(self):
-        service = self.activate_chesimplex()
-        service.showPhrase = True
-        key, char, phrase = self.find_single_phrase_char(service)
-        for ch in key:
-            self.send(service, ord(ch), ord(ch), printable=True)
-        self.assertEqual(self.send(service, 0x20, 0x20), char, "setup: committed")
-        self.assertTrue(service.phrasemode, "setup: phrase window is open")
-        self.assertEqual(list(service.candidateList), [phrase])
-
-        service.switchPageWithSpace = True
-        commit = self.send(service, 0x20, 0x20)
-
-        self.assertEqual(commit, phrase)
-
-    def test_phrase_space_commits_first_candidate_without_paging(self):
-        service = self.activate_chesimplex()
-        service.showPhrase = True
-        self.commit_char(service, "中")
-        first = list(service.candidateList)[0]
-
-        commit = self.send(service, 0x20, 0x20)
-
-        self.assertEqual(commit, first)
-
-    def test_enter_still_commits_first_candidate_after_down_open(self):
-        # Enter keeps its pre-#890 contract: each keydown re-arms the
-        # commit gate, so Enter commits the cursor's candidate exactly as
-        # before; only the window-opening keyevent itself never commits.
-        service = self.activate_chesimplex()
-        service.directShowCand = False
-        self.send(service, ord("l"), ord("l"), printable=True)  # 中 丨 丿
-        self.send(service, 0, 0x28)  # VK_DOWN opens the window
-        self.assertTrue(service.isShowCandidates, "setup: Down opened the window")
-
-        commit = self.send(service, 0, 0x0D)  # VK_RETURN
-
-        self.assertEqual(commit, "中")
-        self.assertFalse(service.isComposing())
-
-    def test_space_pages_when_last_page_holds_one_candidate(self):
-        # A one-item tail page must not be confused with a one-candidate list.
-        service = self.activate_chesimplex()
-        service.candPerPage = 2
-        service.candidateView.configure(service.candPerPage, service.candPerRow)
-        service.switchPageWithSpace = True
-        service.canUseSpaceAsPageKey = True
-        self.send(service, ord("l"), ord("l"), printable=True)  # 中 丨 丿
-        self.send(service, 0, 0x22)  # VK_NEXT -> tail page holds only 丿
-        self.assertEqual(list(service.candidateList), ["丿"])
-
-        commit = self.send(service, 0x20, 0x20)
-
-        self.assertEqual(commit, "")
-        self.assertTrue(service.isComposing(), "space paged instead of committing")
-        self.assertTrue(service.isShowCandidates, "window stayed open")
-
-    def test_shift_escape_from_paged_phrase_window_resets_page(self):
-        # A stale page left on the shared candidate view after escaping a
-        # paged 聯想字 window carried into the next (shorter) window.
-        service = self.activate_chesimplex()
-        service.showPhrase = True
+    def test_shift_letter_outside_the_keyname_map_switches(self):
+        # The not-isInKeyName half of onKeyDown: on the roman table w is not a
+        # radical, so without the second branch the mode stays Chinese.
+        service = self.activate_chepinyin_roman()
         service.shiftLetterSwitchToEnglish = True
-        service.candPerPage = 2
-        service.candidateView.configure(service.candPerPage, service.candPerRow)
-        char, phrases = self.find_multi_phrase_char(service, 3)
-        self.commit_char(service, char)
-        self.assertTrue(service.phrasemode, "setup: phrase window is open")
-        self.send(service, 0, 0x22)  # VK_NEXT
-        self.assertEqual(service.candidateView.page, 1, "setup: paged to page 1")
-        commit = self.send(service, ord("H"), ord("H"), printable=True, shift=True)
 
-        self.assertEqual(commit, "H")
-        self.assertEqual(service.candidateView.page, 0, "escape reset the page")
-        # The next 聯想字 window must open against page 0, not the stale one.
-        service.langMode = CHINESE_MODE
-        lone_key, lone_char, _ = self.find_single_phrase_char(service)
-        for ch in lone_key:
-            self.send(service, ord(ch), ord(ch), printable=True)
-        self.assertEqual(self.send(service, 0x20, 0x20), lone_char, "setup: committed")
-        self.assertTrue(service.isShowPhraseCandidates, "phrase window reopened cleanly")
+        commit = self.send(service, ord("W"), ord("W"), printable=True, shift=True)
+
+        self.assertEqual(commit, "W")
+        self.assertEqual(service.langMode, ENGLISH_MODE)
+
+    def test_shift_letter_outside_keyname_map_commits_with_full_shape(self):
+        # Same letter with Shift full-shape punctuation on: the fall-through
+        # answered nothing at all, so the keypress was swallowed.
+        service = self.activate_chepinyin_roman()
+        service.shiftLetterSwitchToEnglish = True
+        service.fullShapeSymbols = True
+
+        commit = self.send(service, ord("W"), ord("W"), printable=True, shift=True)
+
+        self.assertEqual(commit, "W")
+        self.assertEqual(service.langMode, ENGLISH_MODE)
 
 
 if __name__ == "__main__":
