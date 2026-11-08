@@ -67,7 +67,9 @@ suite_log="$root/.git/pime-pre-commit-suite.log"
 # tests/check_pr_scope.sh would fail on it much later. Two porcelain calls, so
 # the check costs milliseconds on top of the suite.
 tree_state() {
-    git -C "$root" status --porcelain -- python node go-backend
+    # Only the untracked entries: "new file left behind" is the whole question,
+    # and the M/?? mix of a sibling writer in this checkout stays out of it.
+    git -C "$root" status --porcelain -- python node go-backend | grep -E '^\?\? ' || true
 }
 before_state=$(tree_state)
 if ! (cd "$root" && "$py" -m unittest discover -s tests -p 'test_*.py' >"$suite_log" 2>&1); then
