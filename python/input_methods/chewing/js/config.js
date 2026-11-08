@@ -173,6 +173,9 @@ $(function () {
                     chewingConfig[inputItem.name] = inputItem.checked;
                     break;
                 case "text":
+                    // 字型名稱是字串，不能 parseInt（issue #582）
+                    chewingConfig[inputItem.name] = inputItem.value;
+                    break;
                 case "number":
                     chewingConfig[inputItem.name] = Number.parseInt(inputItem.value);
                     break;

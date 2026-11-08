@@ -141,7 +141,7 @@ class ChewingTextService(TextService):
         chewingContext.set_spaceAsSelection(cfg.spaceKeyAction)
 
         # 設定 UI 外觀
-        self.customizeUI(candFontName='MingLiu',
+        self.customizeUI(candFontName=cfg.candFontName,
                          candFontSize=cfg.fontSize,
                          candPerRow=cfg.candPerRow,
                          candUseCursor=not(cfg.leftRightAction and cfg.upDownAction))

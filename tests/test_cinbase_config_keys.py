@@ -15,7 +15,9 @@ import json
 import os
 import re
 import sys
+import tempfile
 import unittest
+from unittest import mock
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 for _path in (os.path.join(ROOT, "python"), os.path.dirname(os.path.abspath(__file__))):
@@ -157,6 +159,53 @@ class CinbaseConfigReadSiteTests(CinbaseKeyHarness):
         service.currentReply = {}
 
         service.cinbase.applyConfig(service)
+
+        self.assertEqual("Noto Sans TC",
+                         service.currentReply["customizeUI"]["candFontName"])
+
+
+class ChewingConfigReadSiteTests(unittest.TestCase):
+    # #582 names both candidate-drawing paths: the cinbase window above and the
+    # chewing window, whose applyConfig() used to pass the literal 'MingLiu'.
+
+    def test_the_chewing_config_ships_the_font_default(self):
+        from input_methods.chewing import chewing_config
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with mock.patch.dict(os.environ, {"APPDATA": temp_dir}):
+                cfg = chewing_config.ChewingConfig()
+                self.assertEqual(chewing_config.DEF_FONT_NAME, cfg.candFontName)
+                # a saved empty value falls back instead of reaching the UI
+                with open(cfg.getConfigFile(), "w", encoding="utf-8") as handle:
+                    json.dump({"candFontName": ""}, handle)
+                cfg.candFontName = "stale"
+                cfg.load()
+                self.assertEqual(chewing_config.DEF_FONT_NAME, cfg.candFontName)
+
+    def test_the_configured_font_reaches_the_chewing_window(self):
+        from input_methods.chewing import chewing_config, chewing_ime
+
+        context = mock.MagicMock()
+        service = chewing_ime.ChewingTextService.__new__(
+            chewing_ime.ChewingTextService)
+        service.configVersion = None
+        service.chewingContext = context
+        service.currentReply = {}
+        service.opencc = None
+        service.hasLangButtons = False
+        service.updateSwitchLangIcon = False
+        service.langMode = context.get_ChiEngMode.return_value
+        service.shapeMode = context.get_ShapeMode.return_value
+        service.icon_dir = "icons"
+        service.client = mock.MagicMock(isWindows8Above=False)
+
+        cfg = chewing_config.chewingConfig
+        previous = cfg.candFontName
+        cfg.candFontName = "Noto Sans TC"
+        try:
+            chewing_ime.ChewingTextService.applyConfig(service)
+        finally:
+            cfg.candFontName = previous
 
         self.assertEqual("Noto Sans TC",
                          service.currentReply["customizeUI"]["candFontName"])

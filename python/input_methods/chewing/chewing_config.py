@@ -21,6 +21,8 @@ import time
 import shutil
 
 DEF_FONT_SIZE = 16
+# 選字及訊息視窗字型 (issue #582)：與 cinbase 的內定值一致
+DEF_FONT_NAME = "MingLiu"
 
 SWITCH_LANG_WITH_BOTH_SHIFT = 0
 SWITCH_LANG_WITH_LEFT_SHIFT = 1
@@ -45,6 +47,7 @@ class ChewingConfig:
         self.addPhraseForward = True
         self.advanceAfterSelection = True
         self.autoLearn = True
+        self.candFontName = DEF_FONT_NAME
         self.candPerPage = 9
         self.candPerRow = 3
         self.defaultEnglish = False
@@ -115,6 +118,9 @@ class ChewingConfig:
 
         except Exception:
             self.save()
+        if not getattr(self, "candFontName", ""):
+            # 空字串（例如設定頁被清空）退回內定字型，讓選字窗仍有字型可用
+            self.candFontName = DEF_FONT_NAME
         self.update()
 
     def toJson(self):
