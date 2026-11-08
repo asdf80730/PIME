@@ -23,7 +23,9 @@ from cinbase import CinBase
 from cinbase import LoadCinTable
 from cinbase import LoadRCinTable
 from cinbase import LoadHCinTable
+from cinbase import CinTableBase
 from cinbase.config import CinBaseConfig
+
 
 
 class CheArrayTextService(TextService):
@@ -61,8 +63,7 @@ class CheArrayTextService(TextService):
             loadCinFile = LoadCinTable(self, CinTable)
             loadCinFile.start()
         else:
-            while CinTable.loading:
-                continue
+            CinTable.wait()
             self.cin = CinTable.cin
 
 
@@ -150,10 +151,13 @@ class CheArrayTextService(TextService):
         self.cinbase.onCompositionTerminated(self, forced)
 
 
-class CinTable:
-    loading = False
+    # 設定候選字頁數
+    def setCandidatePage(self, page):
+        self.currentCandPage = page
+
+class CinTable(CinTableBase):
     def __init__(self):
-        self.cin = None
+        super().__init__()
         self.curCinType = None
         self.userExtendTable = None
         self.priorityExtendTable = None
@@ -161,17 +165,16 @@ class CinTable:
 CinTable = CinTable()
 
 
-class RCinTable:
-    loading = False
+class RCinTable(CinTableBase):
     def __init__(self):
-        self.cin = None
+        super().__init__()
         self.curCinType = None
 RCinTable = RCinTable()
 
 
-class HCinTable:
-    loading = False
+class HCinTable(CinTableBase):
     def __init__(self):
-        self.cin = None
+        super().__init__()
         self.curCinType = None
 HCinTable = HCinTable()
+
