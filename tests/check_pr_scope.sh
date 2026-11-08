@@ -62,7 +62,7 @@ esac
 # record branches stay out too — nothing is ever based on them, so only the
 # head-name check above lets them through.
 case "${GITHUB_BASE_REF:-}" in
-    local/linux-master|omp/master|win/*)
+    local/stroke-parked|local/linux-master|omp/master|win/*)
         printf 'SKIP  PR scope (base %s is an integration branch)\n' "$GITHUB_BASE_REF"
         exit 125
         ;;

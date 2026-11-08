@@ -81,6 +81,29 @@ class CinbaseShiftToggleTests(CinbaseKeyHarness):
 
         self.assertEqual(service.langMode, CHINESE_MODE)
 
+    def test_two_taps_on_a_keydown_only_host_toggle_once_each(self):
+        # 同一完成點前的兩次輕點：不送 key-up 的宿主也要各切一次，往復後回到原模式
+        service = self.activate_chesimplex()
+        self.assertEqual(service.langMode, CHINESE_MODE)
+
+        self.shift_down(service)
+        self.shift_down(service)
+        self.send(service, ord("a"), ord("a"), printable=True)
+
+        self.assertEqual(service.langMode, CHINESE_MODE,
+                         "兩個輕點應各切換一次")
+
+    def test_two_taps_before_one_keyup_toggle_once_each(self):
+        # 有送 key-up 的宿主，同樣的兩次輕點也是切兩次
+        service = self.activate_chesimplex()
+        self.assertEqual(service.langMode, CHINESE_MODE)
+
+        self.shift_down(service)
+        self.shift_down(service)
+        self.shift_up(service)
+
+        self.assertEqual(service.langMode, CHINESE_MODE)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -20,6 +20,7 @@ import types
 SERVICES = [
     ("braille_chewing", "input_methods.braille_chewing.braille_chewing_ime"),
     ("chearray", "input_methods.chearray.chearray_ime"),
+    ("chebihua", "input_methods.chebihua.chebihua_ime"),
     ("checj", "input_methods.checj.checj_ime"),
     ("chedayi", "input_methods.chedayi.chedayi_ime"),
     ("cheeng", "input_methods.cheeng.cheeng_ime"),

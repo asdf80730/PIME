@@ -85,10 +85,11 @@ committed `.cin`/`.json` pair or a test module is a false positive. The design
 credit lives in the commit message and the PR body, in whatever form the effort's
 ticket records under `.scratch/<effort>/`.
 
-Stroke-table worked example: a review flagged the feature's table generator for the
-autonomous header because an ADR recorded the design — an ADR describing an artifact's
-shape does not make the file human-authored. The maintainer's standing choice for that
-feature is the autonomous form everywhere, headers and commit messages alike.
+Stroke-table worked example: a review flagged the feature's table generator,
+`python/cinbase/tools/cnsstroke2cin.py`, for the autonomous header because an ADR
+recorded the design — an ADR describing an artifact's shape does not make the
+file human-authored. The maintainer's standing choice for that feature is the
+autonomous form everywhere, headers and commit messages alike.
 
 ## A quoted line must be the line the implementer wrote
 
@@ -113,7 +114,8 @@ had already reached the round record before a grep corrected it.
 `X says A although the code does B` is not an accepted state; it is a defect with a
 paper trail. Treat it as a finding and ask for the decision record that tolerates
 it. Three scan rounds of the Stroke table read *"big5S is listed although getCharSet
-presently answers big5LF"* in the parked table's own generator and let it
+presently answers big5LF"* in the parked table's own generator,
+`python/cinbase/tools/cnsstroke2cin.py`, and let it
 stand: the comment reads as a known upstream limitation, no ADR recorded it, and no
 test covered what it conceded — so the exclusion it described was inert while every
 review treated it as settled. Accept the divergence only when a record names the
@@ -145,7 +147,6 @@ this (`tests/test_cinbase_tables.py` names `python/cinbase/tools/cintojson.py`),
 move is running the tool or quoting that test. A drift claim the review did not run
 stays `[INFERENCE]`: an imagined drift costs implementation measurement rounds to
 refute.
-
 ## A mutation earns its place by naming what it reddened
 
 ``Eight mutations were run`` proves nothing; the assertion each one reddened is the

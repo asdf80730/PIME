@@ -71,3 +71,36 @@ _Avoid_: bucket, charset group
 The oldest Windows release an installable artifact is allowed to run on, for every component that
 artifact ships.
 _Avoid_: minimum OS, minimum version, compatibility target
+
+**Five-stroke keyset (五筆畫)**:
+The five stroke classes used as input keys for stroke input — 橫、豎、撇、捺、點 folded into 橫豎撇捺折 — written with the home keys `h s p n z` and displayed as `一丨丿丶乙`.
+_Avoid_: wubi (五筆 refers to the 五筆字型 shape method), five strokes (ambiguous with stroke count)
+
+**Stroke table (筆畫表)**:
+The chardefs mapping every stroke sequence, and every prefix of one, to characters: under a
+complete code, the characters whose own sequence is it; under a prefix, those whose sequence
+merely begins with it and still await strokes. The sole table backing the stroke Service.
+_Avoid_: stroke dictionary (a Rime artifact), stroke dict
+
+**Complete code (打完的字)**:
+A character's own full stroke sequence; a candidate is complete at a key when the keys typed are
+exactly its code, so choosing it needs no further stroke. The candidates under a key that are not
+complete still await strokes. Which of the two a candidate is, the typist sees only through its
+position in the key's candidate set.
+_Avoid_: exact match, finished character, longest code (full-code tier in ADR 0002 is a different thing)
+
+**Table holder (碼表承載器)**:
+The in-process copy of a table that every instance of a Service shares, together with whether a load of
+that table is in flight.
+_Avoid_: singleton, global table, cache, CinTable (an engine-facing field name on one holder, not the concept)
+
+**Capability roster (能力名冊)**:
+The single declaration of which engine capabilities a Service may use; a Service outside the roster gets
+neither the behaviour nor its 功能開關 menu items, whatever its own configuration package says. Today the
+only rostered capability is Intelligent select.
+_Avoid_: feature flag, capability flag, feature list, whitelist
+
+**Intelligent select (智慧選字)**:
+The engine capability that reorders the Candidate set for a composition key by the user's own selection
+counts, optionally weighted by recent picks and the preceding character.
+_Avoid_: learning mode, smart selection, frequency sorting

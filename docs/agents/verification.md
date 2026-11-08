@@ -210,7 +210,6 @@ test disagrees between runs, read the toggle state before chasing logic —
 `python/python3/python.exe -c "import ctypes; print(bool(ctypes.WinDLL('User32.dll').GetKeyState(0x14) & 1))"`
 for CapsLock (0x14). Tests pin such reads at every site; the reviewer rule is
 in `docs/agents/code-review.md`.
-
 A test comment that names what would turn the test red is a verification claim too,
 and it needs the same proof as a `Validation:` line: delete the guard the comment
 points at, watch the test fail, put it back. A comment can describe a race the test

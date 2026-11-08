@@ -310,14 +310,17 @@ PRUNE_SCAN_LIMIT = 512      # directory entries inspected per pass
 _rime_started = False
 
 
-def _aged_entries(directory, prefix="", limit=PRUNE_SCAN_LIMIT):
+def _aged_entries(directory, prefix="", limit=PRUNE_SCAN_LIMIT,
+                  dirs_only=False):
     """One walk of `directory`; return ``(matched_total, newest_rows)``.
 
     `newest_rows` holds the newest `limit` ``(mtime, name, path)`` tuples of the
     entries whose name starts with `prefix`, oldest first, kept in a heap of
     `limit` items; `matched_total` counts every match of the single walk, so a
     caller can tell a full listing from a capped window and repeat the walk when
-    the directory was larger than the cap.
+    the directory was larger than the cap. `dirs_only` restricts the match to
+    directories, which is what the folder-pruning caller needs: stray files in
+    the same directory then neither count nor compete for the window.
     """
     matched = 0
 
@@ -330,9 +333,12 @@ def _aged_entries(directory, prefix="", limit=PRUNE_SCAN_LIMIT):
                     if prefix and not name.startswith(prefix):
                         continue
                     try:
+                        is_dir = entry.is_dir()
                         mtime = entry.stat().st_mtime
                     except OSError:
                         continue  # vanished between the listing and the stat
+                    if dirs_only and not is_dir:
+                        continue
                     matched += 1
                     yield (mtime, name, entry.path)
         except OSError:
@@ -363,7 +369,10 @@ def _prune(scan, keep, remover):
                 pass
         if total < PRUNE_SCAN_LIMIT:
             break  # this walk already covered the whole directory
+        previous = total
         total, rows = scan()
+        if total == previous:
+            break  # the rescans agree: a cap-sized listing that never shrinks
     return (before, before - deleted)
 
 
@@ -383,7 +392,8 @@ def prune_sync_snapshots(user_dir, keep=SYNC_SNAPSHOT_MAX):
 
     Returns the ``(before, after)`` folder counts of ``<user_dir>/sync``.
     """
-    return _prune(lambda: _aged_entries(os.path.join(user_dir, "sync")),
+    return _prune(lambda: _aged_entries(os.path.join(user_dir, "sync"),
+                                        dirs_only=True),
                   keep, shutil.rmtree)
 
 

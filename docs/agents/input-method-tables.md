@@ -26,22 +26,48 @@ Stroke-order and other attribute tables derive from the 全字庫 open-data rele
 - Field spec ships inside the same zip (`全字庫屬性資料說明文件.txt`).
 - Older citations pointing at `cns11643.gov.tw/AIDB/Open_Data.zip` are **dead links** (site rebuilt); rewrite them to the URL above.
 
-### Stroke table (筆畫表) — parked
+### Stroke table (筆畫表)
 
-The generated Stroke table, the generator that derives it from the 全字庫 release,
-the Service that ships it, and every test over it are parked on
-`archive/chebihua-2026-10-29` rather than deleted: the maintainer does not want a
-new input method in the product right now. What that branch's copy of this page
-records, and what a revival has to follow, is the regeneration recipe (unzip
-`Properties.zip` and `MapingTables.zip`, read the version out of `release.txt`, and
-pass Windows-form paths because the bundled interpreter resolves a POSIX `/c/...`
-argument against `C:\c`), why `--release` is not decoration (the release version is
-quoted inside the 顯名聲明 the data licence requires, and `--emit-license` writes the
-notice beside the JSON so the committed copy is never typed), the table budget
-(`CLOSURE_TIERS`/`FULLCODE_TIERS`/`EXCLUDED_TIERS`, prefix closure only for the Big5
-tiers, nothing past 30 strokes), and the rule that a character's tier is read from
-which of the converter's tier dicts gained it — not from the name `getCharSet`
-returns, because its Big5 符號 branch files in `big5S` and answers `"big5LF"`.
+`python/cinbase/cin/CnsStroke.cin` is generated, never hand-edited. To rebuild it
+against a new release, unzip `Properties.zip` and `MapingTables.zip` and read the
+version out of `release.txt`, then:
+
+```
+python/python3/python.exe python/cinbase/tools/cnsstroke2cin.py \
+    <unzipped>/CNS_strokes_sequence.txt <unzipped>/Unicode \
+    -o python/cinbase/cin/CnsStroke.cin --release 20260805
+python/python3/python.exe python/cinbase/tools/cintojson.py CnsStroke.cin
+```
+
+The tree the shipped table was built from is kept unzipped at
+`C:\Users\<user>\cns11643-opendata\` — `Properties\CNS_strokes_sequence.txt` plus
+`MapingTables\Unicode\CNS2UNICODE_Unicode*.txt`. Pass Windows-form paths: the bundled
+interpreter resolves a POSIX `/c/...` argument against `C:\c`. Before concluding the
+inputs are unavailable, look here and check `release.txt` against the version the
+`.cin` header quotes — the live release moves ahead of the pinned one.
+
+- `--release` is not decoration: the release version is quoted inside the
+  OGDL-1.0 顯名聲明 that the data licence requires, which the generator writes
+  into the `.cin` header and — as
+  `python/cinbase/json/CnsStroke.LICENSE.txt` — beside the runtime JSON that
+  actually ships. A rebuild writes both; `--emit-license` regenerates the notice
+  alone from the same code, without the CNS raw inputs, so the committed notice
+  is never a hand-typed copy. Commit the regenerated `.cin`, `.json` and notice
+  together.
+- Table budget: full prefix closure over all ~95k CNS code points is ~16 MB of
+  runtime JSON, so the generator expands prefixes only for the Big5 常用/次常用
+  tiers, keeps the complete stroke code alone for the other included planes, and
+  leaves out anything longer than `MAX_STROKES` (30 strokes — the Service declares
+  `maxCharLength` 30, so such a code could never be typed), the CJK Ext-B planes
+  and the private use areas. The knobs are `CLOSURE_TIERS`, `FULLCODE_TIERS` and
+  `EXCLUDED_TIERS` at the top of `python/cinbase/tools/cnsstroke2cin.py`, and
+  a tier the converter starts filing characters under that none of the three lists
+  covers is an error rather than a silent omission. The tier is read from that
+  filing — which of the converter's tier dicts gained the character — not from the
+  name `getCharSet` returns, because the two can disagree: its Big5 符號 branch files
+  in `big5S` and answers `"big5LF"`.
+  `tests/test_cinbase_stroke_table.py` fails if the shipped JSON leaves the size
+  class of the largest other table or the common planes lose their prefix closure.
 
 ## 大易 canonical coordinates
 
@@ -105,11 +131,13 @@ the table exists:
 - `python/cinbase/debug.py` — `jsonNameDict` maps a JSON name to the display name
   the debug log prints; without an entry the log shows the raw file name.
 - `python/cinbase/configtool.py` — `CinDict` is the roster the settings tool
-  resolves a Service's tables through; a Service missing there dies on open, and it
-  is the only roster this tree carries. The Capability roster that gated per-Service
-  behaviour switches (learning counts, 功能開關 menu items) arrived with the 筆畫
-  effort and is parked with it on `archive/chebihua-2026-10-29`: reviving Intelligent
-  select for a Service means reviving that roster module first.
+  resolves a Service's tables through; a Service missing there dies on open.
+  Per-Service behaviour switches gated on a Capability (learning counts,
+  功能開關 menu items) are declared in the Capability roster,
+  `python/cinbase/capabilities.py`: a new Service wanting Intelligent select
+  joins that roster, and a Service outside it gets neither the behaviour nor
+  its menu items, whatever its own configuration package says. `CinDict` and
+  the roster are the rosters that bite.
 - The settings dialog is split across two directories, and the route table in
   `python/cinbase/configtool.py` (`ConfigApp.__init__`) decides which one serves
   a request: `*.html` and `config.js` come from the Service's own `config/`, so
@@ -132,11 +160,16 @@ the table exists:
   third-party open data and owes an attribution exhibit of its own: name the
   shipped table file, its origin, the licence, and where the exhibit ships. The
   exhibit itself ships as `python/cinbase/json/<stem>.LICENSE.txt`, a notice the
-  table's own generator writes beside the runtime JSON, because the installer copies
-  `json/` and excludes `cin/` and the converter gives the JSON no licence key.
-  `installer/installer.nsi` installs `LICENSE.txt` into `$INSTDIR` with the payload
-  (no extra wizard page), so the inventory reaches the user too;
+  generator writes beside the runtime JSON (for the Stroke table:
+  `python/cinbase/tools/cnsstroke2cin.py`), because the installer copies `json/`
+  and excludes `cin/` and the converter gives the JSON no licence key.
+  `installer/installer.nsi` installs `LICENSE.txt` into `$INSTDIR` with the
+  payload (no extra wizard page), so the inventory reaches the user too;
   `tests/stage_installer.bat` stages it, like `version.txt` and `PSF.txt`.
+  `tests/test_cinbase_tables.py` fails if a table whose `.cin` header carries an
+  exhibit has no notice beside its JSON, if that notice no longer matches
+  `--emit-license` byte for byte, or if the inventory entry or the installer's
+  `File` of `LICENSE.txt` is gone.
 
 The 全字庫 release the stroke table was built from sits unzipped under
 `C:\Users\<user>\cns11643-opendata\` on the Windows box; re-download it when the

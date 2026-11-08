@@ -74,13 +74,17 @@ class CinbaseLoadingMessageTests(CinbaseKeyHarness):
         pending.set_result(loaded)
 
         # The report's repro: a quick key sequence right after the load.
+        # Every key is answered, and none of them re-arms the toast.
+        toasts = []
         for code in (0x38, 0x20, ord('a'), ord('b')):  # '*' space a b
             self.send(service, code, code, printable=True)
             reply = service.currentReply
+            self.assertIsInstance(reply, dict,
+                                  "key %r got no reply at all" % code)
             if "showMessage" in reply:
-                self.assertNotEqual(reply["showMessage"]["message"],
-                                    LOADING_MESSAGE,
-                                    "the toast was re-armed after the load")
+                toasts.append(reply["showMessage"]["message"])
+        self.assertEqual([], toasts,
+                         "the toast was re-armed after the load")
 
     def test_done_future_without_a_table_emits_no_stale_message(self):
         service = self.activate_chesimplex()

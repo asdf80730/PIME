@@ -40,8 +40,8 @@ NEW_KEYS = {
 
 
 def fresh_config():
-    from cinbase.config import CinBaseConfig
-    return type(CinBaseConfig)()
+    from cinbase.config import CinBaseConfigClass
+    return CinBaseConfigClass()
 
 
 class CinbaseConfigQuartetTests(unittest.TestCase):
@@ -80,6 +80,27 @@ class CinbaseConfigQuartetTests(unittest.TestCase):
                              "the control for %s is unnamed" % key)
         # 選字鍵順序是 select，選項由 js 建立
         self.assertIn("selKeyType", script)
+
+    def test_the_settings_script_agrees_with_the_python_defaults(self):
+        # config.js carries its own copy of two of these decisions: the 選字鍵
+        # 順序 option rows and the index used when a shipped config.json has no
+        # selKeyType. The engine reads the Python side, so the copies must be
+        # identical or a saved index selects the wrong row.
+        with open(os.path.join(CINBASE_DIR, "config", "js", "config.js"),
+                  encoding="utf-8") as handle:
+            script = handle.read()
+        from cinbase.config import CinBaseConfigClass, selKeys
+
+        rows = re.findall(r'"([^"]+)"',
+                          re.search(r"var selSelKeys = \[(.*?)\];",
+                                    script, re.S).group(1))
+        self.assertEqual(list(selKeys), rows,
+                         "the select options drift from config.py selKeys")
+        fallback = re.search(
+            r'checjConfig\.selKeyType === "undefined"\) \? (\d+) :',
+            script).group(1)
+        self.assertEqual(CinBaseConfigClass().selKeyType, int(fallback),
+                         "the js index fallback is not the python default")
 
     def test_invalid_values_fall_back(self):
         cfg = fresh_config()

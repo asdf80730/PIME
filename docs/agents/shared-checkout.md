@@ -12,13 +12,14 @@ in-place commits.
 
 **Read the integration ref, never recall it.** It is the checked-out branch whose
 tip carries `docs/agents/` and `tests/`: `git rev-parse --abbrev-ref HEAD`, then
-`git log --oneline -3`. Two `local/*` record branches can sit diverged beside each
-other — measured 2026-10-30, `local/linux-master` and `local/stroke-parked` held 37
-and 31 unique commits, and their `docs/agents/` and both gate scripts differ — so a
-name carried from memory can commit work onto the history that lacks the harness you
-are reading, and a gate you believe runs may not exist there.
+`git log --oneline -3`. One ref carries the harness: `local/stroke-parked`, which
+absorbed `local/linux-master` — that branch is retired at `33d187c` (merged
+2026-11-08), and the fork's mirror ref `fork/local/linux-master` was deleted on
+2026-10-31, so neither is a live base. The survivor is published with
+`git push origin local/stroke-parked:master`.
 
-Both gates print the candidate list each run (`tests/check_integration_ref.sh`), so the
+Both gates print their findings each run — `tests/check_integration_ref.sh` names the
+candidate carriers, `tests/check_worktree_hygiene.sh` the stray worktrees — so the
 ambiguity surfaces before a commit rather than after it.
 
 ```bash
@@ -29,9 +30,13 @@ ambiguity surfaces before a commit rather than after it.
 git worktree add -q -b <agent>/<topic> .worktrees/<topic-slug> <base-ref>
 ```
 
-- Worktrees live under `.worktrees/`, never as a sibling of the checkout, and carry
-  the topic slug alone, never the branch's prefix (`chewing-userphrase-393`, not
-  `pr-chewing-userphrase-393`).
+- Run the command from the main checkout root: every linked worktree lives
+  under `.worktrees/` there, never beside it. The user's `Documents\` top level
+  stays free of agent folders, and `tests/check_worktree_hygiene.sh` (run by both
+  verification gates) fails a run that finds strays.
+- Name the directory the topic slug alone, never the branch's prefix
+  (`chewing-userphrase-393`, not `pr-chewing-userphrase-393`); an agent-prefixed
+  slug (`omp-worktree-hygiene`) is equally fine, the gate only checks the location.
 - Remove it with `git worktree remove --force`. This repo carries a submodule, and
   the plain form aborts on it — sometimes after already removing an earlier tree in
   the same chain.
@@ -40,7 +45,7 @@ git worktree add -q -b <agent>/<topic> .worktrees/<topic-slug> <base-ref>
   from either tree.
 - Write agent artifacts into `.scratch/`, the worktree they belong to, or `%TEMP%`;
   the user's `Documents\` top level stays empty of agent output.
-- Edit files inside a sibling worktree by **absolute path**: a mistyped relative
+- Edit files inside a linked worktree by **absolute path**: a mistyped relative
   path is re-anchored by filename match and can silently retarget the main
   checkout.
 

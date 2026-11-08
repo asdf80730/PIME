@@ -310,6 +310,10 @@ step 'PR scope gate self-test' "$ROOT/tests/check_pr_scope_test.sh"
 step 'Worktree test driver self-test' "$ROOT/tests/run_worktree_tests_test.sh"
 step 'Added files carry an AI declaration' "$ROOT/tests/check_ai_declarations.sh"
 step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
+# The Documents top level must stay free of agent folders: the 2026-10 litter
+# of sibling worktrees came from the old `../<repo>-<agent>` convention, so
+# every linked tree must live under the main checkout's .worktrees/.
+step 'Worktrees stay under .worktrees/' "$ROOT/tests/check_worktree_hygiene.sh"
 step 'Tracked code cites no .scratch/' "$ROOT/tests/check_scratch_refs.sh"
 step 'Scratch-ref gate self-test' "$ROOT/tests/check_scratch_refs_test.sh"
 step 'PR bodies carry the AI declaration' "$ROOT/tests/check_pr_bodies.sh"

@@ -168,6 +168,20 @@ class CinbaseSelectionKeyTests(CinbaseKeyHarness):
         self.assertEqual(
             self.send_event(service, self.num_event(ord("2"), VK_NUMPAD1 + 1)), "乙")
 
+    def test_numpad_selection_follows_a_row_changed_mid_session(self):
+        # 選字鍵列在小鍵盤處理前就同步：改變設定後的「第一個」按鍵就用新列
+        service = self.activate_chesimplex()
+        service.directShowCand = False
+        service.switchPageWithSpace = False
+        self.three_candidate_table(service)
+        service.cfg.selKeyType = 1
+
+        self.send(service, ord("l"), ord("l"), printable=True)
+        self.send(service, 0x20, 0x20, printable=True)
+
+        self.assertEqual(
+            self.send_event(service, self.num_event(ord("0"), VK_NUMPAD0)), "甲")
+
     def test_other_numpad_keys_still_bypass_the_ime(self):
         service = self.activate_chesimplex()
         service.directShowCand = False

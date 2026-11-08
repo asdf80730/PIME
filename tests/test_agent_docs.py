@@ -152,7 +152,6 @@ class AgentDocTests(unittest.TestCase):
         self.assertEqual([], offenders,
                          "cite AGENTS.md headings by name, never by section or "
                          "line number")
-
     def test_glossary_terms_follow_the_format(self):
         """GLOSSARY.md is a glossary: every term is **Term**: + definition + _Avoid_."""
         path = os.path.join(ROOT, "GLOSSARY.md")

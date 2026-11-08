@@ -62,10 +62,15 @@ build/
 ```json
 {
   "name": "GoSimpleIME",
+  "guid": "{...语言配置文件 GUID...}",
+  "locale": "zh-Hant-TW",
+  "fallbackLocale": "zh-TW",
   "icon": "icon.ico",
-  "backend": "go-backend"
+  "moduleName": "myservice"
 }
 ```
+
+注意：后端路由由目录位置决定（`go-backend/input_methods/<名称>/`），没有 `"backend"` 字段，代码不读取它。Go 后端也不会按目录自动发现实现——`server.go` 的 `loadInputMethods` 有一个硬编码的目录名 switch，新输入法必须在那里加 `case "<目录名>":`，未知目录只会被记日志并跳过。
 
 ## 开发自定义输入法
 
@@ -99,19 +104,14 @@ func (ime *MyIME) HandleRequest(req *pime.Request) *pime.Response {
 
 ### 2. 注册到服务管理器
 
+在 `server.go` 的 `loadInputMethods` switch 中为你的目录名加一个 `case`，返回实现了 `pime.TextService` 的实例（见 `pime/service.go` 的 `TextServiceBase`）。当前只内置 `meow` 与 `rime` 两个 case；目录存在但没有对应 case 时，服务不会加载，日志会提示跳过。
+
 ```go
-func main() {
-    mgr := pime.NewServiceManager()
-    
-    // 注册输入法
-    mgr.Register("my_ime", func(clientID string) pime.TextService {
-        return NewMyIME(&pime.Client{ID: clientID})
-    })
-    
-    // 运行服务
-    if err := mgr.Run(); err != nil {
-        log.Fatal(err)
-    }
+switch entry.Name() {
+case "meow":
+    ...
+case "my_ime": // 新输入法在这里登记
+    svc = NewMyIME(client)
 }
 ```
 

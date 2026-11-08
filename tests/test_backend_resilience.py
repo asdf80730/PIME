@@ -170,9 +170,10 @@ class ServerResilienceTests(unittest.TestCase):
 
             log_dir = os.path.join(temp_dir, "PIME", "Logs")
             files = sorted(os.listdir(log_dir))
-            # One active file plus the numbered backups, never a longer chain.
-            self.assertLessEqual(len(files), server_mod.LOG_BACKUP_COUNT + 1)
-            self.assertEqual(files[0], "python_backend.log")
+            # Six short lines stay far under the 1 MB rollover, so the chain is
+            # the single active file: the cap in LOG_BACKUP_COUNT only ever
+            # shows up once a rollover has happened.
+            self.assertEqual(["python_backend.log"], files)
             with open(os.path.join(log_dir, "python_backend.log"),
                       encoding="utf-8") as handle:
                 self.assertTrue(handle.read().startswith("ERROR: malformed request"))
@@ -192,8 +193,14 @@ class ServerResilienceTests(unittest.TestCase):
 
             calls = []
             shared_dir = os.path.join(PYTHON_DIR, "input_methods", "rime", "data")
+            # The guard is what the two calls below are for, so start from a
+            # known side of it: other modules' rimeInit may have run first.
+            started_before = rime_librime._rime_started
+            rime_librime._rime_started = False
             with mock.patch.object(rime_librime, "prune_rime_user_data",
-                                   side_effect=lambda *a, **kw: calls.append(1)) as prune:
+                                   side_effect=lambda *a, **kw: calls.append(1)) as prune, \
+                    mock.patch.object(rime_librime, "rime",
+                                      mock.MagicMock()) as api:
                 rime_librime.rimeInit(datadir=shared_dir, userdir=temp_dir,
                                       fullcheck=False, appname="PIME", appver="0.01")
                 rime_librime.rimeInit(datadir=shared_dir, userdir=temp_dir,
@@ -202,6 +209,18 @@ class ServerResilienceTests(unittest.TestCase):
             # One retention pass per start call, and the engine keeps running.
             self.assertEqual(len(calls), 2)
             prune.assert_called()
+            # The engine itself starts once: the _rime_started guard is what
+            # keeps the second call from re-setting up, and a repeated
+            # RimeSetup aborts on glog's "Could not create logging file".
+            self.assertEqual(1, api.setup.call_count,
+                             "the second rimeInit re-set up the engine")
+            self.assertEqual(1, api.initialize.call_count,
+                             "the second rimeInit re-initialized the engine")
+            self.assertTrue(rime_librime._rime_started)
+            # Leave the module-level guard as this process found it: a later
+            # module's rimeInit has to make the real RimeSetup, and the flag is
+            # the only thing telling it that it already did.
+            rime_librime._rime_started = started_before
             self.assertEqual(before, rime_librime.RIME_LOG_MAX_FILES + 4)
             # The real pass is idempotent, so a second start changes nothing.
             report = rime_librime.prune_rime_user_data(

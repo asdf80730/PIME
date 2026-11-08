@@ -79,6 +79,15 @@ expect() {
 expect 125 'integration branch name skips' "$root" local/linux-master
 expect 125 'local record branch skips' "$root" local/stroke-parked
 
+# 1b. The same names as a pull-request base: harness work is the base's own
+# content there, so the scope rules cannot judge it. The retired mirror keeps its
+# entry because PRs delivered before the merge still carry it as their base.
+EXPECT_ENV=(GITHUB_BASE_REF=local/stroke-parked)
+expect 125 'base on the integration ref skips' "$root" pr/scope-sample
+EXPECT_ENV=(GITHUB_BASE_REF=local/linux-master)
+expect 125 'base on the retired mirror skips' "$root" pr/scope-sample
+EXPECT_ENV=()
+
 # 2. Detached HEAD with no argument is not applicable, not a silent pass.
 git worktree add --detach "$work_detached" HEAD >/dev/null 2>&1
 # git can return 0 while the checkout lands where this shell cannot see it

@@ -46,6 +46,7 @@ from .cintablebase import CinTableBase
 from .debug import Debug
 from .candidate_view import CandidateView, Move
 from .wildcard_query import WildcardQuery
+from . import capabilities
 
 CHINESE_MODE = 1
 ENGLISH_MODE = 0
@@ -102,7 +103,6 @@ class CinBase:
             self.emoji = emoji(fs)
 
         self.emojimenulist = ["表情符號", "圖形符號", "其它符號", "雜錦符號", "交通運輸", "調色盤"]
-        self.imeNameList = ["checj", "chephonetic", "chearray", "chedayi", "cheez", "chepinyin", "chesimplex", "cheliu"]
         self.hcinFileList = ["thphonetic.json", "CnsPhonetic.json", "bpmf.json"]
 
     # 初始化輸入行為設定
@@ -217,6 +217,7 @@ class CinBase:
         # 單按 Shift 的中英文切換狀態 (issue #394)：key-down 與 key-up 兩側共用
         cbTS.shiftTapPending = False
         cbTS.shiftTapTime = 0.0
+        cbTS.shiftTapCount = 0
         cbTS.shiftToggleHandled = False
         # 多功能前導字元與 Ctrl 符號擷取 (issue #525/#826)，由 applyConfig 套用設定值
         cbTS.leadInKey = DEF_LEAD_IN_KEY
@@ -376,10 +377,13 @@ class CinBase:
                 cbTS.shiftTapPending = True
                 cbTS.shiftToggleHandled = False
                 cbTS.shiftTapTime = time.time()
+                cbTS.shiftTapCount = 1
+            elif keyEvent.repeatCount <= 1:
+                # 同一完成點前的再一次輕點；自動重複 (repeatCount > 1) 不另計
+                cbTS.shiftTapCount += 1
         elif cbTS.shiftTapPending:
             if not keyEvent.isKeyDown(VK_SHIFT) and not cbTS.shiftToggleHandled:
-                if self.shiftTapMatches(cbTS, time.time() - cbTS.shiftTapTime):
-                    self.applyShiftLanguageToggle(cbTS)
+                if self.completeShiftTap(cbTS, time.time() - cbTS.shiftTapTime):
                     cbTS.shiftToggleHandled = True
             cbTS.shiftTapPending = False
 
@@ -524,6 +528,9 @@ class CinBase:
         # 每個按鍵都重新取得 CapsLock 狀態 (issue #683)：宿主漏送 key-up 時狀態也不會卡住
         cbTS.capsStates = True if self.getKeyState(VK_CAPITAL) else False
 
+        # 選字鍵列先同步 (issue #463/#539)，小鍵盤與後面的選字判定共用同一列
+        self.syncSelKeys(cbTS)
+
         # NumPad 某些狀況允許輸入法處理
         if keyEvent.isKeyToggled(VK_NUMLOCK): # NumLock is on
             # if this key is Num pad 0-9, +, -, *, /, pass it back to the system
@@ -565,14 +572,7 @@ class CinBase:
                 charStr = cbTS.kbtypelist[0][charIndex]
                 charStrLow = charStr.lower()
 
-        # 檢查選字鍵 (issue #463/#539：設定的選字鍵列是單一來源)
-        if not cbTS.imeDirName == "chedayi":
-            selKeys = cbTS.cfg.getSelKeys()
-            cbTS.selKeys = selKeys
-            if not self.candselKeys == selKeys:
-                self.candselKeys = selKeys
-                cbTS.TextService.setSelKeys(cbTS, self.candselKeys)
-                cbTS.isSelKeysChanged = True
+        # 選字鍵列已在小鍵盤處理前同步過 (syncSelKeys)
 
         if cbTS.autoMoveCursorInBrackets:
             if cbTS.compositionBufferMode and keyEvent.isPrintableChar() and not keyEvent.isKeyDown(VK_SPACE):
@@ -800,9 +800,26 @@ class CinBase:
             elif cbTS.imeDirName == "cheez":
                 cbTS.smenucandidates = [menu_autoClearCompositionChar, menu_playSoundWhenNonCand, menu_showPhrase, menu_sortByPhrase, menu_supportWildcard, menu_imeReverseLookup]
                 cbTS.smenuitems = ["autoClearCompositionChar", "playSoundWhenNonCand", "showPhrase", "sortByPhrase", "supportWildcard", "imeReverseLookup"]
-            elif cbTS.imeDirName == "chedayi":
-                cbTS.smenucandidates = [menu_fullShapeSymbols, menu_easySymbolsWithShift, menu_autoClearCompositionChar, menu_playSoundWhenNonCand, menu_showPhrase, menu_sortByPhrase, menu_intelligentSelect, menu_intelligentSelectRecent, menu_intelligentSelectContext, menu_supportWildcard, menu_imeReverseLookup, menu_homophoneQuery]
-                cbTS.smenuitems = ["fullShapeSymbols", "easySymbolsWithShift", "autoClearCompositionChar", "playSoundWhenNonCand", "showPhrase", "sortByPhrase", "intelligentSelect", "intelligentSelectRecent", "intelligentSelectContext", "supportWildcard", "imeReverseLookup", "homophoneQuery"]
+            elif capabilities.has_menu_items(cbTS.imeDirName):
+                # 功能開關 menu = the common items plus the items the Capability
+                # roster (cinbase/capabilities.py) declares for this Service, in
+                # roster order; display strings are looked up by item name.
+                menu_strings = {
+                    "fullShapeSymbols": menu_fullShapeSymbols,
+                    "easySymbolsWithShift": menu_easySymbolsWithShift,
+                    "autoClearCompositionChar": menu_autoClearCompositionChar,
+                    "playSoundWhenNonCand": menu_playSoundWhenNonCand,
+                    "showPhrase": menu_showPhrase,
+                    "sortByPhrase": menu_sortByPhrase,
+                    "intelligentSelect": menu_intelligentSelect,
+                    "intelligentSelectRecent": menu_intelligentSelectRecent,
+                    "intelligentSelectContext": menu_intelligentSelectContext,
+                    "supportWildcard": menu_supportWildcard,
+                    "imeReverseLookup": menu_imeReverseLookup,
+                    "homophoneQuery": menu_homophoneQuery,
+                }
+                cbTS.smenuitems = list(capabilities.menu_items_for(cbTS.imeDirName))
+                cbTS.smenucandidates = [menu_strings[item] for item in cbTS.smenuitems]
             else:
                 cbTS.smenucandidates = [menu_fullShapeSymbols, menu_easySymbolsWithShift, menu_autoClearCompositionChar, menu_playSoundWhenNonCand, menu_showPhrase, menu_sortByPhrase, menu_supportWildcard, menu_imeReverseLookup, menu_homophoneQuery]
                 cbTS.smenuitems = ["fullShapeSymbols", "easySymbolsWithShift", "autoClearCompositionChar", "playSoundWhenNonCand", "showPhrase", "sortByPhrase", "supportWildcard", "imeReverseLookup", "homophoneQuery"]
@@ -2272,7 +2289,8 @@ class CinBase:
         if cbTS.cfg.switchLangWithShift:
             # 剛才最後一個按下的鍵，和現在放開的鍵，都是 Shift
             if cbTS.lastKeyDownCode == VK_SHIFT and keyEvent.keyCode == VK_SHIFT:
-                # 與 key-down 側共用同一個判定，shiftToggleHandled 保證一次按下只切一次
+                # 與 key-down 側共用同一個判定，shiftToggleHandled 保證只切一次；
+                # 實際的切換由 onKeyUp() 依 shiftTapCount 執行
                 if not cbTS.shiftToggleHandled and self.shiftTapMatches(cbTS, time.time() - cbTS.lastKeyDownTime):
                     cbTS.isLangModeChanged = True
                     cbTS.shiftToggleHandled = True
@@ -2320,10 +2338,12 @@ class CinBase:
         cbTS.lastKeyDownCode = 0
         cbTS.lastKeyDownTime = 0.0
 
-        # 若放開 Shift 鍵,且觸發中英文切換
+        # 若放開 Shift 鍵,且觸發中英文切換（連續幾次輕點就切幾次）
         if cbTS.isLangModeChanged and keyCode == VK_SHIFT:
             cbTS.isLangModeChanged = False
-            self.applyShiftLanguageToggle(cbTS)
+            for _ in range(max(1, getattr(cbTS, 'shiftTapCount', 1))):
+                self.applyShiftLanguageToggle(cbTS)
+            cbTS.shiftTapCount = 0
 
         # 若放開 CapsLock 鍵
         if keyEvent.keyCode == VK_CAPITAL:
@@ -2708,6 +2728,18 @@ class CinBase:
                 return True
         return False
 
+    # 選字鍵列的單一來源 (issue #463/#539)：跟隨本輸入法的 selKeyType 設定，
+    # 並在換列時把新列重新掛到 C++ 的候選視窗上
+    def syncSelKeys(self, cbTS):
+        if cbTS.imeDirName == "chedayi":
+            return
+        selKeys = cbTS.cfg.getSelKeys()
+        cbTS.selKeys = selKeys
+        if not self.candselKeys == selKeys:
+            self.candselKeys = selKeys
+            cbTS.TextService.setSelKeys(cbTS, self.candselKeys)
+            cbTS.isSelKeysChanged = True
+
     # 選字鍵的單一決策表 (issues #463/#539/#665/#710/#730)：
     # 「這個按鍵是不是選字鍵、選這頁的第幾個」全部由這裡回答，
     # 一般候選視窗與聯想字視窗只差在 Shift 規則。回傳選字鍵在所用字元列中的索引，
@@ -2757,6 +2789,16 @@ class CinBase:
         if which == SWITCH_LANG_WITH_RIGHT_SHIFT and not self.isPressed(VK_RSHIFT):
             return False
         return pressedDuration < 0.5
+
+    # 完成一次（或連續幾次）單按 Shift 的輕點：key-down 與 key-up 兩側共用，
+    # 回傳是否有切換。自動重複 (repeatCount > 1) 只算一次輕點。
+    def completeShiftTap(self, cbTS, pressedDuration):
+        if not self.shiftTapMatches(cbTS, pressedDuration):
+            return False
+        for _ in range(max(1, getattr(cbTS, 'shiftTapCount', 1))):
+            self.applyShiftLanguageToggle(cbTS)
+        cbTS.shiftTapCount = 0
+        return True
 
     # 執行一次單按 Shift 的切換：語言模式、語言列按鈕、提示訊息與編輯區
     def applyShiftLanguageToggle(self, cbTS):
@@ -2820,7 +2862,7 @@ class CinBase:
         return lastCommitString[-1:]
 
     def sortByIntelligentSelect(self, cbTS, key, candidates):
-        if cbTS.imeDirName != "chedayi" or not getattr(cbTS, 'intelligentSelect', False) or not candidates:
+        if not capabilities.has(cbTS.imeDirName, capabilities.INTELLIGENT_SELECT) or not getattr(cbTS, 'intelligentSelect', False) or not candidates:
             return candidates
         return cbTS.cin.sortByCount(
             key,
@@ -2831,7 +2873,7 @@ class CinBase:
         )
 
     def addIntelligentSelectCount(self, cbTS, key, commitStr):
-        if cbTS.imeDirName == "chedayi" and getattr(cbTS, 'intelligentSelect', False) and key:
+        if capabilities.has(cbTS.imeDirName, capabilities.INTELLIGENT_SELECT) and getattr(cbTS, 'intelligentSelect', False) and key:
             cbTS.cin.addCount(key, commitStr, self.getIntelligentSelectPreviousChar(cbTS))
 
     def sortByPhrase(self, cbTS, candidates):
