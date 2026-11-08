@@ -31,9 +31,13 @@ ime_smoke_runner.install_windows_shims()
 
 def load_config_module():
     """Load python/cinbase/config.py without importing the cinbase package."""
+    # Under tests/run_worktree_tests.py the tree under test is the worktree's,
+    # so read config.py from where cinbase actually bound, not from ROOT.
+    base = os.path.dirname(sys.modules["cinbase"].__file__) \
+        if "cinbase" in sys.modules else os.path.join(PYTHON_DIR, "cinbase")
     spec = importlib.util.spec_from_file_location(
         "cinbase_config_under_test",
-        os.path.join(PYTHON_DIR, "cinbase", "config.py"),
+        os.path.join(base, "config.py"),
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
