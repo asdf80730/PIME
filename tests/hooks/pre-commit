@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Pre-commit gate for the integration checkout: runs the Python backend suite
 # and the staged AI-declaration check before every commit, so neither a broken
-# fast layer nor an undeclared added file lands on local/linux-master.
+# fast layer nor an undeclared added file lands on local/linux-master. The suite
+# is also held hermetic: the product trees are snapshotted around the run, and a
+# file a test left behind is reported with its path.
 # The suite's slow layer is regenerating all 35
 # committed cinbase tables through the converter (~3 min) and only the cinbase
 # table files can break it, so the gate spends it only when a staged path can
@@ -59,6 +61,15 @@ if ! (cd "$root" && bash tests/check_ai_declarations.sh staged); then
 fi
 
 suite_log="$root/.git/pime-pre-commit-suite.log"
+# The suite is meant to be hermetic: every scratch file belongs to a temp dir.
+# Snapshot the product trees around the run so a test that writes into the
+# checkout is named at the commit instead of drifting into a product PR, where
+# tests/check_pr_scope.sh would fail on it much later. Two porcelain calls, so
+# the check costs milliseconds on top of the suite.
+tree_state() {
+    git -C "$root" status --porcelain -- python node go-backend
+}
+before_state=$(tree_state)
 if ! (cd "$root" && "$py" -m unittest discover -s tests -p 'test_*.py' >"$suite_log" 2>&1); then
     printf 'pre-commit: Python backend suite failed. Failing tests:\n' >&2
     grep -E '^(FAIL|ERROR): ' "$suite_log" | head -n 10 >&2
@@ -70,3 +81,16 @@ if ! (cd "$root" && "$py" -m unittest discover -s tests -p 'test_*.py' >"$suite_
     exit 1
 fi
 rm -f "$suite_log"
+
+stray=0
+while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    printf '%s\n' "$before_state" | grep -Fxq -- "$line" && continue
+    printf 'pre-commit: the suite left a new file in the checkout: %s\n' "$line" >&2
+    stray=1
+done <<< "$(tree_state)"
+if [ "$stray" -ne 0 ]; then
+    printf 'Each test owns a temp dir (tempfile.TemporaryDirectory with a cleanup);\n' >&2
+    printf 'name that dir from the module instead of writing into the product tree.\n' >&2
+    exit 1
+fi

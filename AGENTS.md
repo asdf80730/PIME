@@ -61,6 +61,14 @@ analogy-carried between neighbouring APIs. `docs/agents/chewing-api.md` has
 the init command, the files that answer what, and the verified userphrase
 return table.
 
+### Rime backend
+
+Return conventions of the bundled `rime.dll` — the librime source is not
+vendored here — are settled by probing that DLL and by the `RimeApi._fields_`
+declarations, never carried over from libchewing. `docs/agents/librime-api.md`
+has the re-derive commands, the verified config/option return table, the
+case-sensitive profile matching, and the one-`RimeSetup`-per-process rule.
+
 ### Verification
 
 `tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled
