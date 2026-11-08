@@ -183,6 +183,22 @@ class CinbaseSelectionKeyTests(CinbaseKeyHarness):
         self.assertEqual(service.candidateView.page, pageBefore)
         self.assertEqual(service.currentReply.get("commitString", ""), "")
 
+    def test_numpad_digit_with_the_window_closed_is_claimed_without_committing(self):
+        # issue #730 的措辭：數字鍵在「候選清單開著時」是選字鍵；關著時仍由輸入法接管，
+        # 不會漏給應用程式，也不會誤送字。
+        service = self.activate_chesimplex()
+        service.directShowCand = False
+        service.switchPageWithSpace = False
+        self.three_candidate_table(service)
+
+        self.send(service, ord("l"), ord("l"), printable=True)
+        self.assertFalse(service.isShowCandidates, "setup: the window is closed")
+
+        self.assertEqual(
+            self.send_event(service, self.num_event(ord("1"), VK_NUMPAD1)), "")
+        self.assertTrue(service.isComposing())
+        self.assertEqual(service.compositionChar, "l")
+
     # --- plain digit rows select without Shift (issue #710) -------------------
 
     def decision(self, ime, row, key, char, shift=False, phrase=False, numlock=False,
@@ -212,8 +228,13 @@ class CinbaseSelectionKeyTests(CinbaseKeyHarness):
         # 使用數字列的碼表 (大易/行列30)：不需 Shift
         self.assertEqual(
             self.decision("cheliu", "0123456789", "0", "0", phrase=True), 0)
+        # 大易的字根列 ('[]-\)：位移比索引大 1，兩個視窗都一樣
         self.assertEqual(
-            self.decision("chedayi", "'[]-\\", "[", "[", phrase=True), 1)
+            self.decision("chedayi", "'[]-\\", "[", "[", phrase=True), 2)
+        self.assertEqual(
+            self.decision("chedayi", "'[]-\\", "[", "["), 2)
+        self.assertEqual(
+            self.decision("chedayi", "1234567890", "1", "1"), 1)
 
     def test_decision_table_numpad_row(self):
         self.assertEqual(

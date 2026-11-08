@@ -1911,8 +1911,7 @@ class CinBase:
                     selKeyIndex = self.matchSelKey(cbTS, keyEvent, charCode, charStr)
                     if selKeyIndex is not None and cbTS.canUseSelKey:
                         if not cbTS.homophoneselpinyinmode:
-                            # 大易的字根列 ('[]-\) 其候選位移向來比索引大 1
-                            i = selKeyIndex + 1 if cbTS.imeDirName == "chedayi" else selKeyIndex
+                            i = selKeyIndex
                             if i < cbTS.candPerPage and i < len(cbTS.candidateList):
                                 commitStr = cbTS.candidateList[i]
                                 self.addIntelligentSelectCount(cbTS, cbTS.compositionChar, commitStr)
@@ -2107,8 +2106,7 @@ class CinBase:
                 selKeyIndex = self.matchSelKey(cbTS, keyEvent, charCode, charStr, phraseWindow=True)
                 if selKeyIndex is not None:
                     if cbTS.isShowPhraseCandidates:
-                        # 大易的字根列 ('[]-\) 其候選位移向來比索引大 1
-                        i = selKeyIndex + 1 if cbTS.imeDirName == "chedayi" else selKeyIndex
+                        i = selKeyIndex
                         if i < cbTS.candPerPage and i < len(cbTS.candidateList):
                             commitStr = cbTS.candidateList[i]
                             cbTS.compositionBufferType = "phrase"
@@ -2732,7 +2730,11 @@ class CinBase:
                 return None
         elif keyEvent.isKeyDown(VK_SHIFT):
             return None
-        return row.index(digit)
+        index = row.index(digit)
+        # 大易的字根列 ('[]-\) 其候選位移向來比索引大 1
+        if cbTS.imeDirName == "chedayi":
+            index += 1
+        return index
 
     # 以數字列直接選字的碼表 (issue #710)：聯想字視窗不需按 Shift
     def usesPlainSelKeys(self, cbTS):
