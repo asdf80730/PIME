@@ -18,10 +18,10 @@ secrets to pass. Commands here are written from the box, where the fork is
 
 | Ref | Writer | Rule |
 | --- | --- | --- |
-| `fork/master` | Windows box | `git push origin master` publishes the integration branch — fast-forward only, each push under explicit human approval (see the regime below). A Linux checkout, when one exists again, fetches it and rewrites its worktree from it; it never pushes there and never merges into it. |
+| `fork/master` | Windows box | `git push origin local/stroke-parked:master` publishes the integration ref — fast-forward only, each push under explicit human approval (see the regime below). A Linux checkout, when one exists again, fetches it and rewrites its worktree from it; it never pushes there and never merges into it. |
 | `fork/pr/<topic>` | Windows box | Cut from `upstream/master`, deleted after merge. Never rebased once pushed: a rebase moves the tip out from under a run. |
 | `fork/win/<topic>` | Windows box | Windows-only fixes. The box pushes, then folds the commits into `master` itself — fast-forward when the branch was cut from it, otherwise cherry-pick what `master` lacks — and deletes the branch. |
-| `fork/local/linux-master` | not in use | Existed to carry `master` to the box while the Linux machine wrote it. The box publishes `master` directly now, so the ref stays retired — and stays no base for a commit or a PR — until a Linux checkout returns. |
+| `fork/local/linux-master` | not in use | History, not a base. The ref existed to carry `master` to the box while the Linux machine wrote it; its remote ref was deleted on 2026-10-31 and its local branch `local/linux-master` (tip `33d187c`) was merged into `local/stroke-parked` and deleted on 2026-11-08, so its commits are reachable only through that merge commit. Nothing is based on either name. |
 | local integration branch, `.scratch/` | Windows box | `local/stroke-parked` and the only issue-tracker copy: the Linux machine's `.scratch/` went with its tree. Exactly one copy of each. |
 
 The fork carries ~150 stale branches. Do not add a ref outside this table, and
