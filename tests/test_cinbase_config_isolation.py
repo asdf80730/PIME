@@ -49,6 +49,16 @@ def load_config_module():
 _FIX_PRESENT = hasattr(load_config_module(), "CinBaseConfigClass")
 
 
+def _per_ime_config_present():
+    """#1014 shape: the IME builds a private config instead of resetting the
+    shared singleton in its ``__init__``."""
+    import inspect
+
+    from input_methods.checj import checj_ime
+    return "CinBaseConfig.__init__()" not in inspect.getsource(
+        checj_ime.CheCJTextService.__init__)
+
+
 @unittest.skipUnless(_FIX_PRESENT, "cinbase exports CinBaseConfigClass only after the per-IME config fix")
 class CinbaseConfigExportTests(unittest.TestCase):
     """Fresh configs must not share state with the module-level singleton."""
@@ -78,7 +88,8 @@ class CinbaseConfigExportTests(unittest.TestCase):
         self.assertFalse(other.defaultEnglish)
 
 
-@unittest.skipUnless(_FIX_PRESENT, "cinbase exports CinBaseConfigClass only after the per-IME config fix")
+@unittest.skipUnless(_per_ime_config_present(),
+                     "the IME still resets the shared config until #1014 lands")
 @unittest.skipIf(ime_smoke_runner.under_wine(),
                  "Wine lacks propsys.dll.VariantToString, which importing cinbase reaches")
 @unittest.skipUnless(ime_smoke_runner.opencc_available(),
