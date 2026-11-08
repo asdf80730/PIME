@@ -811,11 +811,12 @@ class CinBase:
                 cbTS.setCandidateCursor(0)
                 cbTS.candidateView.reset_position()
 
-                # 大易須更換選字鍵
+                # 大易須更換選字鍵：跟隨本輸入法設定的選字鍵列 (issue #463/#539)
                 if cbTS.imeDirName == "chedayi":
-                    cbTS.selKeys = "1234567890"
-                    if not self.candselKeys == "1234567890":
-                        self.candselKeys = "1234567890"
+                    selKeys = cbTS.cfg.getSelKeys()
+                    cbTS.selKeys = selKeys
+                    if not self.candselKeys == selKeys:
+                        self.candselKeys = selKeys
                         cbTS.TextService.setSelKeys(cbTS, self.candselKeys)
                         cbTS.isShowCandidates = True
                         cbTS.isSelKeysChanged = True
@@ -1298,7 +1299,7 @@ class CinBase:
                     if not cbTS.directShowCand and cbTS.showCandidates and self.isInSelKeys(cbTS, charCode):
                         # 不送出 CIN 所定義的字根
                         cbTS.compositionChar = cbTS.compositionChar
-                    elif cbTS.imeDirName == "chedayi" and cbTS.showCandidates and self.isInSelKeys(cbTS, charCode):
+                    elif self.usesPlainSelKeys(cbTS) and cbTS.showCandidates and self.isInSelKeys(cbTS, charCode):
                         # 不送出 CIN 所定義的字根
                         cbTS.compositionChar = cbTS.compositionChar
                     else:
