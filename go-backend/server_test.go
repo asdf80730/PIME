@@ -42,6 +42,31 @@ func TestAdditionalProfileGuidsFromShippedRimeManifest(t *testing.T) {
 	}
 }
 
+// The meow IME is the other IME shipping in this go tree, so its shipped
+// manifest is looked up here by its own guid in this backend's own runner.
+// Unlike rime it has no additionalProfiles key, so the helper's call below
+// answers the empty slice; that is asserted, not assumed.
+func TestMeowShippedManifestResolvesByItsOwnGuid(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("input_methods", "meow", "ime.json"))
+	if err != nil {
+		t.Fatalf("read the shipped meow manifest: %v", err)
+	}
+	var imeConfig map[string]interface{}
+	if err := json.Unmarshal(data, &imeConfig); err != nil {
+		t.Fatalf("parse the shipped meow manifest: %v", err)
+	}
+
+	primary, _ := imeConfig["guid"].(string)
+	primary = strings.ToLower(primary)
+	if primary != "{7a1c2e93-5b64-4f88-ae21-3d9c6b70f145}" {
+		t.Fatalf("primary guid = %s, want {7a1c2e93-5b64-4f88-ae21-3d9c6b70f145}", primary)
+	}
+
+	if got := additionalProfileGuids(imeConfig); len(got) != 0 {
+		t.Fatalf("additionalProfileGuids() = %v, want the empty slice", got)
+	}
+}
+
 func TestAdditionalProfileGuidsSkipsBadEntries(t *testing.T) {
 	imeConfig := map[string]interface{}{
 		"additionalProfiles": []interface{}{
