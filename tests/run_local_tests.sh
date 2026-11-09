@@ -316,6 +316,8 @@ step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
 step 'Worktrees stay under .worktrees/' "$ROOT/tests/check_worktree_hygiene.sh"
 step 'Tracked code cites no .scratch/' "$ROOT/tests/check_scratch_refs.sh"
 step 'Scratch-ref gate self-test' "$ROOT/tests/check_scratch_refs_test.sh"
+step 'Line citations resolve' "$ROOT/tests/check_line_citations.sh"
+step 'Line-citation gate self-test' "$ROOT/tests/check_line_citations_test.sh"
 step 'PR bodies carry the AI declaration' "$ROOT/tests/check_pr_bodies.sh"
 step 'PR body gate self-test' "$ROOT/tests/check_pr_bodies_test.sh"
 

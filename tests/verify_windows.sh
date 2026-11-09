@@ -198,6 +198,13 @@ run_native 'Tracked code cites no .scratch/' \
 run_native 'Scratch-ref gate self-test' \
 	'bash.exe tests/check_scratch_refs_test.sh'
 
+# The same two halves for the numbered citations the docs carry: a merge that
+# moves a file reddens this instead of costing every later review a re-derivation.
+run_native 'Line citations resolve' \
+	'bash.exe tests/check_line_citations.sh'
+run_native 'Line-citation gate self-test' \
+	'bash.exe tests/check_line_citations_test.sh'
+
 # The PR body is pasted by hand on the box that delivers the PR — this one —
 # and .scratch/ is gitignored, so no CI job can ever read the draft: the
 # declaration gate has to run here, pinned by its own self-test.
