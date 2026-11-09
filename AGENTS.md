@@ -42,6 +42,15 @@ a work tracker. See `docs/agents/issue-tracker.md`.
 ### Domain docs
 
 Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Every decision record, and the one fact each settles:
+`docs/adr/0001-windows-support-floor.md` (the Windows 10 floor),
+`docs/adr/0002-stroke-table-from-cns11643-with-prefix-expansion.md` (the Five-stroke
+table comes from the CNS11643 stroke-sequence data with every prefix emitted),
+`docs/adr/0003-table-load-policy-lives-with-the-service.md` (the cinbase load policy
+belongs to the Service, not the loader), and
+`docs/adr/0004-per-backend-profile-guids.md` (one `ime.json` per backend per IME:
+profile GUIDs distinct within one file and never compared across twins, the
+`locale`/`fallbackLocale` pair the only cross-twin invariant).
 
 ### Input method tables
 

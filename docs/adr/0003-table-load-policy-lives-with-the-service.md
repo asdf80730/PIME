@@ -57,6 +57,7 @@ maintainers have not made.
 - `reset()` is a test seam only, and it raises rather than pretending: a loader
   it could not wait out would otherwise hand the next test the previous test's
   table, bound to the previous `APPDATA`.
-- If #1004 lands with a shared fix, `table_loaders.py` is expected to be
-  deleted, not grown; its `TableHolder` field names are already pinned by what
-  the engine reads.
+- If #1004 lands with a shared fix,
+  `python/input_methods/chebihua/table_loaders.py` is expected to be deleted,
+  not grown; its `TableHolder` field names are already pinned by what the
+  engine reads.

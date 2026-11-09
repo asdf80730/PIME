@@ -18,6 +18,10 @@ import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 AGENTS_DOCS_DIR = os.path.join(ROOT, "docs", "agents")
+# The decision records sit beside the index rather than under it, so they need
+# their own entry: an ADR nothing points at is invisible to an agent that starts
+# from AGENTS.md, which is exactly what the pointer check below catches.
+ADR_DOCS_DIR = os.path.join(ROOT, "docs", "adr")
 
 # A path reference inside backticks or a Markdown link target. Deliberately narrow:
 # only tokens that look like a file path with a known extension count, so prose
@@ -46,13 +50,17 @@ OPTIONAL_REFERENCES = {
 }
 
 
+def markdown_under(directory):
+    """Every Markdown file directly under `directory`, sorted by name."""
+    return [os.path.join(directory, name)
+            for name in sorted(os.listdir(directory)) if name.endswith(".md")]
+
+
 def agent_doc_files():
-    """AGENTS.md plus every Markdown file under docs/agents/."""
-    files = [os.path.join(ROOT, "AGENTS.md")]
-    for name in sorted(os.listdir(AGENTS_DOCS_DIR)):
-        if name.endswith(".md"):
-            files.append(os.path.join(AGENTS_DOCS_DIR, name))
-    return files
+    """AGENTS.md plus every Markdown file under docs/agents/ and docs/adr/."""
+    return ([os.path.join(ROOT, "AGENTS.md")]
+            + markdown_under(AGENTS_DOCS_DIR)
+            + markdown_under(ADR_DOCS_DIR))
 
 
 def citation_scanned_files():
@@ -61,11 +69,9 @@ def citation_scanned_files():
     messages carry a citation to whoever reads one.
     """
     files = [os.path.join(ROOT, "AGENTS.md")]
-    for subdir in (os.path.join(ROOT, "docs", "agents"),
-                   os.path.join(ROOT, "docs", "research")):
-        for name in sorted(os.listdir(subdir)):
-            if name.endswith(".md"):
-                files.append(os.path.join(subdir, name))
+    files += markdown_under(AGENTS_DOCS_DIR)
+    files += markdown_under(os.path.join(ROOT, "docs", "research"))
+    files += markdown_under(ADR_DOCS_DIR)
     tests_dir = os.path.join(ROOT, "tests")
     for name in sorted(os.listdir(tests_dir)):
         if name.endswith(".sh"):
@@ -133,6 +139,23 @@ class AgentDocTests(unittest.TestCase):
                 self.assertTrue(
                     any(os.path.basename(reference) == name for reference in named),
                     f"AGENTS.md does not reference docs/agents/{name}")
+
+    def test_every_adr_is_named_by_a_pointer(self):
+        """An ADR no index entry names is a decision nothing reads. The two
+        layers an agent opens before a decision record — AGENTS.md and
+        docs/agents/ — must each carry a pointer to every file under docs/adr/.
+        """
+        named = set()
+        for path in [os.path.join(ROOT, "AGENTS.md")] + markdown_under(AGENTS_DOCS_DIR):
+            with open(path, encoding="utf-8") as doc:
+                named.update(os.path.basename(reference)
+                             for reference in references(doc.read()))
+        for path in markdown_under(ADR_DOCS_DIR):
+            name = os.path.basename(path)
+            with self.subTest(doc=name):
+                self.assertIn(name, named,
+                              f"docs/adr/{name} is named by neither AGENTS.md nor "
+                              f"any file under docs/agents/")
 
     def test_agents_md_is_cited_by_heading_not_by_number(self):
         """The rules prose moved to the standing rules of docs/agents/code-review.md
