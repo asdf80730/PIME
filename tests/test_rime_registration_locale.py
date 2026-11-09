@@ -136,6 +136,32 @@ class RegistrationLocaleTests(unittest.TestCase):
                 self.assertNotEqual(extra[0]["guid"], profile["guid"],
                                     "the second profile needs its own GUID")
 
+    def test_every_profile_entry_carries_a_registration_guid(self):
+        # One AddLanguageProfile call per entry, and every dispatcher matches on
+        # the entry's own guid, so an entry that names a locale but no guid is a
+        # bucket no client can ever activate: the profile shows up in the
+        # language list and answers 未知的输入法. Checked per file over every
+        # backend tree, because each backend is read by its own dispatcher.
+        for base in BACKEND_INPUT_METHOD_DIRS:
+            for name in sorted(os.listdir(base)):
+                path = os.path.join(base, name, "ime.json")
+                if not os.path.isfile(path):
+                    continue
+                with self.subTest(profile=path):
+                    profile = load_profile(path)
+                    self.assertTrue(profile.get("guid"),
+                                    "the flat guid is what registers the service")
+                    seen = [profile["guid"].lower()]
+                    for entry in profile.get("additionalProfiles", []):
+                        self.assertIsInstance(entry, dict,
+                                              "a profile entry is an object")
+                        self.assertTrue(entry.get("guid"),
+                                        "an additional profile needs its own guid")
+                        guid = entry["guid"].lower()
+                        self.assertNotIn(guid, seen,
+                                         "one guid cannot name two profiles")
+                        seen.append(guid)
+
     def test_twins_agree_on_one_locale_per_ime(self):
         # One IME is one profile per backend: a Windows user must not find
         # 喵喵輸入法 twice under two different locale buckets because a new

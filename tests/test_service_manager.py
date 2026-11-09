@@ -108,6 +108,30 @@ class ServiceManagerTests(unittest.TestCase):
                              "the additional profile GUID started no service")
         self.assertEqual(service.client, "dummy_client")
 
+    def test_shipped_rime_manifest_registers_both_profiles(self):
+        # The synthetic fixture above proves the loader reads the array; this
+        # case drives the same dispatcher over the product's own registration
+        # data, so a key the shipped manifest forgets — or a dispatcher that
+        # stops reading it — reddens here instead of at the first client that
+        # activates the second locale.
+        mgr = TextServiceManager()
+        mgr.load(PYTHON_DIR)
+
+        with open(os.path.join(PYTHON_DIR, "input_methods", "rime", "ime.json"),
+                  encoding="utf-8") as fp:
+            manifest = json.load(fp)
+        primary = manifest["guid"].lower()
+        extra = manifest["additionalProfiles"][0]["guid"].lower()
+        # Pinned literally as well: the two GUIDs DllRegisterServer hands to
+        # AddLanguageProfile, so a silent rename in the manifest is a finding.
+        self.assertEqual("{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}", primary)
+        self.assertEqual("{53c15256-7a5f-4b54-86e8-0636e0745c3e}", extra)
+        self.assertIn(primary, mgr.services)
+        self.assertIn(extra, mgr.services,
+                      "the shipped second profile is unknown to the dispatcher")
+        self.assertIs(mgr.services[primary], mgr.services[extra],
+                      "the second profile is a second key, not a second service")
+
     def test_load_from_json_with_explicit_base_dir(self):
         guid = "{33333333-4444-5555-6666-777777777777}"
         im_dir = self._create_dummy_ime("dummy_explicit", guid, module_name="exp_mod", class_name="ExpClass")

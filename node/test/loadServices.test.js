@@ -53,6 +53,21 @@ function main() {
     const byId = loadServiceById(GUID.toLowerCase(), baseDir);
     assert.strictEqual(byId.marker, 'demo-service', 'GUID lookup is case-insensitive');
     assert.strictEqual(loadServiceById('{00000000-0000-0000-0000-000000000000}', baseDir), null);
+
+    // The second TSF language profile of the same CLSID activates with its own
+    // GUID (#481 round 2): the loader has to answer for it, or a client that
+    // picks the Simplified-Chinese bucket gets no service at all.
+    const byExtra = loadServiceById(EXTRA_GUID.toLowerCase(), baseDir);
+    assert.strictEqual(byExtra, byId,
+      'the additional profile GUID maps to the same module as the primary');
+    // Both sides are lowercased, so the manifest's upper-case form and the
+    // client's lower-case form meet in the middle.
+    assert.strictEqual(loadServiceById(EXTRA_GUID, baseDir), byId,
+      'additional profile lookup is case-insensitive on both sides');
+    // An entry without a usable guid contributes no key: the locale-only and
+    // null entries must not answer as ids.
+    assert.strictEqual(loadServiceById('no-guid', baseDir), null,
+      'a profile entry without a guid registers no key');
   } finally {
     if (fs.rmSync) {
       fs.rmSync(baseDir, {recursive: true, force: true});
