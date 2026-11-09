@@ -52,8 +52,12 @@ Three further facts the probes fixed:
   `Could not create logging file: Invalid argument` and
   `*** Check failure stack trace: ***`. A bare `RimeInitialize(NULL)` after
   `RimeFinalize` is fine, which is why `rimeInit` guards setup plus the first
-  maintenance run behind `_rime_started` while the deploy command's direct
-  `finalize()` / `initialize(None)` pair stays unguarded.
+  maintenance run behind `_rime_started`. The engine calls around the deploy
+  command are the module's own, as of `upstream/master` `97f7efa`:
+  `rime.finalize` is registered once with `atexit.register` at import, so
+  `ID_DEPLOY` runs `deploy_config_file` after the maintenance pass with no
+  `finalize()` / `initialize(None)` pair, and `onKeyboardStatusChanged` calls
+  `createSession()` only while `session_id` is still `None`.
 
 ## Where the engine writes
 
