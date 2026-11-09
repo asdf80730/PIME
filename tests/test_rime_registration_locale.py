@@ -149,6 +149,9 @@ class RegistrationLocaleTests(unittest.TestCase):
         # per-tree lookup cases live in the runner that serves each tree:
         # tests/test_service_manager.py for python, node/test/loadServices.test.js
         # for node, go-backend/server_test.go for go.
+        # Rule recorded in `docs/adr/0004-per-backend-profile-guids.md`,
+        # "Per-backend profile GUIDs; the locale pair is the only cross-twin
+        # invariant".
         for base in BACKEND_INPUT_METHOD_DIRS:
             for name in sorted(os.listdir(base)):
                 path = os.path.join(base, name, "ime.json")
@@ -174,6 +177,10 @@ class RegistrationLocaleTests(unittest.TestCase):
         # 喵喵輸入法 twice under two different locale buckets because a new
         # backend copy drifted from the twins it copied. The invariant
         # guards every multi-backend IME, not just the two adjudicated.
+        # The locale pair is the only cross-twin invariant, and the per-file
+        # GUID rule beside it is recorded in
+        # `docs/adr/0004-per-backend-profile-guids.md`, "Per-backend profile
+        # GUIDs; the locale pair is the only cross-twin invariant".
         twins = {}
         for base in BACKEND_INPUT_METHOD_DIRS:
             for name in sorted(os.listdir(base)):
