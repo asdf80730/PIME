@@ -132,6 +132,56 @@ class ServiceManagerTests(unittest.TestCase):
         self.assertIs(mgr.services[primary], mgr.services[extra],
                       "the second profile is a second key, not a second service")
 
+        # meow is the other IME this tree serves, and the one IME shipping in
+        # all three backends: its own shipped key has to answer in this runner
+        # too, under the same literal-pinned style as the rime pair above.
+        with open(os.path.join(PYTHON_DIR, "input_methods", "meow", "ime.json"),
+                  encoding="utf-8") as fp:
+            meow_manifest = json.load(fp)
+        meow_guid = meow_manifest["guid"].lower()
+        # Pinned literally as well: the one GUID DllRegisterServer hands to
+        # AddLanguageProfile for 喵喵輸入法 in this tree.
+        self.assertEqual("{c5f37da0-274e-4837-9b7c-9bb79fe85d9d}", meow_guid)
+        self.assertIn(meow_guid, mgr.services,
+                      "the shipped meow profile is unknown to the dispatcher")
+        meow_info = mgr.services[meow_guid]
+        self.assertEqual(meow_info.name, "喵喵輸入法")
+        self.assertEqual(meow_info.guid, meow_guid,
+                         "the meow key is the info's own guid, not a neighbour's")
+
+    def test_every_shipped_python_ime_is_resolvable_by_its_own_guid(self):
+        # The per-file invariants in test_rime_registration_locale.py prove each
+        # manifest is well-formed; this walks the same tree through the real
+        # dispatcher, so a GUID that registers in one place but not the other
+        # — or a key collision that hides a service — reddens here.
+        mgr = TextServiceManager()
+        mgr.load(PYTHON_DIR)
+        input_methods_dir = os.path.join(PYTHON_DIR, "input_methods")
+        seen = 0
+        for name in sorted(os.listdir(input_methods_dir)):
+            path = os.path.join(input_methods_dir, name, "ime.json")
+            if not os.path.isfile(path):
+                continue
+            seen += 1
+            with open(path, encoding="utf-8") as fp:
+                manifest = json.load(fp)
+            keys = [manifest["guid"].lower()]
+            for entry in manifest.get("additionalProfiles", []):
+                if isinstance(entry, dict) and entry.get("guid"):
+                    keys.append(entry["guid"].lower())
+            for guid in keys:
+                with self.subTest(ime=name, guid=guid):
+                    self.assertIn(guid, mgr.services,
+                                  "a shipped profile GUID is unknown to the dispatcher")
+                    self.assertIs(mgr.services[guid], mgr.services[keys[0]],
+                                  "every GUID of one ime.json names one service")
+        # 14 named cases today: the 12 cinbase/chewing IMEs, meow and rime. An
+        # added directory has to show up here as its own named lookup, so this
+        # count is the guard against a profile slipping in unnamed.
+        self.assertEqual(seen, 14, "the python tree ships 14 ime.json files")
+        self.assertIsNone(mgr.createService(None, "{00000000-0000-0000-0000-000000000001}"),
+                          "an id no shipped manifest names starts no service")
+
     def test_load_from_json_with_explicit_base_dir(self):
         guid = "{33333333-4444-5555-6666-777777777777}"
         im_dir = self._create_dummy_ime("dummy_explicit", guid, module_name="exp_mod", class_name="ExpClass")

@@ -142,6 +142,13 @@ class RegistrationLocaleTests(unittest.TestCase):
         # bucket no client can ever activate: the profile shows up in the
         # language list and answers 未知的输入法. Checked per file over every
         # backend tree, because each backend is read by its own dispatcher.
+        # Expected shipped counts, so an added profile cannot slip through this
+        # loop unnamed: 喵喵輸入法 1 guid in each of the three trees (node,
+        # python, go-backend), 中州韻輸入法 2 in python and go-backend (the flat
+        # guid plus its zh-CN additionalProfiles entry), emojime 1 in node. The
+        # per-tree lookup cases live in the runner that serves each tree:
+        # tests/test_service_manager.py for python, node/test/loadServices.test.js
+        # for node, go-backend/server_test.go for go.
         for base in BACKEND_INPUT_METHOD_DIRS:
             for name in sorted(os.listdir(base)):
                 path = os.path.join(base, name, "ime.json")
