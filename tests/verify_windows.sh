@@ -13,7 +13,8 @@
 #   - Node backend suite on the shipped node.exe
 #   - Go backend tests + the shipped Windows/386 cross-build
 #   - Rust launcher tests, cargo fmt, cargo clippy
-#   - C++ pure helpers (JsonUtils gtest, CompositionCursor) via mingw-w64 g++
+#   - C++ pure helpers (JsonUtils gtest, CompositionCursor, IME profile GUIDs)
+#     via mingw-w64 g++
 #
 # The C++/TSF text service and the NSIS installer need MSVC and stay in CI
 # (docs/agents/verification.md).
@@ -324,6 +325,8 @@ run_native 'C++ JsonUtils tests (gtest, mingw g++)' \
 	"g++.exe -std=c++17 -O1 -pthread -I PIMETextService -I json/single_include -I $gtest/include -I $gtest tests\\json_utils_test.cpp $gtest/src/gtest-all.cc $gtest/src/gtest_main.cc -o .tools\\json_utils_test.exe && .tools\\json_utils_test.exe"
 run_native 'C++ CompositionCursor test (mingw g++)' \
 	'g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\composition_cursor_test.cpp -o .tools\\composition_cursor_test.exe && .tools\\composition_cursor_test.exe'
+run_native 'C++ IME profile GUID helper test (mingw g++)' \
+	'g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ime_profile_guids_test.cpp -o .tools\\ime_profile_guids_test.exe && .tools\\ime_profile_guids_test.exe'
 
 # Trust anchor: if HEAD or the worktree moved while the layers ran, the PASS
 # lines speak for the old tree — say so instead of letting a green tally hide
