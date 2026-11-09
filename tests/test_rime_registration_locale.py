@@ -142,6 +142,9 @@ class RegistrationLocaleTests(unittest.TestCase):
         # bucket no client can ever activate: the profile shows up in the
         # language list and answers 未知的输入法. Checked per file over every
         # backend tree, because each backend is read by its own dispatcher.
+        # Rule recorded in `docs/adr/0004-per-backend-profile-guids.md`,
+        # "Per-backend profile GUIDs; the locale pair is the only cross-twin
+        # invariant".
         for base in BACKEND_INPUT_METHOD_DIRS:
             for name in sorted(os.listdir(base)):
                 path = os.path.join(base, name, "ime.json")
@@ -167,6 +170,10 @@ class RegistrationLocaleTests(unittest.TestCase):
         # 喵喵輸入法 twice under two different locale buckets because a new
         # backend copy drifted from the twins it copied. The invariant
         # guards every multi-backend IME, not just the two adjudicated.
+        # The locale pair is the only cross-twin invariant, and the per-file
+        # GUID rule beside it is recorded in
+        # `docs/adr/0004-per-backend-profile-guids.md`, "Per-backend profile
+        # GUIDs; the locale pair is the only cross-twin invariant".
         twins = {}
         for base in BACKEND_INPUT_METHOD_DIRS:
             for name in sorted(os.listdir(base)):
