@@ -43,6 +43,17 @@ git worktree add -q -b <agent>/<topic> .worktrees/<topic-slug> <base-ref>
 - A linked worktree carries no `.tools/` (that directory is excluded, not
   versioned): `docs/agents/windows-toolchain.md` says how a vendored tool is run
   from either tree.
+- A linked worktree also starts with the `libIME2` submodule **uninitialized**,
+  and `tests/check_line_citations.sh` reddens on the two citations inside it
+  until you run `git submodule update --init libIME2` in that tree.
+- `bash tests/check_tracker_layout.sh` has to run in the **main** checkout:
+  `.scratch/` is gitignored, so a linked worktree holds none and the check
+  answers `SKIP ... (no .scratch in this checkout)` with its 125 code instead
+  of the 0 the ticket asks for.
+- The installed pre-commit hook writes its suite log under
+  `$(git rev-parse --absolute-git-dir)`, the one path that exists in both tree
+  shapes; a `$root/.git/...` spelling dies in a linked worktree and the commit
+  goes through `--no-verify`, skipping the staged AI-declaration check.
 - Write agent artifacts into `.scratch/`, the worktree they belong to, or `%TEMP%`;
   the user's `Documents\` top level stays empty of agent output.
 - Edit files inside a linked worktree by **absolute path**: a mistyped relative

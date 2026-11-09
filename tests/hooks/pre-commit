@@ -64,7 +64,11 @@ if ! (cd "$root" && bash tests/check_ai_declarations.sh staged); then
     exit 1
 fi
 
-suite_log="$root/.git/pime-pre-commit-suite.log"
+# `.git` is a directory in the main checkout but a plain file in a linked
+# worktree, so the log has to be addressed through the git dir itself: the
+# plain `$root/.git/...` form dies on its own redirect there and every
+# worktree commit silently loses both guardrails this hook carries.
+suite_log=$(git -C "$root" rev-parse --absolute-git-dir)/pime-pre-commit-suite.log
 # The suite is meant to be hermetic: every scratch file belongs to a temp dir.
 # Snapshot the product trees around the run so a test that writes into the
 # checkout is named at the commit instead of drifting into a product PR, where

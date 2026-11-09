@@ -9,13 +9,13 @@ scope.
   (`PIMETextService/DllEntry.cpp:87`, called at `:192`) turns `guid` and each
   `additionalProfiles[].guid` into one `AddLanguageProfile` call under the same
   CLSID, and `ImeModule::loadImeInfo` stops at the first entry whose guid
-  matches (`PIMETextService/PIMEImeModule.cpp:140`), so a value repeated inside
+  matches (`PIMETextService/PIMEImeModule.cpp:126-131`), so a value repeated inside
   one file makes two buckets answer with a single entry's fields.
 - **Across files the GUIDs are not equal and are never compared.** Each backend
   is read by its own dispatcher, which loads only its own tree:
   `python/serviceManager.py:115` walks `base_dir/input_methods`,
   `go-backend/server.go:367` its `exeDir`, `node/loadServices.js:9` its
-  `baseDir`, and `PIMETextService/PIMEImeModule.cpp:100` iterates the
+  `baseDir`, and `PIMETextService/PIMEImeModule.cpp:101` iterates the
   `backendDirs_` named in `backends.json`. So `{9C2D6C68-…}` (python 中州韻) and
   `{3F6B5A12-…}` (its go twin) are two independent registrations that no
   consumer ever matches against each other.
@@ -52,7 +52,7 @@ coincidence is incidental and no rule requires it.
   both without silently dropping the cross-twin half.
 - **Leave the cross-tree duplicate unrecorded** — bounded instead:
   `loadImeInfo` breaks out of the backend scan at the first match
-  (`PIMETextService/PIMEImeModule.cpp:152`), so with the python and node `meow`
+  (`PIMETextService/PIMEImeModule.cpp:139-140`), so with the python and node `meow`
   copies equal only the first-scanned tree (`python`, per `backends.json`)
   answers. Tolerable today because neither copy carries a `configTool` key; a
   duplicate that later grows differing fields is resolved by making the two
