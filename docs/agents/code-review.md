@@ -185,6 +185,32 @@ on days the shared desktop had CapsLock on. The fixed test builds the service
 inside the patched window; the reviewer's check is that the patch covers every
 read site, not just the obvious one.
 
+## A test double implements the landed surface
+
+A double stands in for a real object at one seam, so it has to answer every call the
+code under test makes on it — the same members, in the same order, with the same
+return types the shipped class has. A double that is missing a member the module now
+calls turns a green run into a false positive: the `AttributeError` is swallowed by
+whichever branch reads the return, or the assertion passes on a value the double
+invented rather than the one the real class computes. Read the landed class first and
+list its public members; the double's `def` lines are the checklist. Worked example:
+`_GateHeldLoader` in `tests/test_chebihua_service.py` carries `start()` with the
+`concurrent.futures.Future` the real loader publishes on the holder, because the guard
+under test reads `holder.future` — a double with only `__init__` would let the second
+instantiation start a second load and still print a passing count.
+
+## A swapped module global is restored by addCleanup at the swap site
+
+These modules keep their state in module-level singletons (`CinTable`, `RCinTable`,
+`HCinTable` in `python/input_methods/chebihua/table_loaders.py`, `configTool` in
+`python/cinbase/configtool.py`), so a test that rebinds one leaks into every later test
+in the same process: the next test reads the previous one's table and reports a
+difference no implementation produced. Pair each swap with a restore written next to
+it — `original = module.NAME`, `self.addCleanup(setattr, module, "NAME", original)`,
+then the assignment — so the restore runs even when an assertion fails mid-case. A
+`tearDown` that rebuilds the singleton from scratch is the weaker form: it hides which
+case owns which value, and a partially applied swap still leaks.
+
 ## The standing rules: the fork's upstream prose, verbatim
 
 §2–§4 of the agent rules upstream added to `AGENTS.md` in commit `487cb45`
