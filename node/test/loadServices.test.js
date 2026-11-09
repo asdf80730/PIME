@@ -75,6 +75,36 @@ function main() {
       fs.rmdirSync(baseDir, {recursive: true});
     }
   }
+
+  // The shipped tree next to this file is what DllRegisterServer scans, so the
+  // same two helpers have to answer for the product's own registration data:
+  // every IME that ships under node/input_methods resolves by its own primary
+  // GUID, and an id no shipped manifest names is still null. The shipped
+  // modules are the real IME code and load with no Windows-only state, so the
+  // module's own exported key pair is the marker asserted here.
+  const shippedDir = path.join(__dirname, '..');
+  const shippedServices = loadServices(shippedDir);
+  assert.deepStrictEqual(shippedServices.map((service) => service.name).sort(),
+    ['emojime', '喵喵輸入法'],
+    'the shipped tree registers exactly the IMEs it ships');
+  // Pinned literally as well: the GUIDs DllRegisterServer hands to
+  // AddLanguageProfile, so a silent rename in a shipped manifest is a finding.
+  const MEOW_GUID = '{C5F37DA0-274E-4837-9B7C-9BB79FE85D9D}';
+  const EMOJIME_GUID = '{A381D463-9338-4FBD-B83D-66FFB03523B3}';
+  assert.deepStrictEqual(shippedServices.map((service) => service.guid).sort(),
+    [EMOJIME_GUID, MEOW_GUID],
+    'each shipped IME is keyed by its own shipped guid');
+  const shippedMeow = loadServiceById(MEOW_GUID.toLowerCase(), shippedDir);
+  assert.ok(shippedMeow, 'the shipped meow primary GUID resolves to a module');
+  assert.deepStrictEqual(Object.keys(shippedMeow), ['textReducer', 'response'],
+    'the meow lookup returned the real IME module');
+  const shippedEmojime = loadServiceById(EMOJIME_GUID.toLowerCase(), shippedDir);
+  assert.ok(shippedEmojime, 'the shipped emojime primary GUID resolves to a module');
+  assert.deepStrictEqual(Object.keys(shippedEmojime), ['textReducer', 'response'],
+    'the emojime lookup returned the real IME module');
+  assert.strictEqual(
+    loadServiceById('{00000000-0000-0000-0000-000000000001}', shippedDir), null,
+    'an id absent from every shipped manifest is null');
 }
 
 main();
