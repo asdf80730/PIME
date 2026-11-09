@@ -14,6 +14,8 @@ const path = require('path');
 const {loadServices, loadServiceById} = require('../loadServices');
 
 const GUID = '{A1B2C3D4-E5F6-4789-9ABC-DEF012345678}';
+// The second TSF language profile of the same service (#481).
+const EXTRA_GUID = '{53C15256-7A5F-4B54-86E8-0636E0745C3E}';
 
 function makeFixture() {
   const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pime-load-services-'));
@@ -23,7 +25,12 @@ function makeFixture() {
   fs.writeFileSync(path.join(imeDir, 'ime.json'), JSON.stringify({
     name: 'Demo IME',
     guid: GUID,
-    moduleName: 'demo_ime'
+    moduleName: 'demo_ime',
+    additionalProfiles: [
+      {guid: EXTRA_GUID, locale: 'zh-CN', fallbackLocale: 'zh-CN'},
+      {locale: 'no-guid'},
+      null
+    ]
   }));
   fs.writeFileSync(path.join(imeDir, 'demo_ime.js'),
     'module.exports = {marker: "demo-service"};');

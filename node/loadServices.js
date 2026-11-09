@@ -94,7 +94,14 @@ function loadServiceById(id, baseDir) {
       continue;
     }
 
-    if (config.guid.toLowerCase() === targetId) {
+    let matches = String(config.guid).toLowerCase() === targetId;
+    // 同一個 service 也可由額外語言檔（additionalProfiles）的 GUID 啟動。
+    if (!matches && Array.isArray(config.additionalProfiles)) {
+      matches = config.additionalProfiles.some(
+        (profile) => profile && typeof profile.guid === 'string' &&
+          profile.guid.toLowerCase() === targetId);
+    }
+    if (matches) {
       try {
         service = require(path.join(imeDir, dir, config.moduleName));
         break;

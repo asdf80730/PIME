@@ -36,7 +36,8 @@ class ServiceManagerTests(unittest.TestCase):
         sys.modules.update(self._saved_modules)
         shutil.rmtree(self.test_root, ignore_errors=True)
 
-    def _create_dummy_ime(self, subdir_name, guid, module_name="my_ime", class_name="MyService"):
+    def _create_dummy_ime(self, subdir_name, guid, module_name="my_ime",
+                          class_name="MyService", additional_profiles=None):
         pkg_dir = os.path.join(self.test_root, "input_methods")
         os.makedirs(pkg_dir, exist_ok=True)
         init_file = os.path.join(pkg_dir, "__init__.py")
@@ -47,13 +48,16 @@ class ServiceManagerTests(unittest.TestCase):
         im_dir = os.path.join(pkg_dir, subdir_name)
         os.makedirs(im_dir, exist_ok=True)
         ime_json = os.path.join(im_dir, "ime.json")
+        payload = {
+            "name": "Test IME",
+            "moduleName": module_name,
+            "serviceName": class_name,
+            "guid": guid,
+        }
+        if additional_profiles is not None:
+            payload["additionalProfiles"] = additional_profiles
         with open(ime_json, "w", encoding="utf-8") as f:
-            json.dump({
-                "name": "Test IME",
-                "moduleName": module_name,
-                "serviceName": class_name,
-                "guid": guid,
-            }, f)
+            json.dump(payload, f)
         py_file = os.path.join(im_dir, f"{module_name}.py")
         with open(py_file, "w", encoding="utf-8") as f:
             f.write(f"""class {class_name}:
@@ -80,6 +84,29 @@ class ServiceManagerTests(unittest.TestCase):
 
         self.assertIn(guid.lower(), mgr.services)
         self.assertEqual(mgr.services[guid.lower()].name, "Test IME")
+
+    def test_additional_profile_guid_resolves_to_the_same_service(self):
+        # #481: 中州韻 registers a second TSF language profile for the other
+        # Windows input locale, and that profile activates with its own GUID.
+        # The dispatcher must know it, or the client gets no service.
+        guid = "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}"
+        extra = "{53C15256-7A5F-4B54-86E8-0636E0745C3E}"
+        self._create_dummy_ime(
+            "dummy_extra", guid, module_name="extra_mod", class_name="ExtraClass",
+            additional_profiles=[{"guid": extra, "locale": "zh-CN",
+                                  "fallbackLocale": "zh-CN"},
+                                 {"locale": "no-guid"}, "not-an-object"])
+
+        mgr = TextServiceManager()
+        mgr.load(self.test_root)
+
+        self.assertEqual([extra.lower(), guid.lower()],
+                         sorted(mgr.services, key=str.lower)[:2])
+        self.assertIs(mgr.services[guid.lower()], mgr.services[extra.lower()])
+        service = mgr.createService("dummy_client", extra)
+        self.assertIsNotNone(service,
+                             "the additional profile GUID started no service")
+        self.assertEqual(service.client, "dummy_client")
 
     def test_load_from_json_with_explicit_base_dir(self):
         guid = "{33333333-4444-5555-6666-777777777777}"
