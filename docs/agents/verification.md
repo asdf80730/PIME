@@ -261,7 +261,11 @@ stale by the same rule if it changes mid-run, so the gate snapshots HEAD and
 line naming the drifted paths: a green tally under a WARN validated the tree the
 run started in, and the honest move is rerunning the gate (or the affected layers)
 on the final bytes. A failing layer keeps its output under `.tools/.run/` rather
-than deleting it, so the traceback is there to read without rerunning the step.
+than deleting it — `step-<n>.bat` and `step-<n>.log`, one untouched pair per layer
+(the pair is numbered because cmd.exe reads a batch file through the handle's shared
+file position, and a reused file makes a later layer begin mid-line), plus
+`fail-<label>.log` for the layers that failed — so the traceback is there to read
+without rerunning the step.
 
 Narrowing the Python layer to one file on the shipped interpreter needs
 `discover`: `python/python3/python.exe` is an embedded distribution whose
