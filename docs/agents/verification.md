@@ -88,7 +88,12 @@ Individual commands, if you want to narrow the loop:
   cannot run that Node build (`EBADF` while loading builtins), so the bundled
   runtime is exercised on Windows CI instead: `server.test.js` spawns
   `process.execPath`, which is the shipped `node.exe` there.
-- **Go backend** — `cd go-backend && go test ./...` (4 packages). `go.mod`
+- **Go backend** — `cd go-backend && set "APPDATA=" && go.exe test -count=1 ./...`
+  (4 packages), the exact form `tests/verify_windows.sh` runs: the rime runtime
+  test resolves `rime.dll` from `APPDATA`, so leaving the variable set makes that
+  package answer `RimeInit failed` / `%1 is not a valid Win32 application` on a
+  tree whose DLL bitness the 64-bit toolchain cannot load — a false red the
+  harness avoids by clearing it. `go.mod`
   requires Go 1.21; Debian bookworm's 1.19 is too old. `tests/run_local_tests.sh`
   looks in `PATH`, `/usr/local/go/bin`, and `/opt/go/bin`. To install:
 

@@ -205,6 +205,13 @@ run_native 'Line citations resolve' \
 run_native 'Line-citation gate self-test' \
 	'bash.exe tests/check_line_citations_test.sh'
 
+# The same pair for the step lists themselves: a check script no gate runs is a
+# green file that guards nothing, and the two boxes drift apart silently.
+run_native 'Gate wiring covers both boxes' \
+	'bash.exe tests/check_gate_wiring.sh'
+run_native 'Gate-wiring gate self-test' \
+	'bash.exe tests/check_gate_wiring_test.sh'
+
 # The PR body is pasted by hand on the box that delivers the PR — this one —
 # and .scratch/ is gitignored, so no CI job can ever read the draft: the
 # declaration gate has to run here, pinned by its own self-test.

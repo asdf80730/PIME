@@ -309,6 +309,7 @@ step 'PR branch starts at origin/master' "$ROOT/tests/check_pr_scope.sh"
 step 'PR scope gate self-test' "$ROOT/tests/check_pr_scope_test.sh"
 step 'Worktree test driver self-test' "$ROOT/tests/run_worktree_tests_test.sh"
 step 'Added files carry an AI declaration' "$ROOT/tests/check_ai_declarations.sh"
+step 'AI declaration gate self-test' "$ROOT/tests/check_ai_declarations_test.sh"
 step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
 # The Documents top level must stay free of agent folders: the 2026-10 litter
 # of sibling worktrees came from the old `../<repo>-<agent>` convention, so
@@ -318,6 +319,10 @@ step 'Tracked code cites no .scratch/' "$ROOT/tests/check_scratch_refs.sh"
 step 'Scratch-ref gate self-test' "$ROOT/tests/check_scratch_refs_test.sh"
 step 'Line citations resolve' "$ROOT/tests/check_line_citations.sh"
 step 'Line-citation gate self-test' "$ROOT/tests/check_line_citations_test.sh"
+# Every check script has to be named by both gates, or it is decorative: this is
+# the layer that keeps the step lists on the two boxes in lockstep.
+step 'Gate wiring covers both boxes' "$ROOT/tests/check_gate_wiring.sh"
+step 'Gate-wiring gate self-test' "$ROOT/tests/check_gate_wiring_test.sh"
 step 'PR bodies carry the AI declaration' "$ROOT/tests/check_pr_bodies.sh"
 step 'PR body gate self-test' "$ROOT/tests/check_pr_bodies_test.sh"
 
@@ -326,6 +331,11 @@ step 'PR body gate self-test' "$ROOT/tests/check_pr_bodies_test.sh"
 # skips (125) on an integration branch; its contract is pinned either way.
 step 'PR commit messages claim only their own diff' "$ROOT/tests/check_pr_commit_claims.sh"
 step 'Commit-claims gate self-test' "$ROOT/tests/check_pr_commit_claims_test.sh"
+# The same carried-over commit can also lose the #996 declaration outright: PR #1010
+# shipped two commits whose messages carry none and no gate noticed. Both sides of
+# the pair run on either box now, so the two gates cover the same layers.
+step 'PR commit messages carry the AI declaration' "$ROOT/tests/check_pr_commit_declarations.sh"
+step 'Commit-declaration gate self-test' "$ROOT/tests/check_pr_commit_declarations_test.sh"
 # The gate needs a ref to read, so it runs at delivery time; the contract that
 # keeps it able to catch the unhardened workflows lives here.
 step 'Fork CI noise gate self-test' "$ROOT/tests/check_fork_ci_noise_test.sh"
