@@ -26,7 +26,7 @@ fi
 # name lives (docs/agents/…Windows notes), so the sandbox is built under
 # %USERPROFILE% like tests/check_pr_bodies_test.sh does.
 if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -u "${USERPROFILE:-}")
+    tmpbase=$(cygpath -w "${USERPROFILE:-}")
 else
     tmpbase=${TMPDIR:-/tmp}
 fi

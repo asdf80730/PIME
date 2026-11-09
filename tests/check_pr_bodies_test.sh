@@ -25,7 +25,7 @@ check=$root/tests/check_pr_bodies.sh
 # Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
 # tools then map a /tmp argument somewhere bash cannot see it.
 if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -u "$USERPROFILE")
+    tmpbase=$(cygpath -w "$USERPROFILE")
 else
     tmpbase=${TMPDIR:-/tmp}
 fi

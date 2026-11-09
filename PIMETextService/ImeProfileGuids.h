@@ -48,9 +48,11 @@ inline bool imeProfileGuidEqual(const std::string& a, const std::string& b) noex
 }
 
 // True when `id` names the profile of a parsed ime.json object: the flat
-// "guid" key, or one "guid" of the "additionalProfiles" array. A non-object
-// entry, a missing or non-string "guid" key, and an empty "guid" are skipped
-// without throwing; an empty `id` therefore matches nothing.
+// "guid" key, or one "guid" of the "additionalProfiles" array. The flat key is
+// compared as soon as it holds a string; within the array a non-object entry,
+// a missing or non-string "guid" key, and an empty "guid" are skipped without
+// throwing. Every caller passes a non-empty `id`, so a skipped or empty entry
+// matches nothing.
 inline bool imeProfileGuidMatches(const nlohmann::json& content, const std::string& id) noexcept {
 	const auto guid = content.find("guid");
 	if (guid != content.end() && guid->is_string() &&

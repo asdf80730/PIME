@@ -29,7 +29,7 @@ fi
 # to the shell that created it. Same reasoning as the claims self-test.
 tmpbase=/tmp
 if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -u "$USERPROFILE")
+    tmpbase=$(cygpath -w "$USERPROFILE")
 fi
 tmp=$(mktemp -d "$tmpbase/pime-commit-decls-selftest.XXXXXX")
 repo=$tmp/repo

@@ -142,16 +142,19 @@ class RegistrationLocaleTests(unittest.TestCase):
         # bucket no client can ever activate: the profile shows up in the
         # language list and answers 未知的输入法. Checked per file over every
         # backend tree, because each backend is read by its own dispatcher.
-        # Expected shipped counts, so an added profile cannot slip through this
-        # loop unnamed: 喵喵輸入法 1 guid in each of the three trees (node,
-        # python, go-backend), 中州韻輸入法 2 in python and go-backend (the flat
-        # guid plus its zh-CN additionalProfiles entry), emojime 1 in node. The
-        # per-tree lookup cases live in the runner that serves each tree:
-        # tests/test_service_manager.py for python, node/test/loadServices.test.js
-        # for node, go-backend/server_test.go for go.
+        # Expected shipped counts, asserted per file below so an added profile
+        # cannot slip through this loop unnamed: 喵喵輸入法 1 guid in each of the
+        # three trees (node, python, go-backend), 中州韻輸入法 2 in python and
+        # go-backend (the flat guid plus its zh-CN additionalProfiles entry),
+        # emojime 1 in node, every other python IME 1. The per-tree lookup cases
+        # live in the runner that serves each tree: tests/test_service_manager.py
+        # for python, node/test/loadServices.test.js for node,
+        # go-backend/server_test.go for go.
         # Rule recorded in `docs/adr/0004-per-backend-profile-guids.md`,
         # "Per-backend profile GUIDs; the locale pair is the only cross-twin
         # invariant".
+        # Only rime deviates from the one-guid-per-file default.
+        expected_profile_keys = {"rime": 2}
         for base in BACKEND_INPUT_METHOD_DIRS:
             for name in sorted(os.listdir(base)):
                 path = os.path.join(base, name, "ime.json")
@@ -171,6 +174,9 @@ class RegistrationLocaleTests(unittest.TestCase):
                         self.assertNotIn(guid, seen,
                                          "one guid cannot name two profiles")
                         seen.append(guid)
+                    self.assertEqual(len(seen), expected_profile_keys.get(name, 1),
+                                     "%s registers a different number of profile "
+                                     "GUIDs than the shipped manifest has" % name)
 
     def test_twins_agree_on_one_locale_per_ime(self):
         # One IME is one profile per backend: a Windows user must not find

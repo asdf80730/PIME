@@ -27,7 +27,7 @@ fi
 # git.exe maps that name elsewhere, so a sandbox built there can be invisible
 # to the shell that created it. Same reasoning as tests/check_pr_bodies_test.sh.
 if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -u "${USERPROFILE:-}")
+    tmpbase=$(cygpath -w "${USERPROFILE:-}")
 else
     tmpbase=${TMPDIR:-/tmp}
 fi

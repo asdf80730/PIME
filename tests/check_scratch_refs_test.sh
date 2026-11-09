@@ -24,7 +24,7 @@ fi
 # Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
 # git.exe then maps a /tmp argument to C:\tmp while bash sees %TEMP%.
 if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -u "$USERPROFILE")
+    tmpbase=$(cygpath -w "$USERPROFILE")
 else
     tmpbase=${TMPDIR:-/tmp}
 fi
