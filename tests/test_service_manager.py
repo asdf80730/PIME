@@ -152,8 +152,10 @@ class ServiceManagerTests(unittest.TestCase):
     def test_every_shipped_python_ime_is_resolvable_by_its_own_guid(self):
         # The per-file invariants in test_rime_registration_locale.py prove each
         # manifest is well-formed; this walks the same tree through the real
-        # dispatcher, so a GUID that registers in one place but not the other
-        # — or a key collision that hides a service — reddens here.
+        # dispatcher: every shipped GUID is present as a key, every GUID of one
+        # file names that file's own info object, and the shipped-directory
+        # count is pinned. A duplicate primary across two files is invisible
+        # here: the map holds one entry, so both files' lookups still pass.
         mgr = TextServiceManager()
         mgr.load(PYTHON_DIR)
         input_methods_dir = os.path.join(PYTHON_DIR, "input_methods")
