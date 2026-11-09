@@ -23,6 +23,10 @@ Issues are not used as our work tracker. Tickets stay local to the checkout.
 The layout is machine-checked: `bash tests/check_tracker_layout.sh` exits 0 when
 every feature directory carries its spec (or wayfinder map) — or an `ARCHIVE.md`
 when it is a holding — and every ticket is `NN-<slug>.md` with a `Status:` line.
+Its summary line also tallies the tickets and the blocking edges it found,
+reading the edge in either the plain `Blocked by: NN` form or the bold
+`**Blocked by:** NN` form the triage records use, so a frontier scan can tell
+"no edges" from "no tickets".
 
 ## Parking an effort
 

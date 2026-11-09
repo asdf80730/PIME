@@ -28,6 +28,8 @@ shopt -s nullglob
 
 bad=0
 features=0
+tickets=0
+edges=0
 for dir in .scratch/*/; do
     feature=${dir%/}
     if [ -f "$feature/ARCHIVE.md" ]; then
@@ -48,8 +50,17 @@ for dir in .scratch/*/; do
             printf 'missing Status: line within the first 20 lines of %s\n' "$issue"
             bad=1
         fi
+        tickets=$((tickets + 1))
+        # The blocking edge is written two ways: plain `Blocked by: NN` (the
+        # wayfinder child form) and bold `**Blocked by:** NN` (the form the
+        # triage records use). A frontier scan that reads only one of them
+        # sees no edges at all, so both count here.
+        if head -n 20 "$issue" | grep -Eq '^(\*\*)?Blocked by:(\*\*)?[[:space:]]*[0-9]'; then
+            edges=$((edges + 1))
+        fi
     done
 done
 
-printf 'checked %d feature director%s\n' "$features" "$([ "$features" -eq 1 ] && printf y || printf ies)"
+printf 'checked %d feature director%s, %d ticket(s), %d blocking edge(s)\n' \
+    "$features" "$([ "$features" -eq 1 ] && printf y || printf ies)" "$tickets" "$edges"
 [ "$bad" -eq 0 ]
