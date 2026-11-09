@@ -171,6 +171,16 @@ printf '# cites libchewing/src/x.c:9999\n' > "$sandbox/tests/test_pinned.py"
 git -C "$sandbox" add python/python3/doc.py tests/test_pinned.py
 expect 0 'vendored and pinned trees stay silent'
 
+# The self-test of the gate is read for nothing: the names it writes exist only in
+# the sandbox that test builds, so they must not redd the tree. Without the skip the
+# 99 below would fail against the three-line target.
+reset_index
+target3
+printf 'x = 1  # python/target.py:1\n' > "$sandbox/tests/test_ok.py"
+printf 'x = 1  # python/target.py:99\n' > "$sandbox/tests/check_line_citations_test.sh"
+git -C "$sandbox" add python/target.py tests/test_ok.py tests/check_line_citations_test.sh
+expect 0 'the fixture file stays out of the scan'
+
 # A tree with no citation at all is not applicable rather than a vacuous pass.
 reset_index
 printf 'x = 1\n' > "$sandbox/tests/test_plain.py"
