@@ -329,6 +329,8 @@ run_native 'C++ IME profile GUID helper test (mingw g++)' \
 	'g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ime_profile_guids_test.cpp -o .tools\\ime_profile_guids_test.exe && .tools\\ime_profile_guids_test.exe'
 run_native 'C++ per-monitor DPI helper test (mingw g++)' \
 	'g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\dpi_helper_test.cpp -o .tools\\dpi_helper_test.exe -luser32 -lgdi32 && .tools\\dpi_helper_test.exe'
+run_native 'C++ UI color mapping test (mingw g++)' \
+	'g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ui_colors_test.cpp -o .tools\\ui_colors_test.exe && .tools\\ui_colors_test.exe'
 
 # Trust anchor: if HEAD or the worktree moved while the layers ran, the PASS
 # lines speak for the old tree — say so instead of letting a green tally hide

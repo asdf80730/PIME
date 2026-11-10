@@ -61,6 +61,10 @@ class CinBaseConfig:
         self.fontSize = DEF_FONT_SIZE
         # 選字及訊息視窗的字型 (issue #582)
         self.candFontName = DEF_FONT_NAME
+        # 組字/選字視窗顏色 (issue #902)：0 表示跟隨系統調色盤
+        self.candTextColor = 0
+        self.windowBackgroundColor = 0
+        self.selKeyColor = 0
         # 多功能前導字元 (issue #525)
         self.leadInKey = DEF_LEAD_IN_KEY
         # 按住 Ctrl + 符號鍵輸入特殊符號 (issue #826)
@@ -186,6 +190,24 @@ class CinBaseConfig:
             self.candFontName = DEF_FONT_NAME
         else:
             self.candFontName = font_name.strip()
+
+        # 組字/選字視窗顏色 (issue #902)：0 表示跟隨系統調色盤；非法值退回 0
+        def _to_color(val, default=0):
+            if isinstance(val, bool):
+                return default
+            if isinstance(val, int):
+                return val if 0 <= val <= 0xFFFFFF else default
+            if isinstance(val, str):
+                try:
+                    i = int(val.strip(), 0)
+                except ValueError:
+                    return default
+                return i if 0 <= i <= 0xFFFFFF else default
+            return default
+
+        self.candTextColor = _to_color(getattr(self, "candTextColor", 0), 0)
+        self.windowBackgroundColor = _to_color(getattr(self, "windowBackgroundColor", 0), 0)
+        self.selKeyColor = _to_color(getattr(self, "selKeyColor", 0), 0)
 
         # 多功能前導字元 (issue #525)：只取第一個字元，非法值退回 `
         # 設定頁的數字欄位會存成整數，這裡一併還原成數字字元
