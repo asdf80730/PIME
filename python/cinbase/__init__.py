@@ -3201,7 +3201,10 @@ class CinBase:
         cbTS.customizeUI(candFontSize = cfg.fontSize,
                         candFontName = cfg.candFontName,
                         candPerRow = cfg.candPerRow,
-                        candUseCursor = cfg.cursorCandList)
+                        candUseCursor = cfg.cursorCandList,
+                        candTextColor = cfg.candTextColor,
+                        windowBackgroundColor = cfg.windowBackgroundColor,
+                        selKeyColor = cfg.selKeyColor)
 
         # 設定選字按鍵 (123456..., asdf.... 等)：設定的選字鍵列是單一來源 (issue #463/#539)
         cbTS.selKeys = cfg.getSelKeys()

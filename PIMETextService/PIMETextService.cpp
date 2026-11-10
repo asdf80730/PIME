@@ -18,6 +18,7 @@
 //
 
 #include "PIMETextService.h"
+#include "DpiUtils.h"
 #include <assert.h>
 #include <string>
 #include <libIME2/src/ComPtr.h>
@@ -53,7 +54,7 @@ TextService::TextService(ImeModule* module):
 	font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 	LOGFONT lf;
 	GetObject(font_, sizeof(lf), &lf);
-	lf.lfHeight = candFontHeight(); // FIXME: make this configurable
+	lf.lfHeight = candFontHeight(nullptr); // FIXME: make this configurable
 	lf.lfWeight = FW_NORMAL;
 	font_ = CreateFontIndirect(&lf);
 }
@@ -255,7 +256,12 @@ void TextService::updateCandidates(Ime::EditSession* session) {
 		LOGFONT lf;
 		GetObject(font_, sizeof(lf), &lf);
 		::DeleteObject(font_); // delete old font
-		lf.lfHeight = candFontHeight(); // apply the new size
+		HWND targetHwnd = nullptr;
+		if (session != nullptr && session->context()) {
+			// the DPI of the monitor the host window lives on (upstream #960)
+			session->context()->GetWnd(&targetHwnd);
+		}
+		lf.lfHeight = candFontHeight(targetHwnd); // apply the new size
 		if (!candFontName_.empty()) { // apply new font name
 			wcsncpy(lf.lfFaceName, candFontName_.c_str(), LF_FACESIZE - 1);
 			lf.lfFaceName[LF_FACESIZE - 1] = L'\0';
@@ -270,6 +276,10 @@ void TextService::updateCandidates(Ime::EditSession* session) {
 
 	candidateWindow_->setUseCursor(candUseCursor_);
 	candidateWindow_->setCandPerRow(candPerRow_);
+	// configured colors (upstream #902); 0 keeps the system palette
+	candidateWindow_->setTextColor(candTextColor_);
+	candidateWindow_->setBackgroundColor(windowBackgroundColor_);
+	candidateWindow_->setSelKeyColor(selKeyColor_);
 
 	// the items in the candidate list should not exist the
 	// number of available keys used to select them.
@@ -355,6 +365,9 @@ void TextService::showMessage(Ime::EditSession* session, std::wstring message, i
 	// FIXME: reuse the window whenever possible
 	messageWindow_ = make_unique<Ime::MessageWindow>(this, session);
 	messageWindow_->setFont(font_);
+	// the same configured colors the candidate window gets (upstream #902)
+	messageWindow_->setTextColor(candTextColor_);
+	messageWindow_->setBackgroundColor(windowBackgroundColor_);
 	messageWindow_->setText(message);
 	
 	int x = 0, y = 0;
@@ -411,15 +424,11 @@ void CALLBACK TextService::onMessageTimeout(HWND hwnd, UINT msg, UINT_PTR id, DW
 void TextService::updateLangButtons() {
 }
 
-int TextService::candFontHeight() {
-	int candFontHeight_ = candFontSize_;
-	HDC hdc = GetDC(NULL);
-	if (hdc)
-	{
-		candFontHeight_ = -MulDiv(candFontSize_, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-		ReleaseDC(NULL, hdc);
-	}
-	return candFontHeight_;
+int TextService::candFontHeight(HWND hwnd) {
+	// per-monitor DPI of the host window (upstream #960); the no-window
+	// fallback keeps the old primary-monitor measurement for the
+	// pre-session font.
+	return PIME::candFontHeightFor(candFontSize_, PIME::dpiForWindow(hwnd));
 }
 
 void TextService::closeClient() {
