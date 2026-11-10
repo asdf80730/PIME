@@ -343,6 +343,14 @@ SectionGroup /e $(PYTHON_SECTION_GROUP) python_section_group
 			StrCpy $INST_CINBASE "True"
 		SectionEnd
 
+		Section $(CHEBIHUA) chebihua
+			SectionIn 2
+			SetOutPath "$INSTDIR\python\input_methods\chebihua"
+			File /r "..\python\input_methods\chebihua\*.*"
+			StrCpy $INST_PYTHON "True"
+			StrCpy $INST_CINBASE "True"
+		SectionEnd
+
 		Section $(CHEENG) cheeng
 			${If} ${AtLeastWin8}
 				SectionIn 2
@@ -508,6 +516,7 @@ Section "" Register
 	!insertmacro CreateCinBaseShortcut ${chesimplex} $(SET_CHESIMPLEX) chesimplex
 	!insertmacro CreateCinBaseShortcut ${chephonetic} $(SET_CHEPHONETIC) chephonetic
 	!insertmacro CreateCinBaseShortcut ${cheez} $(SET_CHEEZ) cheez
+	!insertmacro CreateCinBaseShortcut ${chebihua} $(SET_CHEBIHUA) chebihua
 
 	CreateShortCut "$SMPROGRAMS\$(PRODUCT_NAME)\$(UNINSTALL_PIME).lnk" "$INSTDIR\Uninstall.exe"
 SectionEnd
@@ -530,6 +539,7 @@ SectionEnd
 	!insertmacro MUI_DESCRIPTION_TEXT ${chesimplex} $(chesimplex_DESC)
 	!insertmacro MUI_DESCRIPTION_TEXT ${chephonetic} $(chephonetic_DESC)
     !insertmacro MUI_DESCRIPTION_TEXT ${cheez} $(cheez_DESC)
+    !insertmacro MUI_DESCRIPTION_TEXT ${chebihua} $(chebihua_DESC)
     !insertmacro MUI_DESCRIPTION_TEXT ${rime} $(rime_DESC)
 	!insertmacro MUI_DESCRIPTION_TEXT ${mcbopomofo} $(mcbopomofo_DESC)
 	!insertmacro MUI_DESCRIPTION_TEXT ${mcfoxim} $(mcfoxim_DESC)
