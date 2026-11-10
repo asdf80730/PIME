@@ -35,8 +35,10 @@ import json
 import os
 import re
 import shutil
+import struct
 import tempfile
 import unittest
+import zlib
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 CINBASE = os.path.join(ROOT, "python", "cinbase")
@@ -337,6 +339,152 @@ class ShippedExhibitTests(unittest.TestCase):
                 "*.txt", line,
                 f"{line!r} filters .txt out of the cinbase payload, which "
                 f"silently drops the json/*{self.notice_suffix} notices")
+
+CHEBIHUA_DIR = os.path.join(ROOT, "python", "input_methods", "chebihua")
+STROKE_ICON_TOOL = os.path.join(CINBASE, "tools", "strokeicon.py")
+LOCALE_DIR = os.path.join(ROOT, "installer", "locale")
+LOCALE_FILES = ("English.nsh", "TradChinese.nsh", "SimpChinese.nsh")
+
+
+def load_stroke_icon():
+    """Import strokeicon.py by path, like the other tools."""
+    spec = importlib.util.spec_from_file_location("strokeicon_for_packaging_check",
+                                                  STROKE_ICON_TOOL)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def png_chunks(blob):
+    """[(type, body)] of a PNG, skipping the signature and the CRC fields."""
+    chunks = []
+    index = 8
+    while index < len(blob):
+        length = int.from_bytes(blob[index:index + 4], "big")
+        kind = blob[index + 4:index + 8]
+        body = blob[index + 8:index + 8 + length]
+        chunks.append((kind, body))
+        index += 12 + length
+    return chunks
+
+
+def png_pixels(blob):
+    """The RGBA rows of the single-filter PNG this repo ships."""
+    for kind, body in png_chunks(blob):
+        if kind == b"IHDR":
+            width, height = struct.unpack(">II", body[:8])
+            bit_depth, color_type = body[8], body[9]
+        elif kind == b"IDAT":
+            raw = zlib.decompress(body)
+    stride = width * 4
+    rows = []
+    for y in range(height):
+        start = y * (stride + 1)
+        if raw[start] != 0:
+            raise AssertionError("only the None filter is expected, got %r"
+                                 % raw[start])
+        rows.append(raw[start + 1:start + 1 + stride])
+    return width, height, bit_depth, color_type, rows
+
+
+class StrokeServicePackagingTests(unittest.TestCase):
+    """The opt-in installer section and the generated icon of 筆畫輸入法 (PIME).
+
+    Every cinbase Service owns a Section that both copies its own directory and
+    raises the ``$INST_PYTHON`` / ``$INST_CINBASE`` flags the shared ``Register``
+    section reads, so a section that forgets a flag installs a Service whose
+    cinbase class is absent on disk. The icon files are generated too, so both
+    are compared against the renderer instead of trusting the committed bytes.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.nsi = read_text(INSTALLER_NSI)
+        cls.icon = load_stroke_icon()
+
+    def section_body(self):
+        match = re.search(
+            r"Section \$\(CHEBIHUA\) chebihua\r?\n(.*?)\r?\n[ \t]*SectionEnd",
+            self.nsi, re.DOTALL)
+        self.assertIsNotNone(match, "no chebihua Section in installer.nsi")
+        return match.group(1)
+
+    def test_section_is_opt_in_and_copies_the_payload_with_both_flags(self):
+        body = self.section_body()
+        self.assertRegex(body, r"SectionIn 2")
+        self.assertNotIn("SectionIn 1", body,
+                         "the stroke section is on by default; the other "
+                         "cinbase Services are all opt-in")
+        self.assertIn(r'SetOutPath "$INSTDIR\python\input_methods\chebihua"',
+                      body)
+        self.assertIn(r'File /r "..\python\input_methods\chebihua\*.*"', body)
+        # Both flags: the directory needs the python backend *and* the cinbase
+        # class, which the Register section copies only for $INST_CINBASE.
+        self.assertIn('StrCpy $INST_PYTHON "True"', body)
+        self.assertIn('StrCpy $INST_CINBASE "True"', body)
+
+    def test_section_carries_a_description_and_a_setup_shortcut(self):
+        self.assertIn("!insertmacro MUI_DESCRIPTION_TEXT ${chebihua} "
+                      "$(chebihua_DESC)", self.nsi)
+        self.assertIn("!insertmacro CreateCinBaseShortcut ${chebihua} "
+                      "$(SET_CHEBIHUA) chebihua", self.nsi)
+
+    def test_every_locale_defines_the_three_section_strings(self):
+        for name in LOCALE_FILES:
+            text = read_text(os.path.join(LOCALE_DIR, name))
+            for string in ("CHEBIHUA", "chebihua_DESC", "SET_CHEBIHUA"):
+                with self.subTest(locale=name, string=string):
+                    self.assertIn('!insertmacro LANG_STRING %s ' % string, text)
+
+    def test_committed_icons_reproduce_the_renderer(self):
+        with open(os.path.join(CHEBIHUA_DIR, "icon.png"), "rb") as handle:
+            png = handle.read()
+        with open(os.path.join(CHEBIHUA_DIR, "icon.ico"), "rb") as handle:
+            ico = handle.read()
+        self.assertEqual(png, self.icon.png_bytes())
+        self.assertEqual(ico, self.icon.ico_bytes())
+
+    def test_icon_structures_match_what_the_consumers_read(self):
+        # ime.json names icon.ico for the TSF; the settings page asks
+        # configtool.py for /icon.ico, and the 48 px PNG is the family pattern.
+        with open(os.path.join(CHEBIHUA_DIR, "icon.png"), "rb") as handle:
+            png = handle.read()
+        width, height, bit_depth, color_type, rows = png_pixels(png)
+        self.assertEqual((width, height, bit_depth, color_type),
+                         (self.icon.PNG_SIZE, self.icon.PNG_SIZE, 8, 6))
+        self.assertEqual(len(png_chunks(png)), 3,
+                         "the settings page serves this file; a stray chunk "
+                         "is an untested byte")
+        with open(os.path.join(CHEBIHUA_DIR, "icon.ico"), "rb") as handle:
+            ico = handle.read()
+        self.assertEqual(ico[:4], b"\x00\x00\x01\x00")
+        reserved, kind, count = struct.unpack("<HHH", ico[:6])
+        self.assertEqual((reserved, kind, count), (0, 1, 1))
+        entry = struct.unpack("<BBBBHHII", ico[6:22])
+        width, height, _cc, _res, planes, bpp, size, offset = entry
+        self.assertEqual((width, height, planes, bpp),
+                         (self.icon.ICO_SIZE, self.icon.ICO_SIZE, 1, 32))
+        self.assertEqual(offset + size, len(ico),
+                         "the entry does not cover the whole image")
+        # The DIB: 40-byte header, BGRA rows, then the 1-bit AND mask.
+        self.assertEqual(struct.unpack("<I", ico[offset:offset + 4])[0], 40)
+        self.assertEqual(struct.unpack("<I", ico[offset + 20:offset + 24])[0],
+                         40 + self.icon.ICO_SIZE ** 2 * 4 + self.icon.ICO_SIZE * 4)
+
+    def test_each_of_the_five_stroke_bands_is_drawn(self):
+        with open(os.path.join(CHEBIHUA_DIR, "icon.png"), "rb") as handle:
+            png = handle.read()
+        _w, _h, _bd, _ct, rows = png_pixels(png)
+        size = self.icon.PNG_SIZE
+        band = size // 5
+        for index in range(5):
+            ink = sum(1 for row in rows[index * band:(index + 1) * band]
+                      for pixel in range(0, len(row), 4) if row[pixel + 3])
+            with self.subTest(stroke=self.icon.GLYPH_SEGMENTS[index]):
+                self.assertGreater(ink, 0,
+                                   "stroke %d of the Five-stroke keyset is "
+                                   "missing from the icon" % (index + 1))
+
 
 class Dayi3OfficialCodesTests(unittest.TestCase):
     """Upstream #520 and the audit it triggered: 大易三碼 must keep the codes
