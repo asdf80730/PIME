@@ -40,6 +40,14 @@ for dir in .scratch/*/; do
         printf 'missing spec: %s/spec.md (or map.md for a wayfinder effort)\n' "$feature"
         bad=1
     fi
+    # The plan file carries the same closure marker as its tickets, and a spec
+    # that never moved past its opening role reads as open work forever.
+    plan="$feature/spec.md"
+    [ -f "$plan" ] || plan="$feature/map.md"
+    if [ -f "$plan" ] && ! head -n 20 "$plan" | grep -Eq '^Status:[[:space:]]*[a-z]+'; then
+        printf 'missing Status: line within the first 20 lines of %s\n' "$plan"
+        bad=1
+    fi
     for issue in "$feature"/issues/*.md; do
         name=$(basename "$issue")
         if ! printf '%s' "$name" | grep -Eq '^[0-9]{2}-[a-z0-9][a-z0-9-]*\.md$'; then

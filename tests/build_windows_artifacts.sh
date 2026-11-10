@@ -49,7 +49,7 @@ export LIB="C:\\Users\\asdf8\\Documents\\PIME\\.tools\\msvc\\sdk\\lib\\um\\x86;C
 step() { echo; echo "=== $* ==="; }
 
 step "Refreshing source mirror"
-bash "$TOOLS/mirror-sources.sh"
+bash "$ROOT/tests/mirror-sources.sh"
 
 step "Configuring and building x86 (PIMETextService + PIMELauncher)"
 "$CMAKE" -S "$TOOLS/src-mirror" -B "$TOOLS/build-x86" -G Ninja \
