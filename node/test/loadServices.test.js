@@ -84,14 +84,30 @@ function main() {
   // module's own exported key pair is the marker asserted here.
   const shippedDir = path.join(__dirname, '..');
   const shippedServices = loadServices(shippedDir);
-  assert.deepStrictEqual(shippedServices.map((service) => service.name).sort(),
-    ['emojime', '喵喵輸入法'],
-    'the shipped tree registers exactly the IMEs it ships');
+  // The two manifests committed next to this file. The three McBopomofo-family
+  // names are copied into node/input_methods by build.bat from the
+  // McBopomofoWeb, McFoximWeb and McTabimWeb submodules, so their presence
+  // depends on whether the build has run yet — CI runs `npm test`
+  // (build-and-sign.yaml) before `build.bat`, this box may have either order.
+  const COMMITTED = ['emojime', '喵喵輸入法'];
+  const BUILT_BY_BUILD_BAT =
+    ['小麥注音 (PIME)', '小麥他命 (PIME)', '小麥族語 (PIME)'];
+  const names = shippedServices.map((service) => service.name).sort();
+  assert.deepStrictEqual(names.filter((name) => COMMITTED.includes(name)),
+    [...COMMITTED].sort(),
+    'the shipped tree registers exactly the two IMEs whose manifests are ' +
+    'committed');
+  for (const name of names) {
+    assert.ok(COMMITTED.includes(name) || BUILT_BY_BUILD_BAT.includes(name),
+      `unexpected service under node/input_methods: ${name}`);
+  }
   // Pinned literally as well: the GUIDs DllRegisterServer hands to
   // AddLanguageProfile, so a silent rename in a shipped manifest is a finding.
   const MEOW_GUID = '{C5F37DA0-274E-4837-9B7C-9BB79FE85D9D}';
   const EMOJIME_GUID = '{A381D463-9338-4FBD-B83D-66FFB03523B3}';
-  assert.deepStrictEqual(shippedServices.map((service) => service.guid).sort(),
+  assert.deepStrictEqual(
+    shippedServices.filter((service) => COMMITTED.includes(service.name))
+      .map((service) => service.guid).sort(),
     [EMOJIME_GUID, MEOW_GUID],
     'each shipped IME is keyed by its own shipped guid');
   const shippedMeow = loadServiceById(MEOW_GUID.toLowerCase(), shippedDir);
@@ -109,3 +125,8 @@ function main() {
 
 main();
 console.log('node backend: ime.json discovery keeps directory filtering and GUID lookup');
+// loadServices() requires every discovered module, and the McBopomofo-family
+// bundles that build.bat copies in keep a handle open, so the process would sit
+// on an empty event loop. The assertions are through: exit deterministically for
+// both tree orders (before and after build.bat).
+process.exit(0);
