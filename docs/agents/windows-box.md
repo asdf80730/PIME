@@ -49,7 +49,7 @@ describes that checkout, not the fork — ask
 As of 2026-10-30 only the box's `local/stroke-parked` remains; the Linux side
 of both measurements is history.
 
-The box's harness layer (`verify_windows.sh`, `.tools/build_windows_artifacts.sh`,
+The box's harness layer (`verify_windows.sh`, `tests/build_windows_artifacts.sh`,
 environment notes) came from that gap: neither file existed here. It landed on
 2026-10-27 as eleven commits on `29d68db` (`8573c02`), after the box rebased its
 branch onto the new `master` — so the push carried the `ci.yaml` filter, ran no
@@ -97,7 +97,7 @@ them it is not evidence.
 The Windows harness was written on the box, because that is the only place it
 runs, and the box publishes its commits to `master` directly. Authoring and
 authority remain separate: a change to `verify_windows.sh` or
-`.tools/build_windows_artifacts.sh` is proven by a green run on the box plus
+`tests/build_windows_artifacts.sh` is proven by a green run on the box plus
 the push's `linux-checks`. `tests/run_local_tests.sh` skips or wines those
 layers, and says so in its output.
 

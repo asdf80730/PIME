@@ -37,14 +37,17 @@ if [[ -z "$CMAKE" ]]; then
   exit 1
 fi
 
-export RUSTUP_HOME="C:\\Users\\asdf8\\Documents\\PIME\\.tools\\rustup"
-export CARGO_HOME="C:\\Users\\asdf8\\Documents\\PIME\\.tools\\cargo"
-export PATH="/c/Users/asdf8/Documents/PIME/.tools/cargo/bin:$PATH"
-export CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER="C:\\Users\\asdf8\\Documents\\PIME\\.tools\\mingw64\\bin\\lld-link.exe"
-RUSTC="C:\\Users\\asdf8\\Documents\\PIME\\.tools\\rustup\\toolchains\\stable-x86_64-pc-windows-gnu\\bin\\rustc.exe"
+# Windows-native tools need Windows-style paths. Derive them from the checkout
+# root so the script works from any directory on any machine.
+TOOLS_W="$(cygpath -w "$TOOLS")"
+export RUSTUP_HOME="$TOOLS_W\\rustup"
+export CARGO_HOME="$TOOLS_W\\cargo"
+export PATH="$TOOLS/cargo/bin:$PATH"
+export CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER="$TOOLS_W\\mingw64\\bin\\lld-link.exe"
+RUSTC="$TOOLS_W\\rustup\\toolchains\\stable-x86_64-pc-windows-gnu\\bin\\rustc.exe"
 
 # The Rust launcher links against the MSVC CRT; point it at the splatted SDK.
-export LIB="C:\\Users\\asdf8\\Documents\\PIME\\.tools\\msvc\\sdk\\lib\\um\\x86;C:\\Users\\asdf8\\Documents\\PIME\\.tools\\msvc\\sdk\\lib\\ucrt\\x86;C:\\Users\\asdf8\\Documents\\PIME\\.tools\\msvc\\crt\\lib\\x86"
+export LIB="$TOOLS_W\\msvc\\sdk\\lib\\um\\x86;$TOOLS_W\\msvc\\sdk\\lib\\ucrt\\x86;$TOOLS_W\\msvc\\crt\\lib\\x86"
 
 step() { echo; echo "=== $* ==="; }
 
