@@ -327,6 +327,8 @@ run_native 'C++ CompositionCursor test (mingw g++)' \
 	'g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\composition_cursor_test.cpp -o .tools\\composition_cursor_test.exe && .tools\\composition_cursor_test.exe'
 run_native 'C++ IME profile GUID helper test (mingw g++)' \
 	'g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ime_profile_guids_test.cpp -o .tools\\ime_profile_guids_test.exe && .tools\\ime_profile_guids_test.exe'
+run_native 'C++ per-monitor DPI helper test (mingw g++)' \
+	'g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\dpi_helper_test.cpp -o .tools\\dpi_helper_test.exe -luser32 -lgdi32 && .tools\\dpi_helper_test.exe'
 
 # Trust anchor: if HEAD or the worktree moved while the layers ran, the PASS
 # lines speak for the old tree — say so instead of letting a green tally hide

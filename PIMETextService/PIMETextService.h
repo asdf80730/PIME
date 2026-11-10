@@ -148,7 +148,7 @@ private:
 	void updateLangButtons(); // update status of language bar buttons
 
 	void createCandidateWindow(Ime::EditSession* session);
-	int candFontHeight();
+	int candFontHeight(HWND hwnd);
 
 	void closeClient();
 

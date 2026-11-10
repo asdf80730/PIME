@@ -262,6 +262,16 @@ cpp_guids_test() {
         "$BUILD_DIR/ime_profile_guids_test"
 }
 
+cpp_dpi_wine_test() {
+    # The helper calls user32 directly (GetDpiForWindow/GetDeviceCaps), so
+    # the cross-built exe runs under Wine, like the cursor test.
+    i686-w64-mingw32-g++ -std=c++17 -O1 -static \
+        -I PIMETextService \
+        tests/dpi_helper_test.cpp \
+        -o "$BUILD_DIR/dpi_helper_test.exe" -luser32 -lgdi32 &&
+        WINEDEBUG=-all wine "$BUILD_DIR/dpi_helper_test.exe"
+}
+
 go_all_tests() {
     # -count=1: a cached `ok` is not evidence. The hole was measured on the
     # Windows box, where an installed PIME leaves a live %APPDATA%\Rime and
@@ -298,7 +308,8 @@ rust_lint() {
 # the function and everything it reads therefore has to be exported.
 export ROOT BUILD_DIR GO CARGO PY
 export -f python_syntax yaml_parse nsis_smoke python_tests python_bundled_tests \
-    node_tests cpp_json_test cpp_cursor_wine_test cpp_guids_test go_all_tests go_windows_build \
+    node_tests cpp_json_test cpp_cursor_wine_test cpp_guids_test cpp_dpi_wine_test \
+    go_all_tests go_windows_build \
     rust_tests rust_lint shellcheck_all
 
 printf 'PIME local verification (root: %s)\n' "$ROOT"
@@ -407,6 +418,12 @@ if command -v g++ >/dev/null 2>&1 &&
     step 'C++ IME profile GUID helper test (host g++)' cpp_guids_test
 else
     skip 'C++ IME profile GUID helper test' 'g++ or vendored nlohmann/ImeProfileGuids headers missing'
+fi
+
+if command -v i686-w64-mingw32-g++ >/dev/null 2>&1 && command -v wine >/dev/null 2>&1; then
+    step 'C++ per-monitor DPI helper test (Wine)' cpp_dpi_wine_test
+else
+    skip 'C++ per-monitor DPI helper test' 'mingw-w64 g++ or wine missing'
 fi
 
 if command -v go >/dev/null 2>&1; then

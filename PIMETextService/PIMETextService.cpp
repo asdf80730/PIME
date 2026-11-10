@@ -18,6 +18,7 @@
 //
 
 #include "PIMETextService.h"
+#include "DpiUtils.h"
 #include <assert.h>
 #include <string>
 #include <libIME2/src/ComPtr.h>
@@ -53,7 +54,7 @@ TextService::TextService(ImeModule* module):
 	font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
 	LOGFONT lf;
 	GetObject(font_, sizeof(lf), &lf);
-	lf.lfHeight = candFontHeight(); // FIXME: make this configurable
+	lf.lfHeight = candFontHeight(nullptr); // FIXME: make this configurable
 	lf.lfWeight = FW_NORMAL;
 	font_ = CreateFontIndirect(&lf);
 }
@@ -255,7 +256,12 @@ void TextService::updateCandidates(Ime::EditSession* session) {
 		LOGFONT lf;
 		GetObject(font_, sizeof(lf), &lf);
 		::DeleteObject(font_); // delete old font
-		lf.lfHeight = candFontHeight(); // apply the new size
+		HWND targetHwnd = nullptr;
+		if (session != nullptr && session->context()) {
+			// the DPI of the monitor the host window lives on (upstream #960)
+			session->context()->GetWnd(&targetHwnd);
+		}
+		lf.lfHeight = candFontHeight(targetHwnd); // apply the new size
 		if (!candFontName_.empty()) { // apply new font name
 			wcsncpy(lf.lfFaceName, candFontName_.c_str(), LF_FACESIZE - 1);
 			lf.lfFaceName[LF_FACESIZE - 1] = L'\0';
@@ -411,15 +417,11 @@ void CALLBACK TextService::onMessageTimeout(HWND hwnd, UINT msg, UINT_PTR id, DW
 void TextService::updateLangButtons() {
 }
 
-int TextService::candFontHeight() {
-	int candFontHeight_ = candFontSize_;
-	HDC hdc = GetDC(NULL);
-	if (hdc)
-	{
-		candFontHeight_ = -MulDiv(candFontSize_, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-		ReleaseDC(NULL, hdc);
-	}
-	return candFontHeight_;
+int TextService::candFontHeight(HWND hwnd) {
+	// per-monitor DPI of the host window (upstream #960); the no-window
+	// fallback keeps the old primary-monitor measurement for the
+	// pre-session font.
+	return PIME::candFontHeightFor(candFontSize_, PIME::dpiForWindow(hwnd));
 }
 
 void TextService::closeClient() {
