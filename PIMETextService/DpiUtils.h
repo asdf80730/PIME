@@ -14,12 +14,12 @@
 
 // GetDpiForWindow is declared from the Windows 10 SDK level on; the ADR 0001
 // floor makes that the target of every build that includes this header.
-#ifndef _WIN32_WINNT
+// The two macros are undef'd first so the values hold whatever the build
+// passed on the command line (the toolchains carry 0x0600).
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0A00
-#endif
-#ifndef NTDDI_VERSION
+#undef NTDDI_VERSION
 #define NTDDI_VERSION 0x0A000000
-#endif
 
 #include <windows.h>
 

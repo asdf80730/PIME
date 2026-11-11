@@ -17,8 +17,10 @@
 //	Boston, MA  02110-1301, USA.
 //
 
-#include "PIMETextService.h"
+// DpiUtils.h first: its _WIN32_WINNT/NTDDI_VERSION defines must precede the
+// first <windows.h> in this TU (which PIMETextService.h pulls in).
 #include "DpiUtils.h"
+#include "PIMETextService.h"
 #include <assert.h>
 #include <string>
 #include <libIME2/src/ComPtr.h>
