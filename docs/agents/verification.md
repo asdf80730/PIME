@@ -290,7 +290,10 @@ than deleting it — `step-<n>.bat` and `step-<n>.log`, one untouched pair per l
 (the pair is numbered because cmd.exe reads a batch file through the handle's shared
 file position, and a reused file makes a later layer begin mid-line), plus
 `fail-<label>.log` for the layers that failed — so the traceback is there to read
-without rerunning the step.
+without rerunning the step. Read that pair with a `for` glob
+(`for f in .tools/.run/fail-*; do sed -n '1,12p' "$f"; done`): it expands to
+nothing when no layer failed and the loop simply does not run, while `ls` with the
+same glob dies with `os error 123` on an empty match.
 
 Narrowing the Python layer to one file on the shipped interpreter needs
 `discover`: `python/python3/python.exe` is an embedded distribution whose
@@ -370,6 +373,11 @@ helpers for running the tools by hand.
   covers the GitHub YAML parse, Python, Node, Go (tests plus Windows/386
   cross-build), and the host C++ `JsonUtils` test. Layers needing Wine or the
   bundled runtimes report `SKIP` here and run in the Windows job.
+  The fetches sit behind two `actions/cache` entries keyed on this workflow file
+  (the apt archives plus `/var/lib/apt/lists`, and `~/.cache/pip`), so
+  `apt-get update` runs only on a cold cache and a warm runner answers the whole
+  fetch from disk. Editing the package list moves the key, which is what makes
+  the lists and the install agree.
 - `ci` calls `.github/workflows/build-and-sign.yaml` (`windows-2025`), which runs,
   in order:
 
@@ -383,6 +391,21 @@ helpers for running the tools by hand.
 
 `.github/workflows/docs.yaml` runs `test_docs_pages.py` on changes to `docs/**`
 or the test itself.
+
+**Waiting for a run: `gh run watch <id>`.** It blocks to the finish and prints the
+step table, so one call settles it; a hand-rolled `for i in $(seq 1 N) … sleep`
+loop under-reports whenever the job outruns the window, and the only signal it
+gives back is its own `END`. Size a window from the measurement instead when a
+watch is unavailable: `linux-checks` takes 106 s warm, 142 s cold, and 568 s with
+an empty cache on a degraded runner (`43063679955` attempts 1–2, `43061539705`).
+Per-step durations come from the jobs payload, each step's `started_at` and
+`completed_at`:
+
+```
+gh api "repos/asdf80730/PIME/actions/runs/<id>/jobs" \
+  --jq '.jobs[] | select(.name=="linux-checks") | .steps[] |
+        "\(.name) :: \(.started_at) -> \(.completed_at)"'
+```
 
 So the feedback loop for C++/TSF, MSVC-only helpers, or installer changes is:
 push a branch, or run the workflow on it, and read the `build-and-sign` job. Do
