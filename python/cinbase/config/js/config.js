@@ -288,6 +288,13 @@ function updateConfig() {
                 inputValue = 9;
             } else if (inputItem.name === "candPerRow") {
                 inputValue = 1;
+            } else if (inputItem.name === "candFontWeight") {
+                // 400 = FW_NORMAL, the weight the candidate font already carries
+                inputValue = 400;
+            }
+            if (inputItem.name === "candFontWeight" && !inputValue) {
+                // 0 is FW_DONTCARE; collapse onto the same default
+                inputValue = 400;
             }
             checjConfig[inputItem.name] = inputValue;
             break;

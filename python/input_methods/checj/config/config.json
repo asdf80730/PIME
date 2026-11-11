@@ -18,6 +18,7 @@
   "hidePromptMessages": true,
   "fontSize": 12,
   "candFontName": "MingLiu",
+  "candFontWeight": 400,
     "candTextColor": 0,
     "windowBackgroundColor": 0,
     "selKeyColor": 0,
