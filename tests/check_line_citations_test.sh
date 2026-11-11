@@ -187,10 +187,11 @@ printf 'x = 1\n' > "$sandbox/tests/test_plain.py"
 git -C "$sandbox" add tests/test_plain.py
 expect 125 'a citation-free tree is not applicable'
 
-# Outside a git checkout the gate is not applicable, not a failure.
-nowork=$tmp/nowork
-mkdir -p "$nowork"
-out=$(cd "$nowork" && bash "$check" 2>&1)
+# Outside a git checkout the gate is not applicable, not a failure. GIT_DIR is
+# pinned so the case does not depend on where the runner puts TMP: with a
+# missing GIT_DIR, `git rev-parse --show-toplevel` fails from any directory,
+# which is the same branch the bare-directory case takes.
+out=$(cd "$tmp" && GIT_DIR=/nonexistent-pime bash "$check" 2>&1)
 got=$?
 if [ "$got" -ne 125 ]; then
     printf 'FAIL  outside a checkout (rc %s, want 125)\n%s\n' "$got" "$out"
