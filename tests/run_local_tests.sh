@@ -245,7 +245,10 @@ node_tests() {
 
 cpp_json_test() {
     local gtest=libIME2/lib/googletest-release-1.10.0/googletest
-    g++ -std=c++17 -O1 -pthread \
+    # -include cstdint: the vendored 1.10 gtest names uintptr_t in
+    # gtest-death-test.cc without including it, which the newer libstdc++
+    # headers no longer pull in transitively.
+    g++ -std=c++17 -O1 -pthread -include cstdint \
         -I PIMETextService \
         -I json/single_include \
         -I "$gtest/include" -I "$gtest" \
@@ -332,7 +335,7 @@ export ROOT BUILD_DIR GO CARGO PY
 export -f python_syntax yaml_parse nsis_smoke python_tests python_bundled_tests \
     node_tests cpp_json_test cpp_cursor_wine_test cpp_guids_test cpp_dpi_wine_test \
     cpp_ui_colors_test go_all_tests go_windows_build \
-    rust_tests rust_lint shellcheck_all
+    rust_tests rust_lint shellcheck_all ruff_all
 
 printf 'PIME local verification (root: %s)\n' "$ROOT"
 

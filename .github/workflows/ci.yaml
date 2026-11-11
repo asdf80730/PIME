@@ -37,8 +37,11 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+      # libIME2 carries the vendored gtest the C++ helper tests compile; brise
+      # carries the preset the ADR cites by path, and test_agent_docs resolves
+      # that reference against the working tree.
       - name: Check out the C++ test dependency
-        run: git submodule update --init libIME2
+        run: git submodule update --init libIME2 python/input_methods/rime/brise
       - uses: actions/setup-go@v7
         with:
           go-version-file: go-backend/go.mod
@@ -46,10 +49,12 @@ jobs:
         uses: oven-sh/setup-bun@v2
       - name: Install IME smoke test and shell lint dependencies
         # ruff ships no apt package on the runner image (26.04), so the lint
-        # layer takes it from pip; the other three are apt packages.
+        # layer takes it from pip; the other five are apt packages. The two
+        # native libraries are what the ctypes bindings dlopen: libchewing.so.3
+        # and librime.so.
         run: |
           sudo apt-get update
-          sudo apt-get install -y libopencc-dev shellcheck python3-pip
+          sudo apt-get install -y libopencc-dev shellcheck python3-pip libchewing3 librime-dev
           python3 -m pip install --user --break-system-packages ruff
       - name: Run every locally verifiable layer
         run: tests/run_local_tests.sh

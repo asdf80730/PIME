@@ -441,7 +441,12 @@ class StrokeServicePackagingTests(unittest.TestCase):
             png = handle.read()
         with open(os.path.join(CHEBIHUA_DIR, "icon.ico"), "rb") as handle:
             ico = handle.read()
-        self.assertEqual(png, self.icon.png_bytes())
+        # The PNG is compared by decoded content: IDAT is zlib output, whose
+        # exact bytes follow the zlib build the interpreter links (135 bytes
+        # on the bundled Windows interpreter, 336 on the runner's). The
+        # pixels and the header are the contract; the ICO is uncompressed,
+        # so its bytes are.
+        self.assertEqual(png_pixels(png), png_pixels(self.icon.png_bytes()))
         self.assertEqual(ico, self.icon.ico_bytes())
 
     def test_icon_structures_match_what_the_consumers_read(self):

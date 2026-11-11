@@ -1,4 +1,7 @@
 *.nsi text
+# The two icon formats carry their own CRC-checked bytes: no eol conversion.
+*.png binary
+*.ico binary
 # Shell scripts keep LF endings everywhere: Git Bash mis-parses a CRLF
 # shebang line, and a Windows checkout is a first-class target here.
 *.sh text eol=lf
