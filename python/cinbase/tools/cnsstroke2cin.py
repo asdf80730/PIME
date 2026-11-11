@@ -84,9 +84,9 @@ CLOSURE_TIERS = frozenset({"big5F", "big5LF"})
 FULLCODE_TIERS = frozenset({"big5Other", "bopomofo", "cjk", "cjkExtA"})
 # Left out entirely: the ultra-rare planes and symbol sets a stroke typist never
 # reaches. Named rather than left implicit so a tier the converter adds becomes
-# an error instead of a silent omission (see collect_chardefs). "big5S", the 符號
-# set, is reachable only through the accounting: getCharSet files a character there
-# and answers "big5LF", which is why the tier comes from the dict (accounted_tier).
+# an error instead of a silent omission (see collect_chardefs). The tier comes
+# from the dict (accounted_tier), the bookkeeping the branch itself updates:
+# getCharSet files a 符號 character in big5S and answers "big5S".
 EXCLUDED_TIERS = frozenset({"big5S", "cjkExtB", "cjkExtC", "cjkExtD", "cjkExtE",
                             "cjkExtF", "cjkCIibm", "cjkOther", "phrases", "pua"})
 
@@ -122,14 +122,13 @@ TIER_LABELS_ZH = {
     "pua": "私用區",
 }
 
-# getCharSet's return value is a label, not the accounting. Its Big5 符號 branch
-# appends to self.big5S and cincount['big5S'] and still answers "big5LF"
-# (cintojson.py:363-369), so sorting by the label granted every prefix of its code
-# to the one tier EXCLUDED_TIERS declares excluded. The tier is read from the
-# bookkeeping instead: a single character is filed into exactly one tier dict, and
-# that dict is the truth. Which dict and under what name are the converter's own --
-# every 私人使用區/相容字集 branch files into ``privateuse`` and answers "pua", the
-# name CHARSET_LADDER and the sets above use.
+# The tier is read from the converter's bookkeeping: a single character is filed
+# into exactly one tier dict, and that dict is the truth (tests/
+# test_cintojson_tiers.py pins getCharSet's answer to the dict that grew). Which
+# dict and under what name are the converter's own -- every 私人使用區/相容字集
+# branch files into ``privateuse`` and answers "pua", the name CHARSET_LADDER and
+# the sets above use; ``privateuse`` is that tier's attribute, the alias the
+# name↔dict comparison needs.
 TIER_DICT_ATTR_ALIASES = {"privateuse": "pua"}
 # The classifier's instance dicts that hold the table or the ranges rather than a
 # character set; anything else it holds is a tier, so a tier dict the converter
@@ -226,11 +225,11 @@ def accounted_tier(classifier, codepoint):
     """The tier the classifier's bookkeeping files ``codepoint`` under.
 
     getCharSet appends a single character to exactly one tier dict, and that dict is
-    the tier: the string it answers is only a label, and its Big5 符號 branch answers
-    "big5LF" while filing into ``big5S`` (see TIER_DICT_ATTR_ALIASES). Filing
-    nowhere or into several dicts is a converter change this generator cannot
-    classify, so it raises -- like the unknown-tier check in collect_chardefs --
-    instead of keeping a character under a tier nobody declared.
+    the tier; its answer is that same name (tests/test_cintojson_tiers.py pins the
+    two to agree, and TIER_DICT_ATTR_ALIASES carries the one name↔dict alias,
+    pua -> privateuse). Filing nowhere or into several dicts is a converter change
+    this generator cannot classify, so it raises -- like the unknown-tier check in
+    collect_chardefs -- instead of keeping a character under a tier nobody declared.
     """
     root = chr(codepoint)
     dicts = tier_dicts(classifier)

@@ -472,9 +472,9 @@ class GeneratorSeamTests(unittest.TestCase):
     def test_big5_symbol_plane_characters_are_excluded(self):
         """The tier EXCLUDED_TIERS names never reaches the table, at any length.
 
-        getCharSet files 卄 in its big5S dict yet answers "big5LF", so a tier read
-        off that label counted it as 次常用 and fanned h/hs/hss out; read from the
-        accounting it is excluded, which also means it leaves no key of its own.
+        getCharSet files 卄 in its big5S dict and answers "big5S"; read from the
+        accounting it is excluded, so it never fans h/hs/hss out and leaves no key
+        of its own.
         """
         self.assertTrue(is_big5_symbol_plane("卄"),
                         "the fixture character no longer sits in the Big5 符號 plane")
