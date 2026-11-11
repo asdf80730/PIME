@@ -13,7 +13,7 @@ is pinned in layers:
 * the keys and their defaults exist on ``CinBaseConfig`` even when no JSON
   defines them, and ``sanitize()`` keeps configured values and repairs bad
   ones to the system-palette sentinel;
-* all eight shipped ``python/input_methods/*/config/config.json`` carry them,
+* all nine shipped ``python/input_methods/*/config/config.json`` carry them,
   because layer 1's ``__dict__.update`` is the only place existing users see
   a new key;
 * the engine's ``applyConfig`` puts the values on the ``customizeUI`` reply,
@@ -38,8 +38,10 @@ from test_cinbase_shift_to_english import CinbaseKeyHarness  # noqa: E402
 CONFIG_DIR = os.path.join(ROOT, "python", "input_methods")
 CONFIG_HT = os.path.join(ROOT, "python", "cinbase", "config", "config.htm")
 
-IME_DIRS = ("chearray", "checj", "chedayi", "cheez",
-            "cheliu", "chephonetic", "chepinyin", "chesimplex")
+IME_DIRS = tuple(sorted(
+    name for name in os.listdir(CONFIG_DIR)
+    if os.path.isfile(os.path.join(CONFIG_DIR, name, "config", "config.json"))
+))
 
 COLOR_KEYS = ("candTextColor", "windowBackgroundColor", "selKeyColor")
 SYSTEM_PALETTE = 0  # the "follow GetSysColor" sentinel
@@ -64,7 +66,9 @@ class CinbaseColorQuartetTests(unittest.TestCase):
             self.assertEqual(SYSTEM_PALETTE, getattr(cfg, key),
                              f"{key}: default must mean the system palette")
 
-    def test_all_eight_shipped_defaults_carry_the_keys(self):
+    def test_all_shipped_defaults_carry_the_keys(self):
+        self.assertEqual(9, len(IME_DIRS),
+                         "the discovery must reach every shipped config.json")
         for ime in IME_DIRS:
             shipped = self.shipped(ime)
             for key in COLOR_KEYS:
