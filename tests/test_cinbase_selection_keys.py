@@ -25,7 +25,6 @@ for _path in (os.path.join(ROOT, "python"), os.path.dirname(os.path.abspath(__fi
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
-import ime_smoke_runner  # noqa: E402
 from test_cinbase_shift_to_english import CinbaseKeyHarness  # noqa: E402
 
 from cinbase import CinBase  # noqa: E402

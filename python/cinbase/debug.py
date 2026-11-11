@@ -53,7 +53,7 @@ class Debug:
         filename = self.getConfigFile()
         try:
             with open(filename, 'w', encoding='utf8') as f:
-                js = json.dump(debugLog, f, ensure_ascii=False, sort_keys=True, indent=4)
+                json.dump(debugLog, f, ensure_ascii=False, sort_keys=True, indent=4)
             self.debugLog = copy.deepcopy(debugLog)
         except Exception:
             pass # FIXME: handle I/O errors?

@@ -20,7 +20,6 @@ import sys
 import tempfile
 import time
 import unittest
-from unittest.mock import MagicMock
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 PYTHON_DIR = os.path.join(ROOT, "python")

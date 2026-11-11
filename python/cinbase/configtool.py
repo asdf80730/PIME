@@ -18,20 +18,15 @@
 import tornado.ioloop
 import tornado.web
 import sys
-import io
 import os
 import uuid  # use to generate a random auth token
 import random
 import json
-import threading
 
 try:
     from cinbase.config import CinBaseConfig
-    from cinbase.cin import Cin
 except ModuleNotFoundError:
     from config import CinBaseConfig
-    from cin import Cin
-from ctypes import c_uint, byref, create_string_buffer
 
 cfg = CinBaseConfig
 cfg.imeDirName = sys.argv[2]

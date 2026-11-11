@@ -15,14 +15,11 @@
 
 from keycodes import *  # for VK_XXX constants
 from textService import *
-import io
 import os.path
 import copy
 
 from cinbase import CinBase
 from cinbase import LoadCinTable
-from cinbase import LoadRCinTable
-from cinbase import LoadHCinTable
 from cinbase import CinTableBase
 from cinbase.config import CinBaseConfig
 
@@ -121,7 +118,7 @@ class CheDayiTextService(TextService):
                 if self.dsymbols.isInCharDef(self.compositionChar[1:] + charStr):
                     self.compositionChar += charStr
                     self.canUseSelKey = False
-                    candidates = self.dsymbols.getCharDef(self.compositionChar[1:])
+                    self.dsymbols.getCharDef(self.compositionChar[1:])
                 elif keyCode == VK_SPACE or keyCode == VK_RETURN or keyCode == VK_ESCAPE:
                     self.dayisymbolsmode = False
                     self.cinbase.resetComposition(self)

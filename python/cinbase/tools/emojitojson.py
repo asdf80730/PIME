@@ -1,7 +1,6 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 import os
-import re
 import json
 
 class emoji():
@@ -483,7 +482,7 @@ class emoji():
         filename = self.getJsonFile(file)
         try:
             with open(filename, 'w', encoding='utf8') as f:
-                js = json.dump(self.toJson(), f, ensure_ascii=False, sort_keys=True, indent=4)
+                json.dump(self.toJson(), f, ensure_ascii=False, sort_keys=True, indent=4)
         except Exception:
             pass # FIXME: handle I/O errors?
 

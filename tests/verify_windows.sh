@@ -10,6 +10,7 @@
 #     local issue-tracker layout (.scratch/ is gitignored, so no CI job can)
 #   - GitHub/AppVeyor YAML parse (Bun)
 #   - Python backend suite on the shipped interpreter
+#   - Python lint (ruff, F + E9 from the committed ruff.toml)
 #   - Node backend suite on the shipped node.exe
 #   - Go backend tests + the shipped Windows/386 cross-build
 #   - Rust launcher tests, cargo fmt, cargo clippy
@@ -60,7 +61,7 @@ rm -f "$RUN_DIR/step.bat" "$RUN_DIR/step.log" "$RUN_DIR"/step-*.bat \
 # clone has to install it before this script can run.
 missing=()
 for tool in "$TOOLS/go/bin/go.exe" "$TOOLS/node/node.exe" "$TOOLS/bun/bun.exe" \
-	"$TOOLS/cargo/bin/cargo.exe" "$TOOLS/mingw64/bin/g++.exe"; do
+	"$TOOLS/cargo/bin/cargo.exe" "$TOOLS/mingw64/bin/g++.exe" "$TOOLS/ruff/ruff.exe"; do
 	[ -x "$tool" ] || missing+=("$tool")
 done
 if [ ${#missing[@]} -gt 0 ]; then
@@ -287,6 +288,13 @@ run_native 'Worktrees stay under .worktrees/' \
 # --- Python ---------------------------------------------------------------
 run_native_verbose 'Python backend tests (bundled python.exe)' \
 	'python\python3\python.exe -m unittest discover -s tests -p test_*.py'
+
+# Error-class lint on the committed ruff.toml (F + E9, docs/agents/windows-toolchain.md):
+# the Python pair of the cargo fmt/clippy gates. Style rules (W, the rest of E)
+# stay deferred until this set holds, so the run reddens on unused imports,
+# undefined names and duplicate keys, not on formatting.
+run_native 'Python lint (ruff)' \
+	'.tools\\ruff\\ruff.exe check --config ruff.toml python tests'
 
 # --- Node -----------------------------------------------------------------
 run_native 'Node backend tests (bundled node.exe)' \

@@ -78,10 +78,10 @@ def convert_liu_unitab(tab_filename, out_filename):
         high_bits = f.read(math.ceil(n_words * 2 /8))
 
         # read word_count bits
-        unknown_bits = f.read(math.ceil(n_words / 8))
+        f.read(math.ceil(n_words / 8))
 
         # read word_count bits
-        is_simple_bits = f.read(math.ceil(n_words / 8))
+        f.read(math.ceil(n_words / 8))
 
         # read words
         words = []

@@ -52,6 +52,18 @@ slow — see [Building the text service and the installer](#building-the-text-se
 | CMake | 4.2.8 (portable, x86_64) | Configures the upstream `CMakeLists.txt` for the text service and the launcher. |
 | Windows SDK + MSVC CRT | Win11 SDK 10.0.26100, CRT 14.44.17.14 (x86, x64, arm64) | `xwin` splats the redistributable SDK and CRT into `.tools/msvc`, so `clang-cl` can compile against real Windows headers and link against the real import libraries. Only the static release CRT (`libcmt`) is kept. |
 | NSIS | 3.08 (portable) | Builds `installer/installer.nsi` into the installer `.exe`. The `StdUtils` plugin is vendored in `installer/`. |
+| Ruff | 0.17.4 (`aarch64-pc-windows-msvc`) | The Python lint layer: `ruff check` with the committed `ruff.toml` (`F` + `E9`, error-class rules only) over `python/` (minus the vendored `python/python3/`) and `tests/`. One static binary with no interpreter plugins, so it joins the vendored set without touching the shipped interpreter. |
+
+First run of the lint layer, `ruff check --config ruff.toml --statistics python tests`
+(ruff 0.17.4): 895 findings — `F405` 780, `F401` 58, `F403` 35, `F841` 19, `F821` 3.
+The 815 `F403`/`F405` are the star-import heuristics over the codebase's own
+`from ctypes import *` / `from keycodes import *` binding style, so the committed
+config ignores those two codes; the remaining 80 are the error-class findings the
+layer owns and were cleared in the same commit. Widening to the style set is the
+deferred half: `ruff check --select E,F --statistics python tests` measures 1784
+findings, 821 of them under `python/input_methods/` (`E501` line-too-long 125 is
+the largest there) — noisy, which is why only the error-class set ships and style
+adoption waits for a separate pass.
 
 The Git submodule `libIME2` supplies the vendored gtest, and
 `python/input_methods/rime/brise` supplies the Rime data; the installer
@@ -66,7 +78,8 @@ for someone's scratch work.
 **Components** — created by `tests/install_windows_toolchain.sh`, re-created
 the same way: `go/`, `node/`, `bun/`, `cargo/` plus `rustup/` (cargo is the
 rustup proxy), `mingw64/`, `cmake/`, `msvc/` (the `xwin`-splatted SDK and
-CRT), `xwin/`, `nsis/`, the `bin/` shims (`node`, `npm`, `python3` point at
+CRT), `xwin/`, `nsis/`, `ruff/` (the Python lint layer's binary), the `bin/`
+shims (`node`, `npm`, `python3` point at
 the portable builds and the shipped interpreter), and the PATH helpers
 `.tools/env.sh` / `pime-env.bat`. Downloaded archives stay next to their component
 (`cmake/cmake.zip`, `nsis/nsis.zip`, `xwin/xwin.tar.gz`); only

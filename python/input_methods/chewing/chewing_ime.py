@@ -804,7 +804,7 @@ class ChewingTextService(TextService):
             # 使用我們自帶的 python runtime exe 執行 config tool
             # 此處也可以用 subprocess，不過使用 windows API 比較方便
             # SW_HIDE = 0 (hide the window)
-            r = windll.shell32.ShellExecuteW(
+            windll.shell32.ShellExecuteW(
                 None, "open", python_exe, config_tool, self.curdir, 0)
         elif commandId == ID_MODE_ICON:  # windows 8 mode icon
             self.toggleLanguageMode()  # 切換中英文模式

@@ -3,9 +3,7 @@ from __future__ import unicode_literals
 import io
 import os
 import re
-import sys
 import json
-import copy
 
 DEBUG_MODE = False
 CIN_HEAD = "%gen_inp"
@@ -236,7 +234,7 @@ class CinToJson(object):
                     else:
                         root = root.strip()
 
-                    charset = self.getCharSet(key, root)
+                    self.getCharSet(key, root)
 
                     if not self.sortByCharset:
                         if key in  self.chardefs:
