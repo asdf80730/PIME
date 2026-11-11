@@ -137,25 +137,56 @@ class ConfigHandler(BaseHandler):
             pass
 
 
+def _user_phrase_rows():
+    """Every user phrase libchewing reports, as {"phrase", "bopomofo"} dicts."""
+    phrase_len = c_uint(0)
+    bopomofo_len = c_uint(0)
+    phrases = []
+    chewing_ctx.userphrase_enumerate()
+    while chewing_ctx.userphrase_has_next(byref(phrase_len), byref(bopomofo_len)):
+        phrase_buf = create_string_buffer(phrase_len.value)
+        bopomofo_buf = create_string_buffer(bopomofo_len.value)
+        chewing_ctx.userphrase_get(phrase_buf, phrase_len, bopomofo_buf, bopomofo_len)
+        phrase = phrase_buf.raw.decode("utf8").strip('\x00')
+        bopomofo = bopomofo_buf.raw.decode("utf8").strip('\x00')
+        phrases.append({
+            "phrase": phrase,
+            "bopomofo": bopomofo
+        })
+    return phrases
+
+
+def _derive_bopomofo(phrase):
+    """The library's own reading of one phrase, "" when it has no answer.
+
+    libchewing answers userphrase_lookup with 1 for a pair it holds and with
+    0 when the phrase is missing or the bopomofo is invalid, so only 1 counts
+    as an answer. A row whose syllable count differs from the character count
+    is no answer either: both fall back to the value typed by hand, so the
+    save path below is untouched.
+    """
+    if not phrase:
+        return ""
+    for row in _user_phrase_rows():
+        if row["phrase"] != phrase:
+            continue
+        # The dialog stores "_" as the syllable separator while libchewing
+        # reports spaces; the space-joined form is what it validates.
+        syllables = row["bopomofo"].replace("_", " ").split()
+        bopomofo = " ".join(syllables)
+        if not chewing_ctx.userphrase_lookup(phrase.encode("utf8"), bopomofo.encode("utf8")):
+            return ""
+        if len(syllables) != len(phrase):
+            return ""
+        return bopomofo
+    return ""
+
+
 class UserPhraseHandler(BaseHandler):
 
     @tornado.web.authenticated
     def get(self):  # get all user phrases
-        phrase_len = c_uint(0)
-        bopomofo_len = c_uint(0)
-        phrases = []
-        chewing_ctx.userphrase_enumerate()
-        while chewing_ctx.userphrase_has_next(byref(phrase_len), byref(bopomofo_len)):
-            phrase_buf = create_string_buffer(phrase_len.value)
-            bopomofo_buf = create_string_buffer(bopomofo_len.value)
-            chewing_ctx.userphrase_get(phrase_buf, phrase_len, bopomofo_buf, bopomofo_len)
-            phrase = phrase_buf.raw.decode("utf8").strip('\x00')
-            bopomofo = bopomofo_buf.raw.decode("utf8").strip('\x00')
-            phrases.append({
-                "phrase": phrase,
-                "bopomofo": bopomofo
-            })
-        self.write({"data": phrases})
+        self.write({"data": _user_phrase_rows()})
 
     @tornado.web.authenticated
     def post(self):  # add new user phrases or remove existing ones
@@ -182,6 +213,13 @@ class UserPhraseHandler(BaseHandler):
                 result = 0
 
         self.write({"result": result})
+
+
+class BopomofoDeriveHandler(BaseHandler):
+
+    @tornado.web.authenticated
+    def get(self):  # answer the bopomofo of the phrase in the query string
+        self.write({"bopomofo": _derive_bopomofo(self.get_argument("phrase", ""))})
 
 
 class UserPhraseFileHandler(BaseHandler):
@@ -259,6 +297,7 @@ class ConfigApp(tornado.web.Application):
             (r"/(version.txt)", NoCacheStaticFileHandler, {"path": os.path.join(current_dir, "../../../")}),
             (r"/config", ConfigHandler),  # main configuration handler
             (r"/user_phrases", UserPhraseHandler),  # user phrase editor
+            (r"/bopomofo", BopomofoDeriveHandler),  # bopomofo of one phrase
             (r"/user_phrase_file", UserPhraseFileHandler),  # export user phrase
             (r"/keep_alive", KeepAliveHandler),  # keep the api server alive
             (r"/login/(.*)", LoginHandler),  # authentication

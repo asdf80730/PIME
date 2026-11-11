@@ -390,6 +390,25 @@ $(function() {
     $("#import").on("click", onImportPhrase);
     $("#export").on("click", onExportPhrase);
 
+    // Derive the bopomofo from the library once the phrase is filled in, so
+    // the tone marks need not be transcribed by hand.
+    $("#phrase_input").on("input", function(event) {
+        let phrase = $("#phrase_input").val().trim();
+        if (phrase.length < 1) {
+            return;
+        }
+        $.get("/bopomofo", {phrase: phrase}, function(data) {
+            let derived = (data && data.bopomofo) ? data.bopomofo : "";
+            // No answer at all (unknown phrase), or a reading whose syllable
+            // count differs from the character count: keep the manual value,
+            // which the save below still posts.
+            if (derived.length < 1 || derived.split(" ").length != phrase.length) {
+                return;
+            }
+            $("#bopomofo_input").val(derived);
+        }, "json");
+    });
+
     // Change input to bopomofo
     $("#bopomofo_input").on("input", function(event) {
         let keycode_to_bopomofo = {
