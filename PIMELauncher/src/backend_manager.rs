@@ -184,8 +184,9 @@ impl BackendManager {
         let backend_name_clone = backend_name.to_string();
         let manager_clone = self.clone();
         let config_clone = config.clone();
-        let pending_requests =
-            Arc::new(Mutex::new(HashMap::<(String, i64), tokio::time::Instant>::new()));
+        let pending_requests = Arc::new(Mutex::new(
+            HashMap::<(String, i64), tokio::time::Instant>::new(),
+        ));
         let pending_requests_process = pending_requests.clone();
 
         tokio::spawn(async move {
