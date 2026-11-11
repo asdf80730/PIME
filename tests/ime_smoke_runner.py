@@ -45,6 +45,10 @@ SKIP_MARKERS = (
     ("Failed to create chewing context", "libchewing cannot create a context on Linux"),
     ("librime.so", "librime is not installed"),
     ("Rime.dll", "rime.dll is Windows-only"),
+    # docs/agents/input-method-tables.md: 嘸蝦米 is the one table the installer
+    # converts (liu-uni.tab -> liu.cin -> liu.json), so a bare checkout has no
+    # liu.json for the Service to bind.
+    ("liu.json", "the Boshiamy table is converted at install time"),
 )
 
 BASE_EVENT = {
@@ -192,9 +196,31 @@ def import_service(module_name, attempts=2):
                 raise
 
 
+def settle_table(service, module):
+    """Block until the asynchronous table load lands on the Service.
+
+    cinbase schedules every 碼表 read on a shared executor, so a freshly
+    built Service can still be without its table: the classic services join
+    inside the constructor, and the holder-based chebihua leaves the future
+    on ``TableHolder``. The first key cannot be judged before the table
+    exists, so join whoever holds the future.
+    """
+    if getattr(service, "cin", None) is not None:
+        return
+    holder = getattr(module, "CinTable", None)
+    if holder is None:
+        return
+    if hasattr(holder, "wait_until_ready"):
+        holder.wait_until_ready()
+    else:
+        holder.wait()
+    service.cin = holder.cin
+
+
 def run_service(module_name):
     module = import_service(module_name)
     service = service_class(module)(FakeClient())
+    settle_table(service, module)
 
     reply = service.handleRequest({"method": "onActivate", "isKeyboardOpen": True, "seqNum": 1})
     if not reply.get("success"):

@@ -60,9 +60,10 @@ class CheDayiTextService(TextService):
         if not CinTable.curCinType == self.cfg.selCinType and not CinTable.loading:
             loadCinFile = LoadCinTable(self, CinTable)
             loadCinFile.start()
-        else:
-            CinTable.wait()
-            self.cin = CinTable.cin
+        # Both paths need the table before the first key: the done callback
+        # fills self.cin only once the future resolves, so wait for it here.
+        CinTable.wait()
+        self.cin = CinTable.cin
 
 
     # 檢查設定檔是否有被更改，是否需要套用新設定

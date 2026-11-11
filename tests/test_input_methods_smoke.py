@@ -27,9 +27,11 @@ import ime_smoke_runner  # noqa: E402 - located after ROOT is known
 
 # Every service that must run: the cinbase family plus the standalone meow
 # service. chewing/rime/braille are discovered too, but their native bindings
-# may not match the system libraries.
+# may not match the system libraries. cheliu is absent on purpose: its table
+# is the one the installer converts (docs/agents/input-method-tables.md), so a
+# bare checkout leaves it skipped by the runner's own marker.
 EXPECTED_SERVICES = {
-    "chearray", "chebihua", "checj", "chedayi", "cheeng", "cheez", "cheliu",
+    "chearray", "chebihua", "checj", "chedayi", "cheeng", "cheez",
     "chephonetic", "chepinyin", "chesimplex", "meow",
 }
 
