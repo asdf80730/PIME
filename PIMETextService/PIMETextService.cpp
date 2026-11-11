@@ -260,8 +260,13 @@ void TextService::updateCandidates(Ime::EditSession* session) {
 		::DeleteObject(font_); // delete old font
 		HWND targetHwnd = nullptr;
 		if (session != nullptr && session->context()) {
-			// the DPI of the monitor the host window lives on (upstream #960)
-			session->context()->GetWnd(&targetHwnd);
+			// the DPI of the monitor the host window lives on (upstream #960):
+			// this SDK header gives ITfContext no GetWnd, the active view has it
+			ITfContextView* view = nullptr;
+			if (SUCCEEDED(session->context()->GetActiveView(&view)) && view != nullptr) {
+				view->GetWnd(&targetHwnd);
+				view->Release();
+			}
 		}
 		lf.lfHeight = candFontHeight(targetHwnd); // apply the new size
 		if (!candFontName_.empty()) { // apply new font name
