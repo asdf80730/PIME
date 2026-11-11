@@ -113,6 +113,9 @@ void Client::updateUI(json& data) {
 		else if (value.is_number_integer() && name == "candFontSize") {
 			textService_->setCandFontSize(value.get<int>());
 		}
+		else if (value.is_number_integer() && name == "candFontWeight") {
+			textService_->setCandFontWeight(value.get<int>());
+		}
 		else if (value.is_number_integer() && name == "candPerRow") {
 			textService_->setCandPerRow(value.get<int>());
 		}

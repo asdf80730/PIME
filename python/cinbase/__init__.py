@@ -3195,9 +3195,10 @@ class CinBase:
         cbTS.candPerPage = candPerPage
         cbTS.candidateView.configure(cbTS.candPerPage, cbTS.candPerRow)
 
-        # 設定 UI 外觀 (字型與字級都跟隨設定，issue #582)
+        # 設定 UI 外觀 (字型與字級都跟隨設定，issue #582；粗細 issue #854)
         cbTS.customizeUI(candFontSize = cfg.fontSize,
                         candFontName = cfg.candFontName,
+                        candFontWeight = cfg.candFontWeight,
                         candPerRow = cfg.candPerRow,
                         candUseCursor = cfg.cursorCandList,
                         candTextColor = cfg.candTextColor,

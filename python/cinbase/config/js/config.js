@@ -288,6 +288,13 @@ function updateConfig() {
                 inputValue = 9;
             } else if (inputItem.name === "candPerRow") {
                 inputValue = 1;
+            } else if (inputItem.name === "candFontWeight") {
+                // 400 = FW_NORMAL, the weight the candidate font already carries
+                inputValue = 400;
+            }
+            if (inputItem.name === "candFontWeight" && !inputValue) {
+                // 0 is FW_DONTCARE; collapse onto the same default
+                inputValue = 400;
             }
             checjConfig[inputItem.name] = inputValue;
             break;
@@ -314,7 +321,7 @@ function checkDataFormat(checkData, checkType, elementId, dataDesc) {
     for (var i = 0; i < data_array.length; i++) {
         switch (checkType) {
             case "1":
-                if (! /^[A-Za-z] .{1,10}$/.test(data_array[i])) {
+                if (! /^[A-Za-z0-9`\-=\[\]\\;',./] .{1,10}$/.test(data_array[i])) {
                     errorState = true;
                     $.jAlert({
                         'title': '糟糕！',
@@ -346,15 +353,15 @@ function checkDataFormat(checkData, checkType, elementId, dataDesc) {
                 }
                 break;
             case "3":
-                if (! /^[A-Za-z\d]+ .{1,40}$/.test(data_array[i])) {
+                if (! /^[A-Za-z0-9`\-=\[\]\\;',./]+ .{1,40}$/.test(data_array[i])) {
                     if (!(data_array.length == 1 && data_array[0].length == 0))
                     {
                         errorState = true;
                         if (data_array[i].length == 0) {
-                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行為空行！<br>請去除該空行或使用「英數 + 空格 + 字詞」的格式。'
+                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行為空行！<br>請去除該空行或使用「英數符號 + 空格 + 字詞」的格式。'
                         }
                         else {
-                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行「'+ data_array[i] +'」格式錯誤！<br>請使用「英數 + 空格 + 字詞」的格式。'
+                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行「'+ data_array[i] +'」格式錯誤！<br>請使用「英數符號 + 空格 + 字詞」的格式。'
                         }
 
                         $.jAlert({

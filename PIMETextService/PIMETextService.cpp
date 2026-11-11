@@ -49,6 +49,7 @@ TextService::TextService(ImeModule* module):
 	selKeys_(L"1234567890"),
 	candUseCursor_(false),
 	candFontSize_(12),
+	candFontWeight_(FW_NORMAL),
 	popupMenu_(nullptr),
 	currentLangProfile_(GUID_NULL) {
 
@@ -269,6 +270,7 @@ void TextService::updateCandidates(Ime::EditSession* session) {
 			}
 		}
 		lf.lfHeight = candFontHeight(targetHwnd); // apply the new size
+		lf.lfWeight = candFontWeight_; // apply the configured weight (upstream #854)
 		if (!candFontName_.empty()) { // apply new font name
 			wcsncpy(lf.lfFaceName, candFontName_.c_str(), LF_FACESIZE - 1);
 			lf.lfFaceName[LF_FACESIZE - 1] = L'\0';
