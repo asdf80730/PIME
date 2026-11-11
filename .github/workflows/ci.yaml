@@ -47,8 +47,31 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go-backend/go.mod
+          # The toolchain download and the two Go caches come back from the
+          # cache on the second push; the module cache is the one that matters,
+          # `go-backend` pulls its deps from the proxy on a cold runner.
+          cache: true
       - name: Install Bun for the GitHub YAML check
         uses: oven-sh/setup-bun@v2
+      # 501 s of the 568 s green job (run 43061539705) is this fetch, and the
+      # whole of it is five .deb files plus one wheel, so both halves are
+      # staged in the Actions cache and the index refresh is skipped on a hit.
+      # The key is the hash of this file, which is where the package list
+      # lives: edit the list and the key moves with it.
+      - name: Restore the apt archives and index
+        id: apt-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/cache/apt/archives
+            /var/lib/apt/lists
+          key: apt-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
+      - name: Restore the pip wheel cache
+        id: pip-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yaml') }}
       - name: Install IME smoke test and shell lint dependencies
         # ruff ships no apt package on the runner image (26.04), so the lint
         # layer takes it from pip; the other five are apt packages. The two
@@ -61,15 +84,18 @@ jobs:
         # packages.microsoft.com resolved on the same job).
         # `--no-install-recommends` keeps python3-pip's recommend chain out of
         # the step; the five named packages are all the layer reads, so the
-        # chain buys nothing here. Measured on run 42992630322 the whole job is
-        # 92 s, 20 s of it this step, so the saving shows up first in the
-        # degraded-DNS case where every extra fetch costs a retry round.
+        # chain buys nothing here.
+        # A restored `/var/lib/apt/lists` answers resolution, so `update` runs
+        # only on a cold cache; that is the 20 s-per-name DNS round that the
+        # degraded runner repeats for every URI.
         run: |
-          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=5
+          if [ "${{ steps.apt-cache.outputs.cache-hit }}" != 'true' ]; then
+            sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=5
+          fi
           sudo apt-get install -y --no-install-recommends \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=5 \
             libopencc-dev shellcheck python3-pip libchewing3 librime-dev
-          python3 -m pip install --user --no-cache-dir --break-system-packages ruff
+          python3 -m pip install --user --break-system-packages ruff
       - name: Run every locally verifiable layer
         run: tests/run_local_tests.sh
 
