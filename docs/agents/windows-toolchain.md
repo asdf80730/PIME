@@ -85,7 +85,10 @@ mirror so no build tree lands inside the checkout; the mirror itself is
 refreshed by the tracked `tests/mirror-sources.sh`, which step 1 calls),
 `arm64x/` (forwarder
 objects and load probes), `stage/` (the installer staging tree), and the
-two top-level `*_test.exe` that `tests/verify_windows.sh` compiles.
+five top-level `*_test.exe` that `tests/verify_windows.sh` compiles
+(`json_utils_test`, `composition_cursor_test`, `ime_profile_guids_test`,
+`dpi_helper_test`, `ui_colors_test`; recount with
+`ls .tools/*_test.exe | wc -l` → 5).
 
 **Scraps** — ad-hoc `.bat` files, logs and probe dirs from earlier
 interactive sessions (`wg*.bat`, `msi*`, `dev*.bat`, `adm/chk/disk/rm/mk.bat`,
