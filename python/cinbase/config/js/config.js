@@ -275,7 +275,15 @@ function updateConfig() {
         case "number":
             var inputValue = inputItem.value;
             if ($.isNumeric(inputValue)) {
-                inputValue = parseInt(inputValue, 10);
+                if (inputItem.name === "candTextColor" ||
+                    inputItem.name === "windowBackgroundColor" ||
+                    inputItem.name === "selKeyColor") {
+                    // Radix 0 reads both documented forms: 0xRRGGBB and
+                    // decimal; radix 10 truncates the hex form at the x.
+                    inputValue = parseInt(inputValue, 0);
+                } else {
+                    inputValue = parseInt(inputValue, 10);
+                }
             } else if (inputItem.name === "candPerPage") {
                 inputValue = 9;
             } else if (inputItem.name === "candPerRow") {
