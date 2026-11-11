@@ -52,9 +52,15 @@ jobs:
         # layer takes it from pip; the other five are apt packages. The two
         # native libraries are what the ctypes bindings dlopen: libchewing.so.3
         # and librime.so.
+        # The short timeout with three retries is what makes a transient
+        # `Temporary failure resolving 'archive.ubuntu.com'` on the hosted
+        # runner self-heal inside the step instead of reddening the whole run
+        # (observed on run 43041517344, twice in a row, while
+        # packages.microsoft.com resolved on the same job).
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libopencc-dev shellcheck python3-pip libchewing3 librime-dev
+          sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=5
+          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=5 \
+            libopencc-dev shellcheck python3-pip libchewing3 librime-dev
           python3 -m pip install --user --break-system-packages ruff
       - name: Run every locally verifiable layer
         run: tests/run_local_tests.sh
