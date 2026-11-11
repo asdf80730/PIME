@@ -309,6 +309,13 @@ python/python3/python.exe -m unittest discover -s tests -p "test_x.py" -v
 Passing the dotted name to `discover` is not needed — the `-p` pattern is the
 selector, and it is the same interpreter and the same tests the umbrella runs.
 
+`Ran 0 tests in 0.000s` with `NO TESTS RAN` and exit 0 is a **red**, not a
+clean run: the pattern matched no module, most often because the named file
+lives only in a linked worktree while the command ran from the main checkout.
+Read the count line beside the `OK`, and reach for
+`tests/run_worktree_tests.py <test-file> <worktree>` when the file is a
+worktree-only one — that driver aborts (rc 3) rather than reporting zero.
+
 Two tracked trees are vendored third-party code and make a repo-wide search time
 out before it reaches anything you wrote: `python/python3/` (the bundled
 interpreter plus its `site-packages`) and `node/`. Name the trees you actually want
