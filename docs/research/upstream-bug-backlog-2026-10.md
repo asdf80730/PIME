@@ -140,7 +140,7 @@ unpruned (950k-file report).
 | UILess games | #185, #199 | ★`isUiLess` exposed at `PIMETextService/PIMEClient.cpp:705`; cinbase honors it (`cinbase/__init__.py:435,512`) |
 | installer/locale | #203, #506 | `installer.nsi:201-207` PendingFileRename check (triage §4.4); `en_US/ieprotectedpage.ini` gone |
 | chewing features | #478, #725, #719, #789, #802 | export/import `config_tool.py:185-228`; autoLearn toggle `chewing_config.py:47`; config.json fix `eca76915`; paging fix PR #809 (`2efd45e`) |
-| misc | #483, #557, #689, #691, #942 | simplex `io` now contains 次; ARM64 in beta3 (awaiting reporter); embedded-Python `_pth` isolation; tornado pin; AsyncConnector (triage §2.2) |
+| misc | #483, #557, #689, #691, #942 | simplex `io` now contains 次; ARM64 in beta3 (awaiting reporter); embedded-Python `_pth` isolation; tornado pin; AsyncConnector (triage §2.2) — #942 closed out 2026-11-11 with `e0ddf2f` (PR #978), `007dc46` (PR #979) and `31dec68`/`7676819` (PR #1002); native run `tests/test_server_protocol.py` → `Ran 11 tests` / `OK` |
 
 ### 4.2 Already-fixed suspects needing a Windows retest before closing (4 — a subset of §4.1's 19, not an addition)
 #131/#291/#292/#185 are counted above but their verdict leans on the Rust rewrite's watchdog;
