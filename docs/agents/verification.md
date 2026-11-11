@@ -81,7 +81,10 @@ Individual commands, if you want to narrow the loop:
   The lint layer runs beside it, on the same committed config as the Windows
   gate: `ruff check --config ruff.toml python tests` — `F` + `E9` error-class
   rules, `F403`/`F405` off, vendored `python/python3/` excluded; the step
-  prints a named `SKIP` when `ruff` is not installed (apt: `ruff`).
+  prints a named `SKIP` when `ruff` is not installed. The runner image carries
+  no `ruff` apt package, so the `linux-checks` job installs it with
+  `python3 -m pip install --user --break-system-packages ruff`; the layer
+  accepts either the `ruff` shim or the `python3 -m ruff` module form.
 
 - **Node backend** — `cd node && npm test`: three scripts. Upstream's
   `tests/nimeServer.test.js` covers the line protocol under `node --test`;

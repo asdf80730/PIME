@@ -189,7 +189,13 @@ ruff_all() {
     # The same error-class rule set the Windows gate runs — F (pyflakes) + E9
     # (syntax) from the committed ruff.toml — so local, this gate and the
     # linux-checks job agree on one config (docs/agents/windows-toolchain.md).
-    ruff check --config ruff.toml python tests
+    # The CI job installs through pip, which may leave the module importable
+    # without a `ruff` shim on PATH, so both spellings are accepted.
+    if command -v ruff >/dev/null 2>&1; then
+        ruff check --config ruff.toml python tests
+    else
+        python3 -m ruff check --config ruff.toml python tests
+    fi
 }
 
 nsis_smoke() {
@@ -390,10 +396,10 @@ else
     skip 'Harness shell scripts lint' 'shellcheck missing; apt-get install shellcheck'
 fi
 
-if command -v ruff >/dev/null 2>&1; then
+if command -v ruff >/dev/null 2>&1 || python3 -m ruff --version >/dev/null 2>&1; then
     step 'Python lint (ruff)' ruff_all
 else
-    skip 'Python lint (ruff)' 'ruff missing; apt-get install ruff'
+    skip 'Python lint (ruff)' 'ruff missing; python3 -m pip install --user ruff'
 fi
 
 # compileall and unittest discovery would otherwise leave __pycache__ trees
