@@ -42,8 +42,10 @@ KU4_KEYS = ("d", "k", "4")
 IN1_KEYS = ("u", "p", " ")
 HUI4_KEYS = ("c", "j", "o", "4")
 REPORTER_SEQUENCE = SY1_KEYS + KU4_KEYS + IN1_KEYS + HUI4_KEYS
-# The first-candidate strings libchewing commits for that sequence.
-OBSERVED_FLUSH_TEXT = "心客因會"
+# The first-candidate strings libchewing commits for that sequence. The
+# bundled build answers 心 for ㄒㄧㄣ, the CI runner's system library 新; both
+# are measured, and the shape of the reply is the contract.
+OBSERVED_FLUSH_TEXTS = ("心客因會", "新客因會")
 
 
 class UiLessFakeClient:
@@ -95,8 +97,14 @@ class UiLessCompositionTests(unittest.TestCase):
     def test_tone_key_collapses_syllable_into_the_single_buffer(self):
         for ch in SY1_KEYS:
             reply = self.key(ch)
-        self.assertEqual(self.layers(reply), {"compositionString": "心"},
+        layers = self.layers(reply)
+        # The two libchewing builds this suite meets answer the first candidate
+        # of ㄒㄧㄣ differently — the bundled 心, the runner's system 新 — so the
+        # glyph is matched against the measured set and the shape carries the
+        # contract: one layer, no commit riding along.
+        self.assertEqual(set(layers), {"compositionString"},
                          "the tone key moves the syllable into the buffer, still one layer")
+        self.assertIn(layers["compositionString"], {"心", "新"})
         self.assertNotIn("commitString", reply)
 
     def test_flush_reply_commits_once_with_one_non_empty_layer(self):
@@ -112,7 +120,9 @@ class UiLessCompositionTests(unittest.TestCase):
         non_empty = [v for v in layers.values() if v]
         self.assertEqual(len(non_empty), 1,
                          f"flush reply must carry one text layer, got {layers}")
-        self.assertEqual(layers.get("commitString"), OBSERVED_FLUSH_TEXT)
+        self.assertIn(layers.get("commitString"), OBSERVED_FLUSH_TEXTS,
+                      "the committed text is the first-candidate chain of the "
+                      "sequence, whichever libchewing build answers it")
         self.assertEqual(layers.get("compositionString"), "")
         self.assertEqual(layers.get("commitString"), last_composition,
                          "the flush commits what the buffer showed, once")
