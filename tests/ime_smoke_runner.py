@@ -97,10 +97,20 @@ def disarm_launch_surface():
 
 
 class FakeDLL:
-    """Returns a no-op for every Win32 function the services call at load time."""
+    """A Win32 surface for hosts without one.
+
+    POSIX ``ctypes`` exposes ``windll`` as a per-name loader *function*, so the
+    Win32 shape the services use (``windll.user32.GetKeyState``) is absent
+    there. Every name resolves to this same node and calling it answers 0, so
+    any depth of the Win32 chain reads as a no-op: an un-toggled Caps Lock, a
+    null shell handle.
+    """
 
     def __getattr__(self, name):
-        return lambda *args, **kwargs: 0
+        return self
+
+    def __call__(self, *args, **kwargs):
+        return 0
 
 
 class FakeClient:
@@ -118,8 +128,7 @@ def install_windows_shims():
             "winsound",
             types.SimpleNamespace(PlaySound=lambda *args, **kwargs: None, SND_ASYNC=1),
         )
-        if not hasattr(ctypes, "windll"):
-            ctypes.windll = FakeDLL()
+        ctypes.windll = FakeDLL()
         if not hasattr(ctypes, "WinDLL"):
             ctypes.WinDLL = lambda *args, **kwargs: FakeDLL()
     disarm_launch_surface()

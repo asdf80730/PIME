@@ -201,14 +201,26 @@ class RimeModule(RIME_STRUCT):
         ("get_api", CFUNCTYPE(POINTER(RimeCustomApi)))
         ]
 
-_librime.RimeCreateSession.restype = RimeSessionId
-_librime.RimeConfigGetCString.restype = c_char_p
-_librime.RimeConfigListSize.restype = c_size_t
-_librime.RimeGetSharedDataDir.restype=c_char_p
-_librime.RimeGetUserDataDir.restype=c_char_p
-_librime.RimeGetSyncDir.restype=c_char_p
-_librime.RimeGetUserId.restype=c_char_p
-_librime.RimeFindModule.restype = POINTER(RimeModule)
+def _bind(name, restype):
+    # The Windows rime.dll exports the flat Rime* functions; a system
+    # librime on Linux may ship only the rime_get_api() struct, so a missing
+    # name is a gap in that host's surface, not a product failure. The
+    # pure-Python helpers below (prune_log_files, prune_sync_snapshots) work
+    # either way.
+    try:
+        getattr(_librime, name).restype = restype
+    except (AttributeError, OSError):
+        pass
+
+
+_bind("RimeCreateSession", RimeSessionId)
+_bind("RimeConfigGetCString", c_char_p)
+_bind("RimeConfigListSize", c_size_t)
+_bind("RimeGetSharedDataDir", c_char_p)
+_bind("RimeGetUserDataDir", c_char_p)
+_bind("RimeGetSyncDir", c_char_p)
+_bind("RimeGetUserId", c_char_p)
+_bind("RimeFindModule", POINTER(RimeModule))
 
 class RimeApi(RIME_STRUCT):
     _fields_ = [("data_size", c_int),
