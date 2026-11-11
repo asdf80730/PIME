@@ -26,6 +26,11 @@ git push fork master
 git ls-remote fork refs/heads/master # must equal `git rev-parse master`
 ```
 
+In a PR worktree the bare name `master` resolves to nothing, so an ancestry check
+there uses the remote-tracking names — `git rev-parse upstream/master`, or
+`git merge-base --is-ancestor <sha> upstream/master` — and the divergence count
+comes from `git rev-list --left-right --count upstream/master...HEAD`.
+
 Conflicts land in the same places every sync:
 
 - Product code (launcher, node, Python): take upstream's side, then re-apply only the local
@@ -151,7 +156,10 @@ and hand the compare URL plus body to the human.
   A PR opened as a draft stays a draft until the human clicks "Ready for review".
   `gh api notifications` is 403 as well: list the work with
   `gh search prs --author @me --state open` and read discussion through
-  `gh api repos/EasyIME/PIME/issues/<n>/comments`.
+  `gh api repos/EasyIME/PIME/issues/<n>/comments`. A posted comment needs a JSON
+  envelope, so pipe it: `jq -Rs '{body:.}' .scratch/<file>.md | gh api
+  repos/EasyIME/PIME/issues/<n>/comments --input -` — a bare
+  `--input <file>.md` over a plain-text body is 400 `Problems parsing JSON`.
   Check the body gate after writing the body: `bash tests/check_pr_bodies.sh` on this
   box (both `tests/verify_windows.sh` and `tests/run_local_tests.sh` carry the step;
   `bash tests/check_pr_bodies_test.sh` pins its contract). It reads more than the
