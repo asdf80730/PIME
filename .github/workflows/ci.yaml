@@ -41,7 +41,9 @@ jobs:
       # carries the preset the ADR cites by path, and test_agent_docs resolves
       # that reference against the working tree.
       - name: Check out the C++ test dependency
-        run: git submodule update --init libIME2 python/input_methods/rime/brise
+        # Shallow: the layer reads the files, never the history, and libIME2
+        # carries the whole vendored gtest tree.
+        run: git submodule update --init --depth 1 libIME2 python/input_methods/rime/brise
       - uses: actions/setup-go@v7
         with:
           go-version-file: go-backend/go.mod
@@ -57,11 +59,17 @@ jobs:
         # runner self-heal inside the step instead of reddening the whole run
         # (observed on run 43041517344, twice in a row, while
         # packages.microsoft.com resolved on the same job).
+        # `--no-install-recommends` keeps python3-pip's recommend chain out of
+        # the step; the five named packages are all the layer reads, so the
+        # chain buys nothing here. Measured on run 42992630322 the whole job is
+        # 92 s, 20 s of it this step, so the saving shows up first in the
+        # degraded-DNS case where every extra fetch costs a retry round.
         run: |
           sudo apt-get update -o Acquire::Retries=3 -o Acquire::http::Timeout=5
-          sudo apt-get install -y -o Acquire::Retries=3 -o Acquire::http::Timeout=5 \
+          sudo apt-get install -y --no-install-recommends \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=5 \
             libopencc-dev shellcheck python3-pip libchewing3 librime-dev
-          python3 -m pip install --user --break-system-packages ruff
+          python3 -m pip install --user --no-cache-dir --break-system-packages ruff
       - name: Run every locally verifiable layer
         run: tests/run_local_tests.sh
 
