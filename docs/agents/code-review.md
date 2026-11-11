@@ -211,6 +211,32 @@ then the assignment — so the restore runs even when an assertion fails mid-cas
 `tearDown` that rebuilds the singleton from scratch is the weaker form: it hides which
 case owns which value, and a partially applied swap still leaks.
 
+## A writer change lists its readers
+
+A key added to a shared registration manifest is only half a diff: every
+dispatcher that matches on it belongs to the same change, and a missing reader
+fails as `未知的输入法` at activation rather than as a test failure. For
+`input_methods/<ime>/ime.json` the full list is
+`python/serviceManager.py` (`TextServiceManager.load`),
+`go-backend/server.go` (`newClient`), `node/loadServices.js`
+(`loadServiceById`) and `PIMETextService/PIMEImeModule.cpp`
+(`ImeModule::loadImeInfo`, matching through `PIMETextService/ImeProfileGuids.h`),
+each with its own runner's case: `tests/test_service_manager.py`,
+`go-backend/server_test.go`, `node/test/loadServices.test.js`,
+`tests/ime_profile_guids_test.cpp`. Review answers "which of these four are in
+the diff" before reading the bodies; a number from `Ran N tests` is not that
+answer.
+
+## Name the pre-existing convention before adding a third shape
+
+Where the parser already fixes a layout, state it in the PR body from the source
+that fixes it (`docs/adr/0004-per-backend-profile-guids.md` for the profile
+GUIDs, `PIMETextService/DllEntry.cpp:langProfileFromJson` for the manifest
+fields) and then say which way the diff follows it. A parallel structure
+invented beside an existing convention is a finding even when both parse: the
+maintainer adjudicates against the older one, and the second shape survives only
+if the first is shown not to fit.
+
 ## The standing rules: the fork's upstream prose, verbatim
 
 §2–§4 of the agent rules upstream added to `AGENTS.md` in commit `487cb45`

@@ -178,6 +178,29 @@ class RegistrationLocaleTests(unittest.TestCase):
                                      "%s registers a different number of profile "
                                      "GUIDs than the shipped manifest has" % name)
 
+    def test_every_additional_profile_names_its_locale_pair(self):
+        # `langProfileFromJson` reads the pair per entry, so an
+        # `additionalProfiles` object that carries a guid but no locale is a
+        # registered bucket with an empty language name: it appears in
+        # `AddLanguageProfile` yet resolves to LCID 0 in
+        # `libIME2/ImeModule.cpp:registerLangProfiles`. The guid-only check
+        # above cannot see that half-written entry, so the pair is pinned
+        # beside it, per file, over every backend tree.
+        for base in BACKEND_INPUT_METHOD_DIRS:
+            for name in sorted(os.listdir(base)):
+                path = os.path.join(base, name, "ime.json")
+                if not os.path.isfile(path):
+                    continue
+                profile = load_profile(path)
+                for index, entry in enumerate(
+                        profile.get("additionalProfiles", [])):
+                    with self.subTest(profile=path, entry=index):
+                        self.assertTrue(entry.get("locale"),
+                                        "an additional profile names no locale")
+                        self.assertTrue(entry.get("fallbackLocale"),
+                                        "an additional profile names no "
+                                        "fallback locale")
+
     def test_twins_agree_on_one_locale_per_ime(self):
         # One IME is one profile per backend: a Windows user must not find
         # 喵喵輸入法 twice under two different locale buckets because a new

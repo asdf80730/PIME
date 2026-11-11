@@ -40,6 +40,19 @@ coincidence is incidental and no rule requires it.
 
 ## Considered options
 
+- **One `ime.json` per language profile** (upstream's original layout, named by
+  the maintainer in the #1021 review): `input_methods/rime/ime.json` plus
+  `input_methods/rime-cn/ime.json`, each returning one profile from
+  `langProfileFromJson`. It is what the four dispatchers already assume — each
+  walks `input_methods/*` and reads one `ime.json` per subdirectory
+  (`python/serviceManager.py:115`, `go-backend/server.go:367`,
+  `node/loadServices.js:9`, `PIMETextService/PIMEImeModule.cpp:101`) — so it
+  costs one extra directory and the loader-side fields repeat verbatim in each
+  copy: `moduleName`, `icon` and `configTool` are per-directory reads, so a
+  second profile directory re-declares the module it shares with the first.
+  The flat-plus-array shape above is equivalent to it and keeps those fields in
+  one place; `loadImeInfo` still resolves either way, because
+  `imeProfileGuidMatches` compares the array too.
 - **One GUID per IME, shared by every copy** — rejected: nothing reads two
   trees in one lookup, so equality buys no resolution and only doubles the edit
   surface; a shared literal would have to be changed in three places per IME.
