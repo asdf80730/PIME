@@ -47,8 +47,6 @@ HEX_CODE_POSITION = re.compile(r"^([0-9A-Fa-f]{4}|0[xX][0-9A-Fa-f]{1,5})$")
 
 def expandCodePosition(value):
     """Expand a bare hexadecimal code position to its character; keep anything else."""
-    if value == "Error":
-        return value
     if HEX_CODE_POSITION.match(value):
         return chr(int(value, 16))
     return value

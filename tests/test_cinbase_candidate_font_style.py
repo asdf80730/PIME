@@ -30,7 +30,6 @@ sentinel; the save loop checks here reuse them to pin that untouched.
 
 import json
 import os
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -42,8 +41,8 @@ for _path in (os.path.join(ROOT, "python"), os.path.dirname(os.path.abspath(__fi
         sys.path.insert(0, _path)
 
 from test_cinbase_shift_to_english import CinbaseKeyHarness  # noqa: E402
+from settings_js_harness import settings_prelude, run_node_script  # noqa: E402
 
-NODE = os.path.join(ROOT, "node", "node.exe")
 CONFIG_DIR = os.path.join(ROOT, "python", "input_methods")
 CINBASE_DIR = os.path.join(ROOT, "python", "cinbase")
 CONFIG_HT = os.path.join(CINBASE_DIR, "config", "config.htm")
@@ -54,7 +53,6 @@ IME_DIRS = ("chearray", "checj", "chedayi", "cheez",
 
 FW_NORMAL = 400  # the weight the candidate LOGFONT already carries
 FW_BOLD = 700    # the other value the two fonts in use already give
-TIMEOUT_SECONDS = 60
 
 
 def fresh_config():
@@ -158,54 +156,15 @@ class SettingsPageWeightSaveTests(unittest.TestCase):
 
     def drive_save_loop(self, scenarios):
         """Run the real updateConfig() once per scenario in one node call."""
-        lines = [
-            "var src = require('fs').readFileSync(%s, 'utf8');" % json.dumps(
-                CONFIG_JS.replace("\\", "/")),
-            # Faithful to jquery-1.12.4's isNumeric.
-            "function isNumeric(obj) { return !isNaN(parseFloat(obj)) && isFinite(obj); }",
-            # config.js touches the DOM at load; these stubs answer exactly
-            # the statements that run (isIE, includeScriptFile, loadConfig).
-            "var document = {",
-            "  getElementsByTagName: function () { return [{ innerText: '' }]; },",
-            "  createElement: function () { return { innerHTML: '',",
-            "    getElementsByTagName: function () { return []; } }; } };",
-            "Object.defineProperty(globalThis, 'navigator', { value:",
-            "  { userAgent: 'node', appVersion: 'Trident/7.0' },",
-            "  configurable: true, writable: true });",
-            "function includeScriptFile() {}",
-            "$.get = function (url, cb, type) { };",
-            "var inputs = [];",
-            "var selects = [];",
-            "function $(sel) {",
-            "  if (typeof sel === 'function') { return; }",
-            "  return { each: function (cb) {",
-            "    (sel === 'input' ? inputs : selects).forEach(",
-            "      function (it, i) { cb(i, it); }); } };",
-            "}",
-            "$.isNumeric = isNumeric;",
-            "eval(src);",
-            "var results = {};",
-        ]
+        lines = settings_prelude(CONFIG_JS) + ["var results = {};"]
         for name, inputs in scenarios:
             lines.append("inputs = %s;" % json.dumps(inputs))
             lines.append("updateConfig();")
             lines.append("results[%s] = checjConfig;" % json.dumps(name))
         lines.append("console.log(JSON.stringify(results));")
-        harness = "\n".join(lines)
-        completed = subprocess.run(
-            [NODE, "-e", harness],
-            cwd=ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            timeout=TIMEOUT_SECONDS,
-        )
-        self.assertEqual(0, completed.returncode,
-                         completed.stdout.decode("utf-8", "replace"))
-        return json.loads(completed.stdout.decode("utf-8", "replace"))
+        return run_node_script("\n".join(lines))
 
     def test_the_save_loop_stores_a_number_for_the_weight(self):
-        if not os.path.isfile(NODE):
-            self.skipTest("no bundled node/node.exe on this machine")
         weight = lambda value: {"name": "candFontWeight", "type": "text",
                                 "value": value}
         scenarios = [
@@ -220,10 +179,7 @@ class SettingsPageWeightSaveTests(unittest.TestCase):
                 {"name": "selKeyColor", "type": "text", "value": "0"},
             ]),
         ]
-        try:
-            results = self.drive_save_loop(scenarios)
-        except OSError as error:
-            self.skipTest("bundled node.exe cannot run here: %s" % error)
+        results = self.drive_save_loop(scenarios)
         self.assertEqual(FW_BOLD, results["bold"]["candFontWeight"],
                          "a numeric field saves the configured weight")
         for case in ("blank", "garbage", "zero"):

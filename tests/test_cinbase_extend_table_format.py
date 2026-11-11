@@ -17,16 +17,13 @@ report the collected jAlert texts.
 A missing bundled node skips cleanly, as elsewhere in this harness.
 """
 
-import json
 import os
-import subprocess
 import unittest
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
-NODE = os.path.join(ROOT, "node", "node.exe")
-CINBASE_CONFIG_JS = os.path.join(ROOT, "python", "cinbase", "config", "js", "config.js")
+from settings_js_harness import settings_prelude, run_node_script
 
-TIMEOUT_SECONDS = 60
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
+CINBASE_CONFIG_JS = os.path.join(ROOT, "python", "cinbase", "config", "js", "config.js")
 
 
 def build_harness():
@@ -37,29 +34,8 @@ def build_harness():
     two touches the validator makes: $.jAlert collects the error texts and
     the $(elementId) object answers blur()/prop() on the error path.
     """
-    js_path = CINBASE_CONFIG_JS.replace("\\", "/")
     long_value = "新" * 41
-    lines = [
-        "var src = require('fs').readFileSync(%s, 'utf8');" % json.dumps(js_path),
-        "var alerts = [];",
-        "function isNumeric(obj) { return !isNaN(parseFloat(obj)) && isFinite(obj); }",
-        "var document = {",
-        "  getElementsByTagName: function () { return [{ innerText: '' }]; },",
-        "  createElement: function () { return { innerHTML: '',",
-        "    getElementsByTagName: function () { return []; } }; } };",
-        "Object.defineProperty(globalThis, 'navigator', { value:",
-        "  { userAgent: 'node', appVersion: 'Trident/7.0' },",
-        "  configurable: true, writable: true });",
-        "function includeScriptFile() {}",
-        "function $(sel) {",
-        "  if (typeof sel === 'function') { return; }",
-        "  return { each: function (cb) {},",
-        "    blur: function () {}, prop: function () {}, val: function () { return ''; } };",
-        "}",
-        "$.get = function (url, cb, type) { };",
-        "$.isNumeric = isNumeric;",
-        "$.jAlert = function (opts) { alerts.push(opts.content); };",
-        "eval(src);",
+    lines = settings_prelude(CINBASE_CONFIG_JS) + [
         "var results = [];",
         "function run(data, type) {",
         "  alerts.length = 0;",
@@ -87,26 +63,7 @@ class CheckDataFormatPinsTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not os.path.isfile(NODE):
-            raise unittest.SkipTest("no bundled node/node.exe on this machine")
-        try:
-            completed = subprocess.run(
-                [NODE, "-e", build_harness()],
-                cwd=ROOT,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                timeout=TIMEOUT_SECONDS,
-            )
-        except OSError as error:
-            raise unittest.SkipTest(
-                "bundled node.exe cannot run here: %s" % error)
-        except subprocess.TimeoutExpired:
-            raise AssertionError("node -e for checkDataFormat timed out after %ss"
-                                 % TIMEOUT_SECONDS)
-        if completed.returncode != 0:
-            raise AssertionError("node -e failed: %s"
-                                 % completed.stdout.decode("utf-8", "replace"))
-        cls.results = json.loads(completed.stdout.decode("utf-8", "replace"))
+        cls.results = run_node_script(build_harness())
 
     def _accepted(self, index, label):
         self.assertEqual(True, self.results[index]["ret"],

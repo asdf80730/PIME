@@ -21,10 +21,11 @@ umbrella exercises for the Node backend. Where that binary cannot execute
 matching how the other Windows-only layers report SKIP rather than failing.
 """
 
-import json
 import os
 import subprocess
 import unittest
+
+from settings_js_harness import settings_prelude, run_node_script
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 NODE = os.path.join(ROOT, "node", "node.exe")
@@ -104,38 +105,13 @@ class SettingsScriptParseTests(unittest.TestCase):
         the 0 = follow-the-system sentinel — while radix 0 reads it fully.
         The vendored jQuery 1.12.4 isNumeric accepts both forms, so the loop
         reaches parseInt for each."""
-        if not os.path.isfile(NODE):
-            self.skipTest("no bundled node/node.exe on this machine")
-        harness = "\n".join([
-            "var src = require('fs').readFileSync(%s, 'utf8');" % json.dumps(
-                CINBASE_CONFIG_JS.replace("\\", "/")),
-            # Faithful to jquery-1.12.4's isNumeric.
-            "function isNumeric(obj) { return !isNaN(parseFloat(obj)) && isFinite(obj); }",
-            # config.js touches the DOM at load; these stubs answer exactly
-            # the statements that run (isIE, includeScriptFile, loadConfig).
-            "var document = {",
-            "  getElementsByTagName: function () { return [{ innerText: '' }]; },",
-            "  createElement: function () { return { innerHTML: '',",
-            "    getElementsByTagName: function () { return []; } }; } };",
-            "Object.defineProperty(globalThis, 'navigator', { value:",
-            "  { userAgent: 'node', appVersion: 'Trident/7.0' },",
-            "  configurable: true, writable: true });",
-            "function includeScriptFile() {}",
-            "$.get = function (url, cb, type) { };",
-            "var inputs = [",
-            "  { name: 'candTextColor', type: 'text', value: '0x123456' },",
-            "  { name: 'windowBackgroundColor', type: 'text', value: '1193046' },",
-            "  { name: 'selKeyColor', type: 'text', value: '0' }",
-            "];",
-            "var selects = [];",
-            "function $(sel) {",
-            "  if (typeof sel === 'function') { return; }",
-            "  return { each: function (cb) {",
-            "    (sel === 'input' ? inputs : selects).forEach(",
-            "      function (it, i) { cb(i, it); }); } };",
-            "}",
-            "$.isNumeric = isNumeric;",
-            "eval(src);",
+        harness = "\n".join(settings_prelude(
+            CINBASE_CONFIG_JS,
+            inputs=[
+                {"name": "candTextColor", "type": "text", "value": "0x123456"},
+                {"name": "windowBackgroundColor", "type": "text", "value": "1193046"},
+                {"name": "selKeyColor", "type": "text", "value": "0"},
+            ]) + [
             "updateConfig();",
             "console.log(JSON.stringify({",
             "  radix10: parseInt('0x123456', 10),",
@@ -143,22 +119,7 @@ class SettingsScriptParseTests(unittest.TestCase):
             "  saved: checjConfig",
             "}));",
         ])
-        try:
-            completed = subprocess.run(
-                [NODE, "-e", harness],
-                cwd=ROOT,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                timeout=TIMEOUT_SECONDS,
-            )
-        except OSError as error:
-            self.skipTest("bundled node.exe cannot run here: %s" % error)
-        except subprocess.TimeoutExpired:
-            self.fail("node -e for the color controls timed out after %ss"
-                      % TIMEOUT_SECONDS)
-        self.assertEqual(0, completed.returncode,
-                         completed.stdout.decode("utf-8", "replace"))
-        out = json.loads(completed.stdout.decode("utf-8", "replace"))
+        out = run_node_script(harness)
         self.assertEqual(0, out["radix10"],
                          "radix-10 parseInt truncates 0x123456 at the x")
         self.assertEqual(1193046, out["radix0"],
