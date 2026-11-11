@@ -45,7 +45,12 @@ git worktree add -q -b <agent>/<topic> .worktrees/<topic-slug> <base-ref>
   from either tree.
 - A linked worktree also starts with the `libIME2` submodule **uninitialized**,
   and `tests/check_line_citations.sh` reddens on the two citations inside it
-  until you run `git submodule update --init libIME2` in that tree.
+  until you run `git submodule update --init libIME2` in that tree. The second
+  one is `python/input_methods/rime/brise`: `tests/test_agent_docs.py` reddens
+  on the `docs/adr/0002-*` citation into
+  `python/input_methods/rime/brise/preset/stroke.dict.yaml`, so a
+  fresh worktree fails the pre-commit suite until
+  `git submodule update --init python/input_methods/rime/brise` runs there too.
 - `bash tests/check_tracker_layout.sh` has to run in the **main** checkout:
   `.scratch/` is gitignored, so a linked worktree holds none and the check
   answers `SKIP ... (no .scratch in this checkout)` with its 125 code instead
