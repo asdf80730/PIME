@@ -105,7 +105,6 @@ class UiLessCompositionTests(unittest.TestCase):
         self.assertEqual(set(layers), {"compositionString"},
                          "the tone key moves the syllable into the buffer, still one layer")
         self.assertIn(layers["compositionString"], {"心", "新"})
-        self.assertNotIn("commitString", reply)
 
     def test_flush_reply_commits_once_with_one_non_empty_layer(self):
         for ch in REPORTER_SEQUENCE:

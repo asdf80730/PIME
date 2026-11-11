@@ -99,11 +99,11 @@ def disarm_launch_surface():
 class FakeDLL:
     """A Win32 surface for hosts without one.
 
-    POSIX ``ctypes`` exposes ``windll`` as a per-name loader *function*, so the
-    Win32 shape the services use (``windll.user32.GetKeyState``) is absent
-    there. Every name resolves to this same node and calling it answers 0, so
-    any depth of the Win32 chain reads as a no-op: an un-toggled Caps Lock, a
-    null shell handle.
+    POSIX ``ctypes`` gives ``windll`` the loader shape of its release (a plain
+    per-name function, a ``LibraryLoader`` on some), so the Win32 dotted chain
+    the services use (``windll.user32.GetKeyState``) is not there. Every name
+    resolves to this same node and calling it answers 0, so any depth of the
+    Win32 chain reads as a no-op: an un-toggled Caps Lock, a null shell handle.
     """
 
     def __getattr__(self, name):
