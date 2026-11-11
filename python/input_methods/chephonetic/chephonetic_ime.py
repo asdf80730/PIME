@@ -15,14 +15,11 @@
 
 from keycodes import *  # for VK_XXX constants
 from textService import *
-import io
 import os.path
 import copy
 
 from cinbase import CinBase
 from cinbase import LoadCinTable
-from cinbase import LoadRCinTable
-from cinbase import LoadHCinTable
 from cinbase import CinTableBase
 from cinbase.config import CinBaseConfig
 

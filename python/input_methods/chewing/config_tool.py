@@ -189,7 +189,7 @@ class UserPhraseFileHandler(BaseHandler):
     def get(self):  # download user phrase file
         user_phrase_file = os.path.join(config_dir, "chewing.sqlite3")
         if not os.path.exists(user_phrase_file):
-            raise HTTPError(404)
+            raise tornado.web.HTTPError(404)
         self.set_header("Content-Type", "application/force-download")
         self.set_header("Content-Disposition", "attachment; filename=chewing.sqlite3")
         with open(user_phrase_file, "rb") as f:
@@ -199,8 +199,8 @@ class UserPhraseFileHandler(BaseHandler):
                 self.finish()
                 return
             except:
-                raise HTTPError(404)
-        raise HTTPError(500)
+                raise tornado.web.HTTPError(404)
+        raise tornado.web.HTTPError(500)
 
     @tornado.web.authenticated
     def post(self):  # upload file

@@ -185,6 +185,13 @@ shellcheck_all() {
     shellcheck -S error tests/*.sh
 }
 
+ruff_all() {
+    # The same error-class rule set the Windows gate runs — F (pyflakes) + E9
+    # (syntax) from the committed ruff.toml — so local, this gate and the
+    # linux-checks job agree on one config (docs/agents/windows-toolchain.md).
+    ruff check --config ruff.toml python tests
+}
+
 nsis_smoke() {
     # Linux makensis (3.08 here) preprocesses and assembles installer.nsi; what
     # it lacks is build.bat's Windows output, which shows up only as "File: ...
@@ -381,6 +388,12 @@ if command -v shellcheck >/dev/null 2>&1; then
     step 'Harness shell scripts lint' shellcheck_all
 else
     skip 'Harness shell scripts lint' 'shellcheck missing; apt-get install shellcheck'
+fi
+
+if command -v ruff >/dev/null 2>&1; then
+    step 'Python lint (ruff)' ruff_all
+else
+    skip 'Python lint (ruff)' 'ruff missing; apt-get install ruff'
 fi
 
 # compileall and unittest discovery would otherwise leave __pycache__ trees

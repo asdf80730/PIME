@@ -428,7 +428,7 @@ class ChebihuaServiceTests(unittest.TestCase):
         original = chebihua_ime.LoadCinTable
         self.addCleanup(setattr, chebihua_ime, "LoadCinTable", original)
         chebihua_ime.LoadCinTable = _LoaderThatNeverLoads
-        first = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
+        chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
         second = chebihua_ime.CheBihuaTextService(ime_smoke_runner.FakeClient())
         self.assertIsNone(getattr(second, "cin", None),
                           "the constructor handed a degraded Service a table")

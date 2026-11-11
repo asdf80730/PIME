@@ -17,7 +17,6 @@
 
 import json
 import os
-import io
 import time
 import shutil
 
@@ -317,11 +316,10 @@ class CinBaseConfig:
             except Exception:
                 pass
 
-        extendtableTime = 0.0
         extendtableFile = self.findFile(datadirs, "extendtable.dat")
         if extendtableFile:
             try:
-                extendtableTime = os.path.getmtime(extendtableFile)
+                os.path.getmtime(extendtableFile)
             except Exception:
                 pass
 

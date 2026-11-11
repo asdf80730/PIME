@@ -344,10 +344,10 @@ def _read_windows_registry_key(key_name, field_name):
 
 	try:
 		import _winreg as winreg
-	except ImportError as err:
+	except ImportError:
 		try:
 			import winreg
-		except ImportError as err:
+		except ImportError:
 			pass
 
 	key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_name)
@@ -605,7 +605,7 @@ def _friendly_bytes_to_int(friendly_bytes):
 			if input.endswith(pattern):
 				return int(input.split(pattern)[0].strip()) * multiplier
 
-	except Exception as err:
+	except Exception:
 		pass
 
 	return friendly_bytes
@@ -1538,7 +1538,6 @@ def _get_cpu_info_from_cpuid_actual():
 	It will safely call this function in another process.
 	'''
 
-	from io import StringIO
 
 	trace = Trace(True, True)
 	info = {}
@@ -1598,7 +1597,7 @@ def _get_cpu_info_from_cpuid_actual():
 
 		info = _filter_dict_keys_with_empty_values(info)
 		trace.success()
-	except Exception as err:
+	except Exception:
 		from traceback import format_exc
 		err_string = format_exc()
 		trace._err = ''.join(['\t\t{0}\n'.format(n) for n in err_string.split('\n')]) + '\n'
@@ -1664,8 +1663,6 @@ def _get_cpu_info_from_cpuid():
 			# Return the result, only if there is something to read
 			else:
 				output = _b64_to_obj(queue.get())
-				import pprint
-				pp = pprint.PrettyPrinter(indent=4)
 				#pp.pprint(output)
 
 				if 'output' in output and output['output']:

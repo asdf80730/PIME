@@ -78,6 +78,11 @@ Individual commands, if you want to narrow the loop:
   python3 -m compileall -q -x '(^|/)python3(/|$)' python
   ```
 
+  The lint layer runs beside it, on the same committed config as the Windows
+  gate: `ruff check --config ruff.toml python tests` — `F` + `E9` error-class
+  rules, `F403`/`F405` off, vendored `python/python3/` excluded; the step
+  prints a named `SKIP` when `ruff` is not installed (apt: `ruff`).
+
 - **Node backend** — `cd node && npm test`: three scripts. Upstream's
   `tests/nimeServer.test.js` covers the line protocol under `node --test`;
   `server.test.js` spawns `node/server.js` and speaks the launcher's
@@ -124,6 +129,16 @@ Individual commands, if you want to narrow the loop:
     Windows UTF-16 buffer, so build it for Windows and run under Wine:
     `i686-w64-mingw32-g++ -std=c++17 -static -I PIMETextService tests/composition_cursor_test.cpp -o /tmp/composition_cursor_test.exe && wine /tmp/composition_cursor_test.exe`
     (needs `g++-mingw-w64-i686`).
+  - `ImeProfileGuids`: reads only `std::string` and nlohmann/json, so a host
+    g++ build runs it:
+    `g++ -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests/ime_profile_guids_test.cpp -o /tmp/ime_profile_guids_test && /tmp/ime_profile_guids_test`
+  - per-monitor DPI (`DpiUtils.h`): the helper calls user32 directly
+    (`GetDpiForWindow`/`GetDeviceCaps`), so the cross-built exe runs under
+    Wine, like the cursor test:
+    `i686-w64-mingw32-g++ -std=c++17 -O1 -static -I PIMETextService tests/dpi_helper_test.cpp -o /tmp/dpi_helper_test.exe -luser32 -lgdi32 && WINEDEBUG=-all wine /tmp/dpi_helper_test.exe`
+  - UI color mapping (`UIColors.h`): the mapping reads only nlohmann/json, so
+    a host g++ build runs it:
+    `g++ -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests/ui_colors_test.cpp -o /tmp/ui_colors_test && /tmp/ui_colors_test`
 - **Rust launcher** — cross-build for `i686-pc-windows-gnu` and run under Wine
   (`docs/agents/wine.md`; the run prints its own test counts). Treat that as a
   smoke check, not Windows. The same block runs `cargo fmt --check` and
@@ -231,7 +246,9 @@ AI-declaration, PR-body and scratch-ref self-tests, and the local
 issue-tracker layout check (`.scratch/` is gitignored, so no CI job can ever
 run these — the Windows box holds the tickets and writes the PR bodies), the
 GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the shipped
-`python/python3/python.exe`, three Node backend suites on the shipped
+`python/python3/python.exe`, the Python lint layer (`ruff check --config ruff.toml python
+tests`: the settled `F` + `E9` error-class rules, `F403`/`F405` off per the measurement in
+`docs/agents/windows-toolchain.md`), three Node backend suites on the shipped
 `node/node.exe`, the Go backend tests plus the shipped `GOOS=windows GOARCH=386`
 build, `PIMELauncher` tests / `cargo fmt --check` / `cargo clippy`, and the two
 pure-C++ helpers (`JsonUtils` gtest, `CompositionCursor`) built with mingw g++.

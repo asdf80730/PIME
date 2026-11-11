@@ -5,7 +5,6 @@ import os
 import re
 import sys
 import json
-import copy
 
 class PhraseToJson(object):
 
@@ -56,7 +55,7 @@ class PhraseToJson(object):
         filename = self.getJsonFile(file)
         try:
             with open(filename, 'w', encoding='utf8') as f:
-                js = json.dump(self.toJson(), f, ensure_ascii=False, sort_keys=True, indent=4)
+                json.dump(self.toJson(), f, ensure_ascii=False, sort_keys=True, indent=4)
         except Exception:
             pass # FIXME: handle I/O errors?
 

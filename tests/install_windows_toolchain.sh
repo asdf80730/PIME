@@ -35,6 +35,7 @@ RUSTUP_URL=https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustu
 CMAKE_VERSION=4.2.8
 NSIS_VERSION=3.08
 XWIN_VERSION=0.10.0
+RUFF_VERSION=0.17.4
 CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
 NSIS_URL=https://sourceforge.net/projects/nsis/files/NSIS%203/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip
 XWIN_URL=https://github.com/Jake-Shadle/xwin/releases/download/${XWIN_VERSION}/xwin-${XWIN_VERSION}-x86_64-pc-windows-msvc.zip
@@ -59,8 +60,8 @@ detect_arch() {
 }
 
 case "$(detect_arch)" in
-arm64) GO_ARCH=arm64; NODE_ARCH=arm64; BUN_ARCH=aarch64 ;;
-*) GO_ARCH=amd64; NODE_ARCH=x64; BUN_ARCH=x64 ;;
+arm64) GO_ARCH=arm64; NODE_ARCH=arm64; BUN_ARCH=aarch64; RUFF_ARCH=aarch64 ;;
+*) GO_ARCH=amd64; NODE_ARCH=x64; BUN_ARCH=x64; RUFF_ARCH=x86_64 ;;
 esac
 
 mkdir -p "$DL"
@@ -111,6 +112,19 @@ if [ ! -x "$TOOLS/bun/bun.exe" ]; then
 	rm -rf "$TOOLS/.bun-tmp"
 else
 	printf 'Bun already installed\n'
+fi
+
+# --- Ruff (the Python lint layer: F + E9 over python/ and tests/) ----------
+if [ ! -x "$TOOLS/ruff/ruff.exe" ]; then
+	printf 'Ruff %s (%s)\n' "$RUFF_VERSION" "$RUFF_ARCH"
+	fetch "https://github.com/astral-sh/ruff/releases/download/${RUFF_VERSION}/ruff-${RUFF_ARCH}-pc-windows-msvc.zip" "$DL/ruff.zip"
+	rm -rf "$TOOLS/ruff" "$TOOLS/.ruff-tmp"
+	mkdir -p "$TOOLS/.ruff-tmp" "$TOOLS/ruff"
+	unzip -q "$DL/ruff.zip" -d "$TOOLS/.ruff-tmp"
+	mv "$TOOLS/.ruff-tmp/ruff.exe" "$TOOLS/ruff/ruff.exe"
+	rm -rf "$TOOLS/.ruff-tmp"
+else
+	printf 'Ruff already installed\n'
 fi
 
 # --- mingw-w64 (only for the two pure-C++ helpers) --------------------------

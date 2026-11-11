@@ -359,7 +359,6 @@ class CinBase:
     def filterKeyDown(self, cbTS, keyEvent, CinTable, RCinTable, HCinTable):
         charCode = keyEvent.charCode
         charStr = chr(charCode)
-        charStrLow = charStr.lower()
 
         # 紀錄最後一次按下的鍵和按下的時間，在 filterKeyUp() 中要用
         cbTS.lastKeyDownCode = keyEvent.keyCode
@@ -2333,7 +2332,6 @@ class CinBase:
 
 
     def onKeyUp(self, cbTS, keyEvent):
-        charCode = keyEvent.charCode
         keyCode = keyEvent.keyCode
         cbTS.lastKeyDownCode = 0
         cbTS.lastKeyDownTime = 0.0
@@ -2406,7 +2404,7 @@ class CinBase:
             python_exe = sys.executable  # 找到 python 執行檔
             # 使用我們自帶的 python runtime exe 執行 config tool
             # 此處也可以用 subprocess，不過使用 windows API 比較方便
-            r = windll.shell32.ShellExecuteW(None, "open", python_exe, config_tool, self.cinbasecurdir, 0)  # SW_HIDE = 0 (hide the window)
+            windll.shell32.ShellExecuteW(None, "open", python_exe, config_tool, self.cinbasecurdir, 0)  # SW_HIDE = 0 (hide the window)
         elif commandId == ID_MODE_ICON: # windows 8 mode icon
             self.toggleLanguageMode(cbTS)  # 切換中英文模式
         elif commandId == ID_WEBSITE: # visit chewing website
@@ -2585,7 +2583,7 @@ class CinBase:
                 python_exe = sys.executable  # 找到 python 執行檔
                 # 使用我們自帶的 python runtime exe 執行 config tool
                 # 此處也可以用 subprocess，不過使用 windows API 比較方便
-                r = windll.shell32.ShellExecuteW(None, "open", python_exe, config_tool, self.cinbasecurdir, 0)  # SW_HIDE = 0 (hide the window)
+                windll.shell32.ShellExecuteW(None, "open", python_exe, config_tool, self.cinbasecurdir, 0)  # SW_HIDE = 0 (hide the window)
             elif commandId == 1:
                 self.setOutputSimplifiedChinese(cbTS, not cbTS.outputSimpChinese)
         elif commandType == 1: # 功能開關

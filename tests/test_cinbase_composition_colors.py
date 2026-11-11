@@ -25,7 +25,6 @@ is pinned in layers:
 import json
 import os
 import sys
-import tempfile
 import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))

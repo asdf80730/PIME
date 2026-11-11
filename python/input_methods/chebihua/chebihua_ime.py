@@ -18,8 +18,6 @@ import copy
 
 from cinbase import CinBase
 from cinbase import LoadCinTable
-from cinbase import LoadRCinTable
-from cinbase import LoadHCinTable
 from cinbase.config import CinBaseConfig
 
 from input_methods.chebihua.table_loaders import CinTable, RCinTable, HCinTable
