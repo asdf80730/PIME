@@ -2,6 +2,7 @@
 
 use pimelauncher::backend_manager::BackendManager;
 use pimelauncher::backend_registry::BackendRegistry;
+use pimelauncher::elevation;
 use pimelauncher::pipe_server;
 use std::path::PathBuf;
 use tracing::{error, info, warn};
@@ -250,6 +251,8 @@ async fn main() {
     }
 
     setup_logging(&args);
+
+    elevation::warn_if_elevated(args.is_worker);
 
     // Ensure single instance (using a named mutex)
     // The Watchdog process (parent) holds this mutex.
