@@ -364,7 +364,7 @@ class CinToJson(object):
                         except KeyError:
                             self.big5S[key] = [root]
                         self.cincount['big5S'] += 1
-                        return "big5LF"
+                        return "big5S"
                     else: # Big5 其它漢字
                         try:
                             self.big5Other[key].append(root)

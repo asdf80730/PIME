@@ -24,6 +24,8 @@ import shutil
 
 DEF_FONT_SIZE = 12
 DEF_FONT_NAME = 'MingLiu'
+# LOGFONT 重量：400 = FW_NORMAL，即選字視窗字型建立時已帶的粗細 (issue #854)
+DEF_FONT_WEIGHT = 400
 DEF_LEAD_IN_KEY = '`'
 
 SWITCH_LANG_WITH_BOTH_SHIFT = 0
@@ -62,6 +64,8 @@ class CinBaseConfig:
         self.fontSize = DEF_FONT_SIZE
         # 選字及訊息視窗的字型 (issue #582)
         self.candFontName = DEF_FONT_NAME
+        # 選字及訊息視窗的字型粗細 (issue #854)：LOGFONT 重量 1-900
+        self.candFontWeight = DEF_FONT_WEIGHT
         # 組字/選字視窗顏色 (issue #902)：0 表示跟隨系統調色盤
         self.candTextColor = 0
         self.windowBackgroundColor = 0
@@ -191,6 +195,10 @@ class CinBaseConfig:
             self.candFontName = DEF_FONT_NAME
         else:
             self.candFontName = font_name.strip()
+
+        # 選字視窗字型粗細 (issue #854)：只收 1-900，非法值退回 FW_NORMAL
+        self.candFontWeight = _to_int(getattr(self, "candFontWeight", DEF_FONT_WEIGHT),
+                                      DEF_FONT_WEIGHT, min_val=1, max_val=900)
 
         # 組字/選字視窗顏色 (issue #902)：0 表示跟隨系統調色盤；非法值退回 0
         def _to_color(val, default=0):
