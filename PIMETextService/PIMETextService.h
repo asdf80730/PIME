@@ -122,6 +122,18 @@ public:
 		updateFont_ = true;
 	}
 
+	int candFontWeight() const {
+		return candFontWeight_;
+	}
+
+	// LOGFONT weight (upstream #854); 400 (FW_NORMAL) is what the window's
+	// font is created with, so the python-side default keeps the paint
+	// byte-identical when unset.
+	void setCandFontWeight(int candFontWeight) {
+		candFontWeight_ = candFontWeight;
+		updateFont_ = true;
+	}
+
 	// composition/candidate colors (upstream #902); 0 means "follow the
 	// system palette", the value the python side ships as default
 	COLORREF candTextColor() const {
@@ -193,6 +205,7 @@ private:
 	bool candUseCursor_;
 	std::wstring candFontName_;
 	int candFontSize_;
+	int candFontWeight_;
 	COLORREF candTextColor_ = 0;
 	COLORREF windowBackgroundColor_ = 0;
 	COLORREF selKeyColor_ = 0;
