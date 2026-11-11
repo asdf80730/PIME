@@ -18,6 +18,8 @@
 import json
 import os
 import time
+
+from pimepaths import appdata
 import shutil
 
 DEF_FONT_SIZE = 12
@@ -109,7 +111,7 @@ class CinBaseConfig:
         self._lastUpdateTime = 0.0
 
     def getConfigDir(self):
-        config_dir = os.path.join(os.path.expandvars("%APPDATA%"), "PIME", self.imeDirName)
+        config_dir = os.path.join(appdata(), "PIME", self.imeDirName)
         os.makedirs(config_dir, exist_ok=True)
         return config_dir
 

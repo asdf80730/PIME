@@ -40,6 +40,7 @@ sys.path.append(os.path.dirname(__file__))
 
 
 from serviceManager import TextServiceManager
+from pimepaths import localappdata
 
 
 # Size bound for the backend's own log, see the module docstring.
@@ -49,7 +50,7 @@ LOG_BACKUP_COUNT = 3
 
 def append_error_log(message):
     try:
-        log_dir = os.path.join(os.path.expandvars("%LOCALAPPDATA%"), "PIME", "Logs")
+        log_dir = os.path.join(localappdata(), "PIME", "Logs")
         os.makedirs(log_dir, exist_ok=True)
         handler = logging.handlers.RotatingFileHandler(
             os.path.join(log_dir, "python_backend.log"),

@@ -56,6 +56,7 @@ from time import time
 import heapq
 import shutil
 import sys, os
+from pimepaths import tempdir
 
 try:
     from opencc import OpenCC
@@ -405,7 +406,7 @@ def prune_rime_user_data(user_dir, app_name="PIME", log_dir=None):
     directories is a no-op for the second pass.
     """
     if log_dir is None:
-        log_dir = os.path.expandvars("%TEMP%")
+        log_dir = tempdir()
     log_before, log_after = prune_log_files(log_dir, app_name=app_name)
     sync_before, sync_after = prune_sync_snapshots(user_dir)
     return {

@@ -20,6 +20,8 @@ import os
 import time
 import shutil
 
+from pimepaths import appdata
+
 DEF_FONT_SIZE = 16
 # 選字及訊息視窗字型 (issue #582)：與 cinbase 的內定值一致
 DEF_FONT_NAME = "MingLiu"
@@ -82,7 +84,7 @@ class ChewingConfig:
 
     def getConfigDir(self):
         config_dir = os.path.join(
-            os.path.expandvars("%APPDATA%"), "PIME", "chewing")
+            appdata(), "PIME", "chewing")
         os.makedirs(config_dir, exist_ok=True)
         return config_dir
 
