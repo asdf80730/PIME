@@ -15,6 +15,7 @@ data the table was derived from, not recomputed from the table itself
 import concurrent.futures
 import json
 import os
+import re
 import sys
 import tempfile
 import threading
@@ -35,6 +36,24 @@ from keycodes import (  # noqa: E402
     VK_HOME, VK_NEXT, VK_OEM_3, VK_RIGHT, VK_SHIFT, VK_SPACE)
 
 VK_8 = 0x38  # Shift+8 is the * wildcard key
+
+RUNTIME_JSON = os.path.join(PYTHON_DIR, "cinbase", "json", "CnsStroke.json")
+
+
+def union_of(pattern):
+    """Every character the shipped table files under a one-wildcard pattern.
+
+    Computed from the artifact rather than from the engine, so the coverage
+    assertion below compares the Service's answer with an independent count.
+    """
+    regex = re.compile("^%s$" % pattern.replace("*", "."))
+    with open(RUNTIME_JSON, encoding="utf-8") as handle:
+        chardefs = json.load(handle)["chardefs"]
+    found = set()
+    for key, values in chardefs.items():
+        if len(key) == len(pattern) and regex.match(key):
+            found.update(values)
+    return found
 
 # CNS 筆順 for the sampled characters, digits 1..5 = 橫豎撇點折:
 # 二 11, 十 12, 万 135, 三 111, 土 121, 威 131531543 (second stroke 1/2/3
@@ -170,6 +189,39 @@ class ChebihuaServiceTests(unittest.TestCase):
         self.assertIn("三", candidates)
         self.assertIn("土", candidates)
         self.assertIn("威", candidates)
+
+    def test_wildcard_budget_answers_the_whole_union_of_a_pattern(self):
+        # The Service's own budget is sized from the shipped table, so a pattern
+        # the table can answer comes back complete instead of stopping inside the
+        # fourth key: at the inherited default of 100, h*h lost hzh's 506
+        # characters with no sign. candMaxItems is read only by the wildcard
+        # branch of the engine (cinbase/__init__.py), so exact-key pages keep the
+        # family's paging.
+        service = self.activate_chebihua()
+        for pattern in ("h*h", "s*h"):
+            with self.subTest(pattern=pattern):
+                # A fresh service per pattern: every press extends the
+                # composition already open, so a reused one would answer a
+                # longer pattern than the one named here.
+                service = self.activate_chebihua()
+                for letter in pattern:
+                    if letter == "*":
+                        self.press(service, ord("*"), VK_8, shift=True)
+                    else:
+                        self.press(service, ord(letter))
+                answered = set(service.candidateView.candidates)
+                self.assertEqual(union_of(pattern), answered,
+                                 "%s lost part of its union" % pattern)
+        # 10000 is the ceiling the config layer accepts (cinbase/config.py
+        # clamps candMaxItems to 10..10000), so it is the largest budget a
+        # Service can ship. The bare * is the one pattern above it, and it
+        # arrives as exactly that many — a fresh composition, since each press
+        # extends the one already open.
+        self.assertEqual(10000, service.candMaxItems)
+        ceiling = self.activate_chebihua()
+        self.press(ceiling, ord("*"), VK_8, shift=True)
+        self.assertEqual(min(len(union_of("*")), ceiling.candMaxItems),
+                         len(set(ceiling.candidateView.candidates)))
 
     def test_non_root_letter_passes_through_when_idle(self):
         service = self.activate_chebihua()

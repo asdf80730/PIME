@@ -30,7 +30,7 @@
     "directOutMSymbols": true,
     "supportWildcard": true,
     "selWildcardType": 1,
-    "candMaxItems": 100,
+    "candMaxItems": 10000,
     "showPhrase": false,
     "sortByPhrase": false,
     "intelligentSelect": true,

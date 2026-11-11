@@ -19,6 +19,7 @@ import copy
 from cinbase import CinBase
 from cinbase import LoadCinTable
 from cinbase.config import CinBaseConfig
+from cinbase.tools.cnsstroke2cin import MAX_STROKES
 
 from input_methods.chebihua.table_loaders import CinTable, RCinTable, HCinTable
 
@@ -32,7 +33,7 @@ class CheBihuaTextService(TextService):
 
         # 輸入法模組自訂區域
         self.imeDirName = "chebihua"
-        self.maxCharLength = 30 # 輸入法最大編碼字元數量（最長筆畫數）
+        self.maxCharLength = MAX_STROKES  # 輸入法最大編碼字元數量（最長筆畫數）
         self.cinFileList = ["CnsStroke.json"]
 
         self.cinbase = CinBase

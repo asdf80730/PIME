@@ -147,6 +147,12 @@ LICENSE_LATIN = "Open Government Data License"
 # and by the shipped notice alike.
 EXHIBIT_HEADING = "顯名聲明（%s 附件）：" % LICENSE_NAME
 NOTICE_SUFFIX = ".LICENSE.txt"
+# The 碼表說明 panel of the Service's settings page is static HTML, so this is the
+# one owner of its wording: tests/test_cinbase_tables.py compares the shipped
+# label with this string, which keeps the panel's licence name tied to the
+# exhibit's rather than hand-carried in two places.
+SETTINGS_LABEL = ("筆畫表: 依 CNS11643 全字庫筆順開放資料衍生之筆畫碼表,"
+                  "依據%s提供。" % LICENSE_NAME)
 
 CIN_HEADS = """%gen_inp
 %ename CnsStroke

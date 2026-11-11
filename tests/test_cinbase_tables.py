@@ -491,6 +491,32 @@ class StrokeServicePackagingTests(unittest.TestCase):
                                    "missing from the icon" % (index + 1))
 
 
+    def test_stroke_cap_has_one_owner_across_the_three_sites(self):
+        # One fact, one owner: the generator's MAX_STROKES is both the number the
+        # Service compiles against and the number the committed header prints, so
+        # a re-derived cap cannot leave one site behind.
+        stroke = load_stroke_tests()
+        generator = stroke.load_generator()
+        service_text = read_text(os.path.join(CHEBIHUA_DIR, "chebihua_ime.py"))
+        self.assertIn("from cinbase.tools.cnsstroke2cin import MAX_STROKES",
+                      service_text)
+        self.assertIn("self.maxCharLength = MAX_STROKES", service_text)
+        header = "\n".join(cin_header(stroke.CIN_PATH))
+        match = re.search(r"超過 (\d+) 畫", header)
+        self.assertIsNotNone(match, "the .cin header lost its stroke-cap note")
+        self.assertEqual(int(match.group(1)), generator.MAX_STROKES,
+                         "the header prints a cap the generator does not use")
+
+    def test_settings_page_label_is_the_generators_own_wording(self):
+        # The 碼表說明 panel is static HTML, so the tie is this comparison: the
+        # licence name it shows is the one the exhibit is built from.
+        generator = load_stroke_tests().load_generator()
+        html = read_text(os.path.join(CHEBIHUA_DIR, "config", "config.html"))
+        self.assertIn(generator.SETTINGS_LABEL,
+                      re.findall(r"<label>(.*?)</label>", html),
+                      "the settings page drifted from the generator's provenance")
+
+
 class Dayi3OfficialCodesTests(unittest.TestCase):
     """Upstream #520 and the audit it triggered: 大易三碼 must keep the codes
     the official TaiYi-licensed table assigns.
