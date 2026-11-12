@@ -144,6 +144,14 @@ and hand the compare URL plus body to the human.
   committed: run `tests/verify_windows.sh` first, then compose the commit message.
   A green claim written before the run is credit taken before the sale; if the run
   fails after committing, fix and re-run before touching the message.
+- Cite the form that still resolves after the merge. A worktree-only file is run
+  through `tests/run_worktree_tests.py <file> <worktree>` while that directory
+  lives; once the branch is folded into the integration ref, the same file answers
+  the plain `python/python3/python.exe -m unittest discover -s tests -p "<file>"`,
+  and `check_pr_bodies.sh` reddens the body for the vanished `<worktree>` path. So
+  write the `discover` form into the body, and keep the driver form for the
+  pre-merge transcript. `tests/verify_windows.sh <label-word>` re-runs just the
+  layers you touched, which is what makes that re-check cheap.
 - Verify on `master`: `tests/run_local_tests.sh` runs the Python, Node, C++ helper, Go and
   Rust layers plus the GitHub YAML parse, skipping toolchains this machine lacks. Use the
   narrow command in `docs/agents/verification.md` when that loop is too slow.

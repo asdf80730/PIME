@@ -295,6 +295,13 @@ without rerunning the step. Read that pair with a `for` glob
 nothing when no layer failed and the loop simply does not run, while `ls` with the
 same glob dies with `os error 123` on an empty match.
 
+An optional first word filters the layers: `bash tests/verify_windows.sh ruff`
+or `bash tests/verify_windows.sh "PR bodies"` runs only the labels holding that
+word and prints `filter <word>: N layer(s) skipped` above the tally — measured
+here, `Python lint` answered in 3s against 472s for the full sweep. Use it to
+re-check one touched layer; the unfiltered run is the authoritative tally, and
+the skipped layers are the ones the earlier full run already judged.
+
 Narrowing the Python layer to one file on the shipped interpreter needs
 `discover`: `python/python3/python.exe` is an embedded distribution whose
 `python3*._pth` pins `sys.path` to the interpreter directory and ignores

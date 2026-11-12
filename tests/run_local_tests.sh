@@ -369,6 +369,9 @@ step 'Line-citation gate self-test' "$ROOT/tests/check_line_citations_test.sh"
 # the layer that keeps the step lists on the two boxes in lockstep.
 step 'Gate wiring covers both boxes' "$ROOT/tests/check_gate_wiring.sh"
 step 'Gate-wiring gate self-test' "$ROOT/tests/check_gate_wiring_test.sh"
+# The gate's own optional first word (layer filter) is pinned by a nested pair of
+# filtered runs; it skips (125) where `.tools/` holds no Windows toolchain.
+step 'Layer filter self-test' "$ROOT/tests/check_gate_filter_test.sh"
 step 'PR bodies carry the AI declaration' "$ROOT/tests/check_pr_bodies.sh"
 step 'PR body gate self-test' "$ROOT/tests/check_pr_bodies_test.sh"
 

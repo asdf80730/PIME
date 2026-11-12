@@ -25,6 +25,11 @@
 
 set -u
 
+# An optional first word filters the layers: only labels containing it run, the
+# rest are counted as skipped. A one-line edit then pays seconds instead of the
+# eleven-minute full sweep; run without the word for the authoritative tally.
+FILTER="${1:-}"
+
 # Discovery would otherwise leave __pycache__ trees in the checkout, ready for a
 # later `git add` to sweep into a commit: the product .gitignore does not cover
 # them and tests/check_pr_scope.sh fails a branch that carries them. Mirrors
@@ -33,10 +38,14 @@ export PYTHONDONTWRITEBYTECODE=1
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 TOOLS="$ROOT/.tools"
-RUN_DIR="$TOOLS/.run"
+# The nested run from tests/check_gate_filter_test.sh passes its own dir: step
+# files are numbered from 1, so a shared folder would let the inner run overwrite
+# the pair the outer is about to read.
+RUN_DIR="${PIME_RUN_DIR:-$TOOLS/.run}"
 
 failures=0
 passed=0
+skipped=0
 # Per-step bat/log numbering, see write_step.
 step_no=0
 
@@ -52,6 +61,18 @@ step_start=$SECONDS
 
 pass() { printf 'PASS  %s (%ds)\n' "$1" "$((SECONDS - step_start))"; passed=$((passed + 1)); }
 fail() { printf 'FAIL  %s (%ds)\n' "$1" "$((SECONDS - step_start))"; failures=$((failures + 1)); }
+
+# Whether this label is inside the optional filter: an empty filter keeps every
+# layer, so the unfiltered run stays exactly as it was.
+selected() {
+	if [ -z "$FILTER" ]; then
+		return 0
+	fi
+	case "$1" in
+	*"$FILTER"*) return 0 ;;
+	*) return 1 ;;
+	esac
+}
 
 mkdir -p "$RUN_DIR"
 rm -f "$RUN_DIR/step.bat" "$RUN_DIR/step.log" "$RUN_DIR"/step-*.bat \
@@ -107,6 +128,10 @@ write_step() {
 run_native() {
 	local label="$1"
 	shift
+	if ! selected "$label"; then
+		skipped=$((skipped + 1))
+		return 0
+	fi
 	step_start=$SECONDS
 	write_step "$*"
 	if "$bat_path" >"$log_path" 2>&1; then
@@ -124,6 +149,10 @@ run_native() {
 run_or_skip() {
 	local label="$1"
 	shift
+	if ! selected "$label"; then
+		skipped=$((skipped + 1))
+		return 0
+	fi
 	step_start=$SECONDS
 	write_step "$*"
 	if "$bat_path" >"$log_path" 2>&1; then
@@ -141,6 +170,10 @@ run_or_skip() {
 run_native_verbose() {
 	local label="$1"
 	shift
+	if ! selected "$label"; then
+		skipped=$((skipped + 1))
+		return 0
+	fi
 	step_start=$SECONDS
 	write_step "$*"
 	local log rc
@@ -214,6 +247,11 @@ run_native 'Gate wiring covers both boxes' \
 run_native 'Gate-wiring gate self-test' \
 	'bash.exe tests/check_gate_wiring_test.sh'
 
+# The optional first word is what makes a one-line edit's re-check seconds
+# instead of eight minutes, so its tally gets the same pinning as the others.
+run_or_skip 'Layer filter self-test' \
+	'bash.exe tests/check_gate_filter_test.sh'
+
 # The PR body is pasted by hand on the box that delivers the PR — this one —
 # and .scratch/ is gitignored, so no CI job can ever read the draft: the
 # declaration gate has to run here, pinned by its own self-test.
@@ -267,15 +305,19 @@ run_native 'Integration ref candidates' \
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
 # "no .scratch here", which is not a failure.
-step_start=$SECONDS
-write_step 'bash.exe tests/check_tracker_layout.sh'
-if "$bat_path" >"$log_path" 2>&1; then
-	pass 'Local issue tracker layout'
-elif [ $? -eq 125 ]; then
-	pass 'Local issue tracker layout (no .scratch)'
+if selected 'Local issue tracker layout'; then
+	step_start=$SECONDS
+	write_step 'bash.exe tests/check_tracker_layout.sh'
+	if "$bat_path" >"$log_path" 2>&1; then
+		pass 'Local issue tracker layout'
+	elif [ $? -eq 125 ]; then
+		pass 'Local issue tracker layout (no .scratch)'
+	else
+		fail 'Local issue tracker layout'
+		tail -n 15 "$log_path" | sed 's/^/      /'
+	fi
 else
-	fail 'Local issue tracker layout'
-	tail -n 15 "$log_path" | sed 's/^/      /'
+	skipped=$((skipped + 1))
 fi
 
 # The Documents top level must stay free of agent folders: the 2026-10 litter
@@ -363,5 +405,8 @@ else
 	printf 'step logs kept for the failing layers: %s\n' "$RUN_DIR"
 fi
 
+if [ -n "$FILTER" ]; then
+	printf 'filter %s: %d layer(s) skipped\n' "$FILTER" "$skipped"
+fi
 printf '\n%d passed, %d failed\n' "$passed" "$failures"
 [ "$failures" -eq 0 ]
