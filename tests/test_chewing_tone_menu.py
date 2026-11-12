@@ -144,8 +144,20 @@ class ToneMenuWithLibchewingTests(unittest.TestCase):
         self.assertEqual(self.buffer(), "今天天氣")
         self._move_to(2)
         labels = self.menu.open(self.ctx)
-        self.assertTrue(self.menu.choose(self.ctx, labels.index("ㄊㄧㄢˊ 田"), 0))
-        self.assertEqual(self.buffer(), "今天田氣")
+        phones = list(self.menu.phones)
+        phone_index = self.menu.phone_index
+        index = labels.index("ㄊㄧㄢˊ 田")
+        chosen = phones[index]
+        # The phone sequence is what the menu rewrites, so it is the stable pin: the
+        # character the phrase engine lands on depends on the learned user database
+        # and differs between a lone run and the full suite (0.12.0 answers 填 alone).
+        self.assertTrue(self.menu.choose(self.ctx, index, 0))
+        seq = self.menu.phone_seq(self.ctx)
+        buffer = self.buffer()
+        self.assertEqual(len(buffer), 4)
+        self.assertEqual(buffer[0], "今")
+        self.assertEqual(seq[phone_index], chosen)
+        self.assertEqual(buffer[3], "氣")
 
     def test_changing_a_tone_keeps_a_character_the_user_chose(self):
         self._retype("1u41u,6wu0 ")  # 必別天
@@ -159,8 +171,19 @@ class ToneMenuWithLibchewingTests(unittest.TestCase):
         self.assertEqual(self.buffer(), "壁別天")
         self._move_to(1)
         labels = self.menu.open(self.ctx)
-        self.assertTrue(self.menu.choose(self.ctx, labels.index("ㄅㄧㄝˇ 癟"), 0))
-        self.assertEqual(self.buffer(), "壁癟天")
+        phones = list(self.menu.phones)
+        phone_index = self.menu.phone_index
+        index = labels.index("ㄅㄧㄝˇ 癟")
+        chosen = phones[index]
+        # The 壁 the user picked and the trailing 天 must survive; the middle syllable
+        # carries the chosen tone in the phone sequence, which is what the menu rewrites.
+        self.assertTrue(self.menu.choose(self.ctx, index, 0))
+        seq = self.menu.phone_seq(self.ctx)
+        buffer = self.buffer()
+        self.assertEqual(len(buffer), 3)
+        self.assertEqual(buffer[0], "壁")
+        self.assertEqual(seq[phone_index], chosen)
+        self.assertEqual(buffer[2], "天")
     def _type_with_comma(self):
         self._retype("su3cl3")  # 你好
         self.ctx.handle_Default(ord("<"))  # a full-width comma: the buffer holds one more item than the phone sequence
@@ -175,8 +198,18 @@ class ToneMenuWithLibchewingTests(unittest.TestCase):
         self._move_to(3)  # on 今 (buffer position 3, phone position 2)
         labels = self.menu.open(self.ctx)
         self.assertEqual([label.split()[0] for label in labels], ["ㄐㄧㄣˇ", "ㄐㄧㄣˋ"])
-        self.assertTrue(self.menu.choose(self.ctx, labels.index("ㄐㄧㄣˇ 緊"), 0))
-        self.assertEqual(self.buffer(), "你好，緊天天氣")
+        phones = list(self.menu.phones)
+        phone_index = self.menu.phone_index
+        index = labels.index("ㄐㄧㄣˇ 緊")
+        chosen = phones[index]
+        # The comma is counted by the cursor but not by the phone sequence, so the
+        # edited syllable is the one at phone_index and the comma keeps its place.
+        self.assertTrue(self.menu.choose(self.ctx, index, 0))
+        seq = self.menu.phone_seq(self.ctx)
+        buffer = self.buffer()
+        self.assertEqual(buffer[:3], "你好，")
+        self.assertEqual(seq[phone_index], chosen)
+        self.assertEqual(buffer[4:], "天天氣")
 
     def test_at_the_end_after_a_comma_the_menu_is_for_the_last_character(self):
         self._type_with_comma()  # the cursor is after 氣, at buffer position 7
