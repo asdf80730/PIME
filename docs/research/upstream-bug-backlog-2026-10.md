@@ -68,12 +68,13 @@ could be anywhere below the DLL; only its code-verified entries are load-bearing
 | unclear | 22 | corpus too thin to judge (single-sentence reports, screenshots only) |
 | still-present-code | 21 | defect visibly present on `upstream/master`, cited file:line |
 | likely-fixed | 19 | current master addresses it; close after reporter retest (§4.2) |
-| libchewing-upstream | 16 | root cause in the pinned libchewing 0.5.1 submodule (§7) |
+| libchewing-upstream | 14 | root cause in the library, still reading the same at the 0.12.0 pin (§7) |
+| fixed-by-pin-0.12 | 2 | answered by the pin bump (`05ae6bcb`): #760, #715 (§7) |
 | user-config | 11 | reporter's environment/config, not a PIME defect |
 | obsolete-pre2 | 8 | targets deleted architecture (legacy C++ launcher, libIME-era callbacks) (§5) |
 
-`act` (what should happen): close-out 93, needs-windows 102, **fixable-here 20**,
-upstream-lib 16, dead 8.
+`act` (what should happen): close-out 95, needs-windows 102, **fixable-here 20**,
+upstream-lib 14, dead 8.
 
 Status × filed-year, selected (full matrix in `.scratch/upstream-bugs/joined.json`, the
 `"\(.y)|\(.status)"` jq pass in §8): pre-2020 skews heavily to needs-windows-repro
@@ -201,11 +202,19 @@ this checkout — same stance as triage §4.1.
 ## 7. libchewing block (16)
 
 #117, #157, #361, #363, #411, #549, #585, #682, #685, #715, #736, #760, #768, #858, #869
-(+ #765, librime). Root cause sits in the submodule pinned at 0.5.1 (2020-06-27, triage
-§4.4); the only PIME-side lever is moving the pin — tracked by #838. Two worth watching:
-#715 (user dictionary >66k phrases makes the editor hang — also hits PIME's `config_tool`)
-and #736 (DVORAK 許氏 mismaps `S`→`;` — plausibly a PIME key-routing layer too; the agent
-kept it upstream with med conf).
+and the librime sibling #765 (16 records). Root cause sat in the submodule pinned at 0.5.1
+(2020-06-27, triage §4.4); the only PIME-side lever was moving the pin — tracked by #838.
+
+**Swept 2026-11-12 against 0.12.0** (`05ae6bcb`, released 2026-04-06): one shared probe,
+`.scratch/upstream-bug-backlog/sweep_libchewing_21.py`, answers each issue against both DLLs;
+raw dump `sweep-21-raw.txt`; per-issue table in
+`.scratch/upstream-bug-backlog/issues/21-libchewing-pin-bump-sweep.md`. Two moved:
+#760 (`ㄇㄛ˙` now yields `麼`) and #715 (67 360 `userphrase_add` calls: 221.33 s on 0.5.1
+against 10.28 s on 0.12.0, both enumerating 8 420 rows in ~0.15 s). #361's answer changed
+without improving — easy symbols need the Shift state in 0.12, which `handle_Default` never
+sets. The other 13 read the same on both pins, so they stay with the library's own tracker.
+The 49 `chewing_*` symbols the python layers call exist on both pins; `chewing_ack` is new.
+
 
 ## 8. Method and limitations
 
@@ -216,9 +225,10 @@ kept it upstream with med conf).
 - Partition of the 239 — the numbers §2/§4/§6/§7 quote:
   `jq -r '.[] | "\(.act)|\(.status)"' .scratch/upstream-bugs/joined.json | sort | uniq -c`
   gives needs-windows 102 (91 `needs-windows-repro`, 4 likely-fixed, 2 stale, 5 unclear),
-  close-out 93 (26 invalid, 23 stale, 17 unclear, 15 likely-fixed, 11 user-config,
+  close-out 95 (26 invalid, 23 stale, 17 unclear, 15 likely-fixed, 11 user-config,
+  2 `fixed-by-pin-0.12` — #715 and #760, §7, filed 2026-11-12,
   1 `still-present-code` — #373, a mislabeled feature request, filed at §4.4), dead 8,
-  upstream-lib 16, fixable-here 20; 102+93+8+16+20 = 239.
+  upstream-lib 14, fixable-here 20; 102+95+8+14+20 = 239.
   The same command with `"\(.y)|\(.status)"` gives the year matrix behind §2's skew
   line. Activity figures: the per-year "no comment after 2020" row and the
   78-of-140 last-comment-in-filed-month count join `full_all.json`'s
