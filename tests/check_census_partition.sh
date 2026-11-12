@@ -6,10 +6,17 @@
 # §2 plus §8 were edited by hand, so the partition is the one place a green run
 # can hide an off-by-N.
 #
-# Three comparisons, all against .scratch/upstream-bugs/joined.json:
+# Four comparisons, all against .scratch/upstream-bugs/joined.json:
 #   - the §2 status table rows (`| <status> | <n> |`)
 #   - the §2 `act` line (`close-out 95, needs-windows 102, ...`)
 #   - the §8 partition sentence: each act's number and the `a+b+... = N` sum
+#   - the §4.5 stale set: the issue numbers the section names, and the
+#     comment-id table under them, against the `stale-unreproducible` records
+#
+# The §4.5 comparison is the one the retest sweep (ticket 51) needs: its
+# acceptance is "the 25 numbers", and the section states them inside prose, so
+# nothing but a join against the joined data can catch a list that no longer
+# matches the bucket it claims. A census without a §4.5 section skips it.
 #
 # `.scratch/` is git-excluded, so a fresh clone without the joined data skips;
 # the census is tracked, so its absence is a failure.
@@ -54,6 +61,16 @@ real_status() {
         END { print c }' "$joined"
 }
 real_records=$(awk '/^    "n": / { c++ } END { print c + 0 }' "$joined")
+
+# The stale bucket's issue numbers, one per line, ascending. The record's "n"
+# key precedes its "status" key, so the number is remembered until the status
+# line decides whether the record belongs to the bucket.
+real_stale() {
+    awk 'BEGIN { n = "" }
+        /^    "n": / { line = $0; sub(/^    "n": /, "", line); gsub(/[^0-9]/, "", line); n = line }
+        /^    "status": / { line = $0; sub(/^    "status": /, "", line); gsub(/[", \r]/, "", line); if (line == "stale-unreproducible") print n }
+    ' "$joined" | sort
+}
 
 fail=0
 
@@ -146,6 +163,61 @@ else
     fi
     if [ "$computed" != "$total" ]; then
         printf 'FAIL  census partition: addends %s add to %s, not %s\n' "$addends" "$computed" "$total"
+        fail=1
+    fi
+fi
+
+# 4. The §4.5 stale set: the issue numbers the section names, and the
+# comment-id table under them, against the joined data's stale records. A
+# census without a §4.5 section skips this comparison.
+section45=$(awk '
+    /^### 4\.5 / { in45 = 1 }
+    in45 && /^### / && !/^### 4\.5 / { in45 = 0 }
+    in45 { print }
+' "$census")
+if [ -n "$section45" ]; then
+    stale_real=$(real_stale)
+    stale_real_count=$(printf '%s\n' "$stale_real" | grep -c '[0-9]')
+    stale_quoted=$(printf '%s\n' "$section45" | grep -o '#[0-9][0-9]*' | tr -d '#' | sort -u)
+    stale_quoted_count=$(printf '%s\n' "$stale_quoted" | grep -c '[0-9]')
+    if [ "$stale_quoted_count" != "$stale_real_count" ]; then
+        printf 'FAIL  census partition: §4.5 names %s stale issue(s), joined data holds %s stale-unreproducible record(s)\n' \
+            "$stale_quoted_count" "$stale_real_count"
+        fail=1
+    fi
+    if [ "$stale_quoted" != "$stale_real" ]; then
+        printf 'FAIL  census partition: §4.5 stale set differs from the joined data\n'
+        printf '  only in §4.5: %s\n' "$(comm -23 <(printf '%s\n' "$stale_quoted") <(printf '%s\n' "$stale_real") | tr '\n' ' ')"
+        printf '  only in joined data: %s\n' "$(comm -13 <(printf '%s\n' "$stale_quoted") <(printf '%s\n' "$stale_real") | tr '\n' ' ')"
+        fail=1
+    fi
+    # The comment-id table under the section: one id per named issue, ids distinct.
+    table_pairs=$(printf '%s\n' "$section45" | awk -F'|' '
+        /^\| *[0-9]+ *\|/ {
+            for (i = 2; i < NF; i += 2) {
+                issue = $i; id = $(i + 1)
+                gsub(/[ \t]/, "", issue); gsub(/[ \t]/, "", id)
+                if (issue ~ /^[0-9]+$/ && id ~ /^[0-9]+$/) print issue " " id
+            }
+        }')
+    table_count=$(printf '%s\n' "$table_pairs" | grep -c '[0-9]')
+    table_issues=$(printf '%s\n' "$table_pairs" | cut -d' ' -f1 | sort)
+    table_ids=$(printf '%s\n' "$table_pairs" | cut -d' ' -f2 | sort)
+    if [ "$table_count" != "$stale_quoted_count" ]; then
+        printf 'FAIL  census partition: §4.5 comment-id table holds %s row(s), the section names %s issue(s)\n' \
+            "$table_count" "$stale_quoted_count"
+        fail=1
+    fi
+    if [ "$(printf '%s\n' "$table_issues" | sort -u | grep -c '[0-9]')" != "$table_count" ]; then
+        printf 'FAIL  census partition: §4.5 comment-id table names an issue twice\n'
+        fail=1
+    fi
+    if [ "$(printf '%s\n' "$table_ids" | uniq -d | grep -c '[0-9]')" != "0" ]; then
+        printf 'FAIL  census partition: §4.5 comment-id table repeats a comment id\n'
+        fail=1
+    fi
+    if [ "$table_issues" != "$stale_quoted" ]; then
+        printf 'FAIL  census partition: §4.5 comment-id table does not cover the named issues\n'
         fail=1
     fi
 fi

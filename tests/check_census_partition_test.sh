@@ -92,6 +92,11 @@ write_joined() {
     "n": 4,
     "status": "needs-windows-repro",
     "act": "needs-windows"
+  },
+  {
+    "n": 5,
+    "status": "stale-unreproducible",
+    "act": "close-out"
   }
 ]
 JSON
@@ -108,17 +113,27 @@ write_census() {
 | likely-fixed | 2 | closed after a retest |
 | libchewing-upstream | 1 | root cause in the library |
 | needs-windows-repro | 1 | needs a live desktop |
+| stale-unreproducible | 1 | no retest thread left |
 
-`act` (what should happen): close-out 2, needs-windows 1, **fixable-here 0**,
+`act` (what should happen): close-out 3, needs-windows 1, **fixable-here 0**,
 upstream-lib 1, dead 0.
+
+## 4. Close-out pile
+
+### 4.5 Stale unreproducible (1)
+The stale issue (#5) plus a comment id.
+
+| # | comment id |
+| --- | --- |
+| 5 | 12345 |
 
 ## 8. Method
 
 - Partition of the records — the numbers §2 quotes:
   `jq -r` over the joined data
   gives needs-windows 1 (1 `needs-windows-repro`),
-  close-out 2 (2 likely-fixed), dead 0,
-  upstream-lib 1, fixable-here 0; 2+1+0+1+0 = 4.
+  close-out 3 (2 likely-fixed, 1 stale-unreproducible), dead 0,
+  upstream-lib 1, fixable-here 0; 3+1+0+1+0 = 5.
 MD
 }
 
@@ -146,9 +161,27 @@ expect_says 'the missing act is named' 'upstream-lib never quoted'
 
 # A sum that no longer adds to the record count reddens too.
 write_census
-sed -E 's/2\+1\+0\+1\+0 = 4\./2+1+0+1+0 = 5./' "$census" > "$census.n" && mv "$census.n" "$census"
+sed -E 's/3\+1\+0\+1\+0 = 5\./3+1+0+1+0 = 4./' "$census" > "$census.n" && mv "$census.n" "$census"
 expect 1 'a sum line that misses the record count reddens'
-expect_says 'the sum drift is named' 'joined data holds 4 records'
+expect_says 'the sum drift is named' 'joined data holds 5 records'
+
+# The §4.5 stale set: the issue numbers the section names, against the joined
+# data's stale-unreproducible records.
+write_census
+sed -E 's/The stale issue \(#5\)/The stale issue (#6)/' "$census" > "$census.n" && mv "$census.n" "$census"
+expect 1 'a §4.5 issue number off the joined data reddens'
+expect_says 'the stale set drift is named' '§4.5 stale set differs from the joined data'
+
+# The comment-id table has to cover the named issues, one row each.
+write_census
+sed -E 's/^\| 5 \| 12345 \|/| 5 | 12345 | 6 | 67890 |/' "$census" > "$census.n" && mv "$census.n" "$census"
+expect 1 'a comment-id table row the section does not name reddens'
+expect_says 'the table drift is named' 'comment-id table'
+
+# A census without a §4.5 section skips the stale comparison.
+write_census
+sed -E '/^### 4\.5 /,/^## 8\./d' "$census" > "$census.n" && mv "$census.n" "$census"
+expect 0 'a census without a §4.5 section skips the stale comparison'
 
 # Missing inputs: the joined data is git-excluded, the census is tracked.
 write_census

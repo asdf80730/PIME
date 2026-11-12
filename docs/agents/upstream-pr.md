@@ -171,6 +171,11 @@ and hand the compare URL plus body to the human.
   envelope, so pipe it: `jq -Rs '{body:.}' .scratch/<file>.md | gh api
   repos/EasyIME/PIME/issues/<n>/comments --input -` — a bare
   `--input <file>.md` over a plain-text body is 400 `Problems parsing JSON`.
+  Where `jq` is not on PATH, `gh` reads the file itself: `gh api
+  repos/EasyIME/PIME/issues/<n>/comments -F body=@.scratch/<file>.md` (the `-F`
+  field reads `@<path>` as its value). The Windows toolchain installs `jq` into
+  `.tools/jq` with a `.tools/bin/jq` shim, so `source .tools/env.sh` puts it on
+  PATH.
   Check the body gate after writing the body: `bash tests/check_pr_bodies.sh` on this
   box (both `tests/verify_windows.sh` and `tests/run_local_tests.sh` carry the step;
   `bash tests/check_pr_bodies_test.sh` pins its contract). It reads more than the

@@ -36,6 +36,7 @@ CMAKE_VERSION=4.2.8
 NSIS_VERSION=3.08
 XWIN_VERSION=0.10.0
 RUFF_VERSION=0.17.4
+JQ_VERSION=1.7.1
 CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-windows-x86_64.zip
 NSIS_URL=https://sourceforge.net/projects/nsis/files/NSIS%203/${NSIS_VERSION}/nsis-${NSIS_VERSION}.zip
 XWIN_URL=https://github.com/Jake-Shadle/xwin/releases/download/${XWIN_VERSION}/xwin-${XWIN_VERSION}-x86_64-pc-windows-msvc.zip
@@ -112,6 +113,19 @@ if [ ! -x "$TOOLS/bun/bun.exe" ]; then
 	rm -rf "$TOOLS/.bun-tmp"
 else
 	printf 'Bun already installed\n'
+fi
+
+# --- jq (the JSON filter the agent docs prescribe for gh api envelopes) -----
+# `docs/agents/upstream-pr.md` pipes a comment body through `jq -Rs '{body:.}'`,
+# and `tests/check_census_partition.sh` prints a `jq -r` derivation command; a
+# box without jq makes both fail at the last step of a task.
+if [ ! -x "$TOOLS/jq/jq.exe" ]; then
+	printf 'jq %s\n' "$JQ_VERSION"
+	fetch "https://github.com/jqlang/jq/releases/download/jq-${JQ_VERSION}/jq-windows-amd64.exe" "$DL/jq.exe"
+	mkdir -p "$TOOLS/jq"
+	cp "$DL/jq.exe" "$TOOLS/jq/jq.exe"
+else
+	printf 'jq already installed\n'
 fi
 
 # --- Ruff (the Python lint layer: F + E9 over python/ and tests/) ----------
@@ -244,7 +258,17 @@ cat >"$TOOLS/bin/python3.cmd" <<'BAT'
 rem Shim: `python3` on PATH -> the interpreter PIME ships (python\python3).
 "%~dp0..\..\python\python3\python.exe" %*
 BAT
-chmod +x "$TOOLS/bin/node" "$TOOLS/bin/npm" "$TOOLS/bin/python3"
+cat >"$TOOLS/bin/jq" <<'SH'
+#!/bin/sh
+# Shim: `jq` on PATH (Git Bash) -> the portable jq build in .tools/jq.
+exec "$(dirname "$0")/../jq/jq.exe" "$@"
+SH
+cat >"$TOOLS/bin/jq.cmd" <<'BAT'
+@echo off
+rem Shim: `jq` on PATH -> the portable jq build in .tools\jq.
+"%~dp0..\jq\jq.exe" %*
+BAT
+chmod +x "$TOOLS/bin/node" "$TOOLS/bin/npm" "$TOOLS/bin/python3" "$TOOLS/bin/jq"
 
 # --- PATH helpers ----------------------------------------------------------
 cat >"$TOOLS/env.sh" <<'SH'

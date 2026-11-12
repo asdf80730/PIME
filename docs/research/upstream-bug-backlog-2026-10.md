@@ -133,6 +133,16 @@ unpruned (950k-file report).
 
 ## 4. Close-out pile (112: 90 closable, 22 needing a reproduction)
 
+**Status (2026-11-12, ticket 01 / tracker 53).** The 13 records ticket 01 owns — the 5
+adjudicated fixes (#832, #942, #973, #203, #104) plus the 8 obsolete-pre2 of §4.3 — each
+carry an evidence comment naming the fixing PR/commit or the rewrite that retired the
+component; `#973` is the only one closed (`b0257c6`, PR #988), the other 12 still sit open
+because `asdf80730` lacks close rights, so each also carries a one-line maintainer close
+request. Of the 5, only `#203` and `#942` are §4 records (both in §4.1); `#832`, `#973` and
+`#104` come from `upstream-issue-triage.md`'s "Left: close-out only" line, not from this
+section. Per-issue comment ids and dispositions: ticket
+`.scratch/upstream-bug-backlog/issues/53-close-adjudicated-with-evidence.md`.
+
 ### 4.1 Already answered by current master — close after a retest cycle (19, likely-fixed)
 
 | group | issues | basis on master |
