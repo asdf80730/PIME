@@ -82,7 +82,7 @@ pairs=$(awk '
 # Rank-1 token set, deduped, then one batch-check process per object directory.
 # A bare digit string of the same shape joins the batch so an abbreviation such as
 # `7676819` is read locally and counted as checked.
-declare -A is_sha is_num held
+declare -A is_sha=() is_num=() held=()
 while IFS=$'\t' read -r _ tok; do
     [ -n "${tok:-}" ] || continue
     if [[ "$tok" =~ ^[0-9a-f]*[a-f][0-9a-f]*$ ]] && \
