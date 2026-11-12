@@ -30,7 +30,7 @@ Execution order for this backlog is tracked as 22 tickets under
 - **112 are the close-out pile** — 90 closable with an evidence comment (19 likely-fixed,
   27 invalid, 11 user-config, 25 unreproducible-stale, 8 dead-architecture) and 22 too
   thin to judge without a reproduction — **16 belong to libchewing**, and **91 can only
-  move on a live Windows desktop** (the 102-issue `needs-windows` join minus the 11 that
+  move on a live Windows desktop** (the 103-issue `needs-windows` join minus the 12 that
   already carry a verdict). §8 binds every bucket to one jq derivation.
 - Two pre-2020 bugs are verifiably **still live and still reported in 2026**: #520 (大易三碼
   `tf8` 缺「續」— confirmed missing from `dayi3.json` chardefs today, §4.3) and #557
@@ -67,13 +67,13 @@ could be anywhere below the DLL; only its code-verified entries are load-bearing
 | stale-unreproducible | 25 | `unable to reproduce` label or dead retest request (§5) |
 | unclear | 22 | corpus too thin to judge (single-sentence reports, screenshots only) |
 | still-present-code | 21 | defect visibly present on `upstream/master`, cited file:line |
-| likely-fixed | 19 | current master addresses it; close after reporter retest (§4.2) |
+| likely-fixed | 19 | current master addresses it; retested on the installed 2.0.0-beta4 payload 2026-11-12 — 14 close requests posted, 5 await a human session (§4.1/§4.2) |
 | libchewing-upstream | 14 | root cause in the library, still reading the same at the 0.12.0 pin (§7) |
 | fixed-by-pin-0.12 | 2 | answered by the pin bump (`05ae6bcb`): #760, #715 (§7) |
 | user-config | 11 | reporter's environment/config, not a PIME defect |
 | obsolete-pre2 | 8 | targets deleted architecture (legacy C++ launcher, libIME-era callbacks) (§5) |
 
-`act` (what should happen): close-out 95, needs-windows 102, **fixable-here 20**,
+`act` (what should happen): close-out 94, needs-windows 103, **fixable-here 20**,
 upstream-lib 14, dead 8.
 
 Status × filed-year, selected (full matrix in `.scratch/upstream-bugs/joined.json`, the
@@ -153,10 +153,51 @@ section. Per-issue comment ids and dispositions: ticket
 | chewing features | #478, #725, #719, #789, #802 | export/import `config_tool.py:185-228`; autoLearn toggle `chewing_config.py:47`; config.json fix `eca76915`; paging fix PR #809 (`2efd45e`) |
 | misc | #483, #557, #689, #691, #942 | simplex `io` now contains 次; ARM64 in beta3 (awaiting reporter); embedded-Python `_pth` isolation; tornado pin; AsyncConnector (triage §2.2) — #942 closed out 2026-11-11 with `e0ddf2f` (PR #978), `007dc46` (PR #979) and `31dec68`/`7676819` (PR #1002); native run `tests/test_server_protocol.py` → `Ran 11 tests` / `OK` |
 
-### 4.2 Already-fixed suspects needing a Windows retest before closing (4 — a subset of §4.1's 19, not an addition)
+**Outcomes (2026-11-12, ticket 52).** All 19 got a dated retest comment against the
+payload installed on this Windows box (`version.txt` and
+`C:\Program Files (x86)\PIME\version.txt` both read `2.0.0-beta4`) at code SHA
+`827c8c9` (integration ref `local/stroke-parked`). Every body names the payload
+version, the tested SHA, and the observed line it quotes, and ends with the
+AI-declaration footer. **14 carry a maintainer-facing close request; 5 keep the
+label and ask for a human session** — #131/#291/#292/#185 (the watchdog family,
+which needs the reported rime/chewing service the install does not carry) and
+#802 (interactive-only; the headless probe never reached a candidate window).
+
+| # | verdict | comment id | observed line |
+|---|---|---|---|
+| 131 | label kept, no close | 6828005080 | `OBS: RESULT launcher respawned the backend automatically: 8056 -> 9544` |
+| 185 | label kept, no close | 6828005592 | `OBS: payload python/server.py:82 -> self.isUiLess = msg["isUiLess"]` |
+| 199 | close request | 6828006153 | `OBS: v2.0.0-beta4 PIMETextService/PIMEClient.cpp:705 -> initReq["isUiLess"] = textService_->isUiLess();` |
+| 203 | close request | 6828006706 | `OBS: installer/installer.nsi:213 -> !insertmacro CheckPendingFileRename "$INSTDIR" $R0` |
+| 291 | label kept, no close | 6828007133 | `OBS: RESULT launcher respawned the backend automatically: 8056 -> 9544` |
+| 292 | label kept, no close | 6828007640 | `OBS: RESULT launcher respawned the backend automatically: 8056 -> 9544` |
+| 365 | close request | 6828008130 | `OBS: RESULT launcher respawned the backend automatically: 8056 -> 9544` |
+| 375 | close request | 6828008641 | `OBS: RESULT launcher respawned the backend automatically: 8056 -> 9544` |
+| 478 | close request | 6828009128 | `OBS: GET /user_phrase_file          -> HTTP 200 (20480 bytes)` |
+| 483 | close request | 6828009629 | `OBS: 次 present in payload simplex io = True` |
+| 506 | close request | 6828010150 | `OBS: ieprotectedpage.ini in beta4 tree = 0` |
+| 557 | close request | 6828010722 | `OBS: arm64\PIMETextService_arm64.dll -> ARM64 0xaa64` |
+| 689 | close request | 6828011240 | `OBS: anaconda entries in sys.path = []` |
+| 691 | close request | 6828011894 | `OBS: GET /version.txt               -> HTTP 200 (11 bytes)` |
+| 719 | close request | 6828012392 | `OBS: config.json parses as JSON, keys = 30` |
+| 725 | close request | 6828012887 | `OBS: config.json parses as JSON, keys = 30` |
+| 789 | close request | 6828013431 | `OBS: config.json parses as JSON, keys = 30` |
+| 802 | label kept, no close | 6828013864 | `OBS: RESULT space while candidates shown moved the selection = False` |
+| 942 | close request | 6828014363 | `OBS: WaitNamedPipe 3x3000ms loop present = 0 hit(s)` |
+
+Comment ids re-read from `repos/EasyIME/PIME/issues/<n>/comments` after posting: 19/19
+present, one per issue, each body carrying the footer as its last line. The bodies
+are generated by `.scratch/upstream-bug-backlog/i52/post_retest_comments.py`, so the
+per-issue wording is auditable. The joined data records the same verdicts: 14 rows
+keep `act: close-out`, and #802 moves to `act: needs-windows` (§8's partition).
+
+### 4.2 Already-fixed suspects needing a Windows retest before closing (5 — a subset of §4.1's 19, not an addition)
 #131/#291/#292/#185 are counted above but their verdict leans on the Rust rewrite's watchdog;
-they need one human beta3 session each before anyone presses *Close*. In the join these
-four carry `act: needs-windows`; §4.1's other 15 carry `act: close-out`.
+they need one human beta3 session each before anyone presses *Close*. #802 joined them on
+2026-11-12: the fix is in the tree (`chewing_ime.py:493`, PR #809 / `2efd45e`), but the
+candidate-window flip is interactive-only and the headless probe never raised
+`showCandidates`, so the flip itself is untested. In the join these five carry
+`act: needs-windows`; §4.1's other 14 carry `act: close-out`.
 
 ### 4.3 Dead architecture — close with a comment (8, obsolete-pre2)
 #168, #37 (libIME-era callback/compose paths replaced by RPC dispatch,
@@ -216,14 +257,14 @@ Pre-2020 issues that still have a pulse (last comment ≥ 2024):
 | # | filed | last activity | state |
 |---|---|---|---|
 | #520 | 2019-03 | 2026-02 (off-topic; defect confirmed live, §3.3) | **the oldest verifiably real bug in the tree** |
-| #557 | 2019-11 | 2026-10-17 (PCMan: beta3 ships ARM64 native; awaiting reporter) | close-out pending retest |
-| #131 | 2016-07 | 2024-06 (40 comments, Win7→Win11) | likely-fixed via watchdog, retest then close |
-| #375 | 2017-05 | 2024-02 | same family |
+| #557 | 2019-11 | 2026-11-12 (retest comment, ticket 52; ARM64 native in beta3) | close request posted 2026-11-12 (§4.1) |
+| #131 | 2016-07 | 2026-11-12 (retest comment, ticket 52; 40 comments, Win7→Win11) | watchdog respawn confirmed; label kept for a human session (§4.2) |
+| #375 | 2017-05 | 2026-11-12 (retest comment, ticket 52) | same family; close request posted (§4.1) |
 | #463 | 2018-01 | 2024-02 | 嘸蝦米選字鍵 0-起編 — fixable §3.1 |
 | #509 | 2019-01 | 2024-10 | invalid-by-design (chewing punctuation behavior) |
 | #539 | 2019-06 | 2024-02 | fixable §3.1 |
 
-## 6. Windows-only mountain (91 + 11 needs-windows retest)
+## 6. Windows-only mountain (91 + 12 needs-windows retest)
 
 Clusters, for whoever gets a lab machine: Word/Office input death and ruler-drag crashes
 (#770, #772, #778, #862, #859, #850, #841, #840 … — #836 and #883 sit in this pile but
@@ -258,11 +299,11 @@ The 49 `chewing_*` symbols the python layers call exist on both pins; `chewing_a
   the census comment counts). Age/activity/git-reference stats are deterministic jq/grep.
 - Partition of the 239 — the numbers §2/§4/§6/§7 quote:
   `jq -r '.[] | "\(.act)|\(.status)"' .scratch/upstream-bugs/joined.json | sort | uniq -c`
-  gives needs-windows 102 (91 `needs-windows-repro`, 4 likely-fixed, 2 stale, 5 unclear),
-  close-out 95 (26 invalid, 23 stale, 17 unclear, 15 likely-fixed, 11 user-config,
+  gives needs-windows 103 (91 `needs-windows-repro`, 5 likely-fixed, 2 stale, 5 unclear),
+  close-out 94 (26 invalid, 23 stale, 17 unclear, 14 likely-fixed, 11 user-config,
   2 `fixed-by-pin-0.12` — #715 and #760, §7, filed 2026-11-12,
   1 `still-present-code` — #373, a mislabeled feature request, filed at §4.4), dead 8,
-  upstream-lib 14, fixable-here 20; 102+95+8+14+20 = 239.
+  upstream-lib 14, fixable-here 20; 103+94+8+14+20 = 239.
   The same command with `"\(.y)|\(.status)"` gives the year matrix behind §2's skew
   line. Activity figures: the per-year "no comment after 2020" row and the
   78-of-140 last-comment-in-filed-month count join `full_all.json`'s
