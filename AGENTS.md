@@ -30,6 +30,10 @@ index of agent docs.
 - **Every added file declares its AI authorship** in its header;
   `tests/hooks/pre-commit` fails the commit on a missing one, and the category
   forms live in the standing rules of `docs/agents/code-review.md`.
+- **Reply language**: what the human reads is **zh-Hant** — answers, questions,
+  and progress reports. What the machines and the upstream author read stays
+  **English**: GitHub issue/PR comments, commit messages and PR bodies, and the
+  prompts and findings passed between agent and subagents.
 
 ## Agent skills
 

@@ -250,7 +250,7 @@ design.
 
 | Standing rule | Mechanical enforcement |
 | --- | --- |
-| Every added file's header carries its AI declaration | `check_ai_declarations.sh` (staged mode backs the pre-commit hook) |
+| Every added file's header carries its AI declaration | `check_ai_declarations.sh` (the positional word `staged`, no dashes, backs the pre-commit hook; the default `head` mode compares against the product remote's master) |
 | PR body carries the declaration, #996 three-way split | `check_pr_bodies.sh` |
 | Commit message claims only its own diff | `check_pr_commit_claims.sh` |
 | Commit message carries its AI declaration, #996 three-way split | `check_pr_commit_declarations.sh` |
