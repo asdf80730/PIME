@@ -37,6 +37,10 @@ case "$verb" in
 esac
 exit 0
 STUB
+# `cat >` leaves the stub 644, and a non-executable file is invisible to
+# `command -v`: the gate then falls back to whatever `gh` the box has, and a
+# runner without a token answers empty, which reads as a 125 for every case.
+chmod 755 "$SANDBOX/gh"
 
 failures=0
 check() { # name want got
@@ -49,8 +53,8 @@ check() { # name want got
 }
 
 run_gate() {
-    ( cd "$ROOT" && PATH="$SANDBOX:$PATH" STUB_LIST="$SANDBOX/list" STUB_VIEW="$SANDBOX/view" \
-        bash "$GATE" EasyIME/PIME ) >/dev/null 2>&1
+    ( cd "$ROOT" && PATH="$SANDBOX:$PATH" GH_BIN="$SANDBOX/gh" STUB_LIST="$SANDBOX/list" \
+        STUB_VIEW="$SANDBOX/view" bash "$GATE" EasyIME/PIME ) >/dev/null 2>&1
     printf '%s' "$?"
 }
 

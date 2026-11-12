@@ -43,6 +43,10 @@ for a in "$@"; do
 done
 exit 0
 STUB
+# `cat >` leaves the stub 644, and a non-executable file is invisible to
+# `command -v`: the gate then falls back to whatever `gh` the box has, and a
+# runner without a token answers empty, which reads as a 125 for every case.
+chmod 755 "$SANDBOX/gh"
 
 # A census with a §4.5 block: heading count, expiry line, and a five-pair row.
 make_census() { # file expiry-count claim
@@ -58,8 +62,8 @@ make_census() { # file expiry-count claim
 }
 
 run_gate() { # census-file
-    ( cd "$ROOT" && PATH="$SANDBOX:$PATH" STUB_STATES="$SANDBOX/states" STUB_LAST="$SANDBOX/last" \
-        bash "$GATE" "$1" ) >/dev/null 2>&1
+    ( cd "$ROOT" && PATH="$SANDBOX:$PATH" GH_BIN="$SANDBOX/gh" STUB_STATES="$SANDBOX/states" \
+        STUB_LAST="$SANDBOX/last" bash "$GATE" "$1" ) >/dev/null 2>&1
     printf '%s' "$?"
 }
 
