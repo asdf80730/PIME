@@ -74,7 +74,10 @@ Review the diff before delivering it; the rules the reviewers work under are
 `docs/agents/code-review.md`.
 
 PR verbs on `gh` follow the credential in front of them. This Windows box has a
-scoped gh login: `gh pr create` and `gh pr edit` worked (#1013). Checkouts holding
+scoped gh login: `gh pr create` and `gh pr edit` worked (#1013). With
+`--repo EasyIME/PIME` the head must be fork-qualified —
+`--head asdf80730:pr/<topic>`; the bare branch name dies on `Head sha can't be
+blank`. Checkouts holding
 the fine-grained push-only token get 403 on `gh pr create`, `edit`, `comment`,
 `ready`, label and close — when 403 comes back, do not retry; write the body file
 and hand the compare URL plus body to the human.
