@@ -227,12 +227,31 @@ The same discipline applies to grepping CI logs: log lines arrive with
 `<job>\t<step>\t<timestamp>` prefixes, so an anchored pattern (`^FAIL`) can
 match nothing and its silence reads as a clean run — confirm the extraction
 itself produced output before treating no-match as evidence.
+Two Git Bash quirks cost re-issued reads here: process substitution is dead
+(`diff <(git show …)` answers `diff: /dev/fd/63: No such file or directory`),
+so compare with two `git show` calls into files and a plain `diff a b`, and
+write those redirect targets relative to the cwd — an absolute `/tmp/...` name
+written in the same call as the diff can be missing by the time it is read.
+The candidate window never appears in `EnumWindows`/`EnumChildWindows` because
+`libIME2/src/Window.cpp` registers it with the `CS_IME` class style; start a
+probe of that window from `WindowFromPoint` instead of the enumeration.
 
 The shared machine's desktop state is a run input: when a cinbase behaviour
 test disagrees between runs, read the toggle state before chasing logic —
 `python/python3/python.exe -c "import ctypes; print(bool(ctypes.WinDLL('User32.dll').GetKeyState(0x14) & 1))"`
 for CapsLock (0x14). Tests pin such reads at every site; the reviewer rule is
 in `docs/agents/code-review.md`.
+The active profile beside that read comes off the registry, which is the form
+that settles on this box — `reg query HKLM\SOFTWARE\Microsoft\CTF\TIP /s` names
+the TIP and its profile GUID under `0x00000404`, the same `guid` the IME's own
+`ime.json` carries (ADR 0004); `ITfInputProcessorProfileMgr::CoCreateInstance`
+answers `0x800401F0` here, so record the COM form as unavailable rather than as
+a pass. The payload inventory is the other read that decides verdicts: the
+installed `python/input_methods/` ships `chebihua` only, so the chewing and rime
+reporter steps are answered from the tree, not from a live session. Console
+tools run through `bash` (`reg query`, `tasklist`); `subprocess.run(..., text=True)`
+inside the bundled interpreter dies on the cp950 pages with
+`UnicodeDecodeError: 0xb5`, so keep that interpreter for the `unittest` layers.
 A test comment that names what would turn the test red is a verification claim too,
 and it needs the same proof as a `Validation:` line: delete the guard the comment
 points at, watch the test fail, put it back. A comment can describe a race the test
@@ -258,6 +277,10 @@ pure-C++ helpers (`JsonUtils` gtest, `CompositionCursor`) built with mingw g++.
 The tally is not the count of `run_native` call sites: the tracker check is
 dispatched inline (`write_step` plus its own `pass`/`fail`, so its exit 125 can
 read as "no .scratch" rather than a failure), so it is not one of those calls.
+The skip code is part of that contract: the PR gates judge a branch under
+delivery, so on an integration or local ref they answer
+`SKIP … (… is an integration or local branch)` with **125**, and 125 is the
+satisfied answer there — only exit 1 is a red.
 
 **The agent docs have their own check, and it is not a layer.**
 `tests/test_agent_docs.py` resolves every backticked or linked token ending in md, sh,
@@ -418,6 +441,12 @@ loop under-reports whenever the job outruns the window, and the only signal it
 gives back is its own `END`. Size a window from the measurement instead when a
 watch is unavailable: `linux-checks` takes 106 s warm, 142 s cold, and 568 s with
 an empty cache on a degraded runner (`43063679955` attempts 1–2, `43061539705`).
+The AppVeyor side answers only at the bare project URL,
+`https://ci.appveyor.com/api/projects/easyime/pime`, whose JSON carries the
+latest build and its PR head SHA; `.../builds` and `.../build/<n>` return the
+HTML SPA shell or `Build not found`, so a numbered build is read as
+`build/<branch> build <n>-<jobsuffix>` taken verbatim from the project JSON's
+`Version` field.
 Per-step durations come from the jobs payload, each step's `started_at` and
 `completed_at`:
 

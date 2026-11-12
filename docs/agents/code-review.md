@@ -84,6 +84,20 @@ the branch's own tree the main package still died on its dead imports. The
 honest line names the package scope it really ran, and says what the base still
 fails beside the PR that fixes it.
 
+## A first-pass `mergeable` is unsettled
+
+`UNKNOWN` from the API is GitHub still computing the field: re-read it once and record
+only the second value, so a disposition is never written from the pass that had no answer
+yet. `tests/check_pr_queue.sh` does the re-read and reddens a row that stays `UNKNOWN`.
+
+## A desktop observation names its reads
+
+A hands-on case is evidence only with the state it was taken in: the active profile GUID
+read back before the first keystroke, the CapsLock value pinned beside each typed probe,
+and the opened/closed window counts per case. `GetKeyboardLayout` answering `0x0` on a
+headless-driven desktop is a reading rather than a failure; a case leaving more windows
+open than it opened is a defect in the probe, not in the product.
+
 ## Judge an AI header by the file's category
 
 The standing rules (below) grade a new file's header by its **category**: a script, a lookup

@@ -33,7 +33,9 @@ index of agent docs.
 - **Reply language**: what the human reads is **zh-Hant** — answers, questions,
   and progress reports. What the machines and the upstream author read stays
   **English**: GitHub issue/PR comments, commit messages and PR bodies, and the
-  prompts and findings passed between agent and subagents.
+  prompts and findings passed between agent and subagents. The one bilingual case
+  is the reporter-facing upstream issue comment: zh-Hant first, then English, per
+  the standing rule in `docs/agents/code-review.md`.
 
 ## Agent skills
 

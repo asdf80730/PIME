@@ -18,10 +18,6 @@ absorbed `local/linux-master` — that branch is retired at `33d187c` (merged
 2026-10-31, so neither is a live base. The survivor is published with
 `git push origin local/stroke-parked:master`.
 
-Both gates print their findings each run — `tests/check_integration_ref.sh` names the
-candidate carriers, `tests/check_worktree_hygiene.sh` the stray worktrees — so the
-ambiguity surfaces before a commit rather than after it.
-
 ```bash
 # Feature base = that integration ref. A branch destined for an upstream PR is cut
 # from the product remote's master — the remote whose URL is EasyIME/PIME — because

@@ -153,6 +153,14 @@ raw dump `sweep-21-raw.txt`).
   `handle_key` (`src/editor/mod.rs:1157`); `chewing_handle_Default` never sets the shift
   state, so with easy input on, `,` commits `ㄝ` rather than `，`. PIME's wrapper calls
   `handle_Default`.
+- `chewing_KBStr2Num` is read two ways and the columns differ: the raw `CDLL` answers
+  `1` for a known layout name, while `python/libchewing/libchewing.py` answers `0`,
+  because its `__getattr__` prefix passes the context first and the name lands in the
+  `ctx` slot. Both columns are in `.scratch/upstream-bug-backlog/ticket49_probe.py`,
+  the twin of the dual-DLL sweep named above — a probe in that directory is two
+  levels under the root, so its `ROOT` is two `os.pardir` steps, and its `drive()` is
+  the working tornado-handler stub (`RequestStartLine`, a `Host` header, a connection
+  stub carrying `set_close_callback`) to copy into the next probe.
 
 ## The Python binding passes the C return through raw
 

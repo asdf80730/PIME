@@ -4,6 +4,9 @@
 # makes the human add it.
 # #996 split the declaration three ways; the pre-#996 one-liner is still
 # accepted for bodies written before it and posted already.
+# Beyond the declaration the body is judged on its own prose: one paragraph
+# emitted twice, a `Validation:` path no tree carries, and a `Ran N tests`
+# tally the named module never carried.
 #
 # Both gates run this script: tests/run_local_tests.sh (Linux and CI) and
 # tests/verify_windows.sh. The body file is written on the box that delivers
@@ -25,6 +28,10 @@ cd "$ROOT" || exit 1
 files=()
 [ -d .scratch ] && mapfile -t files < <(find .scratch -maxdepth 1 -type f -name 'pr-*-body.md' -print)
 bad=0
+# Cache for the `Ran N tests` rule below: a module's whole history of case
+# counts is read once, whatever number of bodies cite it.
+tally_paths=()
+tally_sets=()
 if [ -n "${PR_BODY:-}" ]; then
     if [ -f "$PR_BODY" ]; then
         files+=("$PR_BODY")
@@ -62,6 +69,49 @@ for f in "${files[@]}"; do
         printf 'duplicated paragraph in %s: %s\n' "$f" "${dup:0:70}"
         bad=1
     fi
+
+    # The `Ran N tests` tally is a claim about one module, so the module's own
+    # `def test_` count settles it (the shape of the path rule below). Only a
+    # bullet naming exactly one module and one tally is judged: a glob or a
+    # multi-module summary is a different claim. The number may match any count
+    # the module has ever carried, so a case added after the delivery does not
+    # redden a body that was honest when it was written — PR #928's `8` against
+    # a 15-case file was never any of them.
+    while IFS= read -r bullet; do
+        [ -n "$bullet" ] || continue
+        n_ran=$(printf '%s\n' "$bullet" | grep -cE 'Ran [0-9]+ tests?')
+        [ "$n_ran" -eq 1 ] || continue
+        n=$(printf '%s\n' "$bullet" | grep -oE 'Ran [0-9]+ tests?' | grep -oE '[0-9]+')
+        n_mods=$(printf '%s\n' "$bullet" | grep -oE 'test_[A-Za-z0-9_]+\.py' | sort -u | grep -c .)
+        [ "$n_mods" -eq 1 ] || continue
+        mod=$(printf '%s\n' "$bullet" | grep -oE 'test_[A-Za-z0-9_]+\.py' | sort -u | head -n 1)
+        path="tests/$mod"
+        [ -f "$path" ] || continue
+        seen=
+        for i in "${!tally_paths[@]}"; do
+            [ "${tally_paths[$i]}" = "$path" ] && seen=${tally_sets[$i]}
+        done
+        if [ -z "$seen" ]; then
+            # One `git grep` over the module's whole revision list carries every
+            # historical count; a per-rev `git show` loop spends a process each.
+            seen=$(git grep -c '^[[:space:]]*def test_' \
+                    $(git log --format=%H -- "$path") -- "$path" 2>/dev/null \
+                    | awk -F: '{ print $3 }')
+            seen="$seen
+$(grep -c '^[[:space:]]*def test_' "$path")"
+            tally_paths+=("$path")
+            tally_sets+=("$seen")
+        fi
+        if ! printf '%s\n' "$seen" | grep -qx "$n"; then
+            printf 'Ran %s tests matches no count %s has carried (%s): %s\n' \
+                "$n" "$path" "$(printf '%s' "$seen" | tr '\n' ' ' | sed 's/ *$//')" "$f"
+            bad=1
+        fi
+    done < <(awk '{
+                  if ($0 ~ /^- /) { if (b != "") print b; b = $0 }
+                  else if ($0 ~ /^ +/ && b != "") { b = b " " $0 }
+                  else { if (b != "") print b; b = "" }
+              } END { if (b != "") print b }' "$f")
 
     # A Validation: line names the runs that earned the PR its evidence; a
     # command path no tree and no ref has ever carried is credit taken before

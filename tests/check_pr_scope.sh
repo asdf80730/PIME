@@ -122,5 +122,36 @@ if [ -n "$swept" ]; then
     exit 1
 fi
 
-printf 'PASS  PR scope (%s is on %s, %s file(s) beyond it)\n' \
-    "$target" "$base_ref" "$(git diff --name-only "$base_ref...$target" | wc -l)"
+# The pick symmetry: a `git cherry-pick -n` whose conflict is answered with the
+# *ours* side can silently drop the picked commit's own deletions, and the file
+# counts above cannot see it — the same eight `setCandidatePage` overrides rode
+# back into `pr/cinbase-candidate-view` past a green count. Match each branch
+# commit with the commit of the same subject that already exists in this
+# checkout (the integration-side original it was lifted from) and compare the
+# product paths each touched; a path in one list and not the other is the miss.
+picks=$(git rev-list --no-merges "$base_ref..$target" 2>/dev/null)
+subjects=$(git log --all --no-merges --format='%H%x09%s' 2>/dev/null)
+symmetry=0
+for c in $picks; do
+    s=$(git log -1 --format=%s "$c" 2>/dev/null)
+    [ -n "$s" ] || continue
+    twin=$(printf '%s\n' "$subjects" \
+        | awk -F'\t' -v s="$s" -v self="$c" '$2 == s && $1 != self { print $1; exit }')
+    [ -n "$twin" ] || continue
+    a=$(git show --name-only --format= "$c" | grep -vE \
+        '^(tests/|docs/|GLOSSARY\.md|AGENTS\.md|CLAUDE\.md|\.scratch/)' | sort)
+    b=$(git show --name-only --format= "$twin" | grep -vE \
+        '^(tests/|docs/|GLOSSARY\.md|AGENTS\.md|CLAUDE\.md|\.scratch/)' | sort)
+    gap=$(comm -3 <(printf '%s\n' "$a") <(printf '%s\n' "$b"))
+    [ -n "$gap" ] || continue
+    printf 'FAIL  PR scope: %s does not carry the same paths as the commit it was picked from (%s):\n' \
+        "$c" "$twin"
+    printf '%s\n' "$gap"
+    printf 'Re-pick, or resolve the conflict with both sides; the deleted paths must stay deleted.\n'
+    symmetry=1
+done
+[ "$symmetry" -eq 0 ] || exit 1
+
+printf 'PASS  PR scope (%s is on %s, %s file(s) beyond it, %s picked commit(s) matched)\n' \
+    "$target" "$base_ref" "$(git diff --name-only "$base_ref...$target" | wc -l)" \
+    "$(printf '%s\n' "$picks" | grep -c .)"

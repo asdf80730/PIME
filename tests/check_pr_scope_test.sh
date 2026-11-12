@@ -41,14 +41,17 @@ work_bad=$tmp/bad
 work_detached=$tmp/detached
 work_ok=$tmp/ok
 work_pyc=$tmp/pyc
+branch_sym=selftest/scope-sym.$$
+work_sym=$tmp/sym
 
 cleanup() {
     git worktree remove --force "$work_bad" 2>/dev/null
     git worktree remove --force "$work_detached" 2>/dev/null
     git worktree remove --force "$work_ok" 2>/dev/null
     git worktree remove --force "$work_pyc" 2>/dev/null
+    git worktree remove --force "$work_sym" 2>/dev/null
     git worktree prune 2>/dev/null
-    git branch -D "$branch_bad" "$branch_ok" "$branch_pyc" 2>/dev/null
+    git branch -D "$branch_bad" "$branch_ok" "$branch_pyc" "$branch_sym" 2>/dev/null
     rm -rf "$tmp"
 }
 trap cleanup EXIT
@@ -161,6 +164,29 @@ if [ -n "$base_ref" ] && git rev-parse --verify --quiet "$base_ref" >/dev/null; 
         expect 1 'branch carrying bytecode fails the gate' "$work_pyc" "$branch_pyc"
     else
         printf 'SKIP  bytecode FAIL (worktree at %s unavailable)\n' "$base_ref"
+        skipped=$((skipped + 1))
+    fi
+fi
+
+# 6/7. The pick symmetry: a `cherry-pick -n` answered with the *ours* side keeps
+#      the paths the twin dropped. Two commits with one subject and the same
+#      path set pass; the same pair with one path missing fails. Product paths
+#      only, so the harness exclusion cannot mask the gap.
+if [ -n "$base_ref" ] && git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+    git worktree add -B "$branch_sym" "$work_sym" "$base_ref" >/dev/null 2>&1
+    if [ -d "$work_sym" ]; then
+        printf 'a\n' >"$work_sym/selftest-sym-a.txt"
+        printf 'b\n' >"$work_sym/selftest-sym-b.txt"
+        git -C "$work_sym" add selftest-sym-a.txt selftest-sym-b.txt >/dev/null 2>&1
+        git -C "$work_sym" commit -qm 'selftest: symmetry twin carries two paths' >/dev/null 2>&1
+        expect 0 'picked commit matching its twin passes' "$work_sym" "$branch_sym"
+
+        printf 'b2\n' >"$work_sym/selftest-sym-b.txt"
+        git -C "$work_sym" add selftest-sym-b.txt >/dev/null 2>&1
+        git -C "$work_sym" commit -qm 'selftest: symmetry twin carries two paths' >/dev/null 2>&1
+        expect 1 'picked commit that dropped a path fails' "$work_sym" "$branch_sym"
+    else
+        printf 'SKIP  pick symmetry (worktree at %s unavailable)\n' "$base_ref"
         skipped=$((skipped + 1))
     fi
 fi

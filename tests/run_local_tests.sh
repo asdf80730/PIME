@@ -376,6 +376,19 @@ step 'Census-partition gate self-test' "$ROOT/tests/check_census_partition_test.
 # the tickets.
 step 'Close-out identifiers resolve' "$ROOT/tests/check_closeout_identifiers.sh"
 step 'Close-out identifier gate self-test' "$ROOT/tests/check_closeout_identifiers_test.sh"
+# The two DPI helper spellings are one fact: whichever side is current, the
+# other must be gone, or the C++ step keeps building a superseded helper.
+step 'DPI helper pair matches the merged side' "$ROOT/tests/check_dpi_pair.sh"
+step 'DPI helper pair self-test' "$ROOT/tests/check_dpi_pair_test.sh"
+# The 25 stale-retest threads close on the date the census states beside their
+# ids; this reads both the table and the live thread states, so a silent
+# close-out cannot slip past the publish.
+step 'Silence-window close-out settled' "$ROOT/tests/check_retest_window.sh"
+step 'Silence-window gate self-test' "$ROOT/tests/check_retest_window_test.sh"
+# One deterministic row per open PR — head, mergeability, check conclusions —
+# in place of a hand-assembled queue table off truncated fields.
+step 'Open PR queue snapshot' "$ROOT/tests/check_pr_queue.sh"
+step 'PR queue gate self-test' "$ROOT/tests/check_pr_queue_test.sh"
 # Every check script has to be named by both gates, or it is decorative: this is
 # the layer that keeps the step lists on the two boxes in lockstep.
 step 'Gate wiring covers both boxes' "$ROOT/tests/check_gate_wiring.sh"

@@ -105,7 +105,12 @@ and hand the compare URL plus body to the human.
   commit and `git rm -f <path>` for every harness path the pick staged, then `git commit`.
   A harness file upstream never carried conflicts as **deleted in HEAD**, and `git rm` is
   the resolution; `git cherry-pick` returns non-zero for that conflict, so do not chain
-  the cleanup behind `&&`. Write the message yourself (`git commit -F <file>`): a
+  the cleanup behind `&&`. The one it already carries (`tests/test_cinbase_cand_per_page.py`
+  is that case) restores with `git checkout HEAD -- <path>`, which leaves no diff; `git rm -f`
+  on it registers a deletion and reddens `check_pr_scope.sh`. A pick answered with the *ours*
+  side can drop the picked commit's own deletions, and the symmetry step of
+  `tests/check_pr_scope.sh` is what catches that. Write the message yourself
+  (`git commit -F <file>`): a
   `git commit -C <local-sha>` inherits the integration message, which describes the test
   and parse-check work the branch deliberately does not carry, and
   `tests/check_pr_commit_claims.sh <branch>` fails it for exactly that — run it next to
@@ -169,6 +174,15 @@ and hand the compare URL plus body to the human.
   `gh search prs --author @me --state open` and read discussion through
   `gh api repos/EasyIME/PIME/issues/<n>/comments` — the issue endpoint's
   `comments` field is only a count, so the list needs that second endpoint.
+  Two number spaces live in that one repo: a backlog ticket's own entry names the
+  *issue* (`gh issue view`/`gh issue comment`), and the PR that fixes it is a separate
+  number (`gh pr view`, `pr://N/diff`) — `gh pr view 960` on an issue number answers
+  `Could not resolve to a PullRequest`. Whether a posting landed is settled by the id
+  set, not a substring: `--jq '.[-1].id'` against the id the posting script printed.
+  The REST issues endpoint ignores a `numbers=` query filter (it returns the whole
+  list), so a per-number check loops `gh api repos/EasyIME/PIME/issues/<n>` or reads
+  the one paginated list and selects from it; `tests/check_retest_window.sh` is that
+  shape.
   A posted comment needs a JSON
   envelope, so pipe it: `jq -Rs '{body:.}' .scratch/<file>.md | gh api
   repos/EasyIME/PIME/issues/<n>/comments --input -` — a bare

@@ -19,18 +19,9 @@ there before searching the tree or a prior session's transcript.
 
 ## File structure
 
-This repo is single-context:
-
-```
-/
-├── GLOSSARY.md
-├── docs/adr/
-│   ├── 0001-....md
-│   └── 0002-....md
-├── PIMETextService/
-├── PIMELauncher/
-└── node/ python/ go-backend/
-```
+This repo is single-context: one `GLOSSARY.md` and one `docs/adr/` at the root, no
+`GLOSSARY-MAP.md`, and the product trees sit beside them where a directory listing
+answers their names.
 
 ## Use the glossary's vocabulary
 

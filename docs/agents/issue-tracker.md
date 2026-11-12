@@ -19,6 +19,9 @@ Issues are not used as our work tracker. Tickets stay local to the checkout.
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading
 - Non-feature holdings (rescued WIP, snapshots) live in `.scratch/<name>/` carrying an
   `ARCHIVE.md` that records the origin and restore target; the layout check skips those
+- A multi-issue sweep leaves its per-case readings in a numbered side directory beside the
+  tickets (`i52/`, `retest-51/`): the hand-off unit is those files, so a successor's second
+  pass is one read per case rather than a re-derivation from the ticket prose
 
 The layout is machine-checked: `bash tests/check_tracker_layout.sh` exits 0 when
 every feature directory carries its spec (or wayfinder map) — or an `ARCHIVE.md`

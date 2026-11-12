@@ -256,6 +256,27 @@ run_native 'Close-out identifiers resolve' \
 run_native 'Close-out identifier gate self-test' \
 	'bash.exe tests/check_closeout_identifiers_test.sh'
 
+# Which of the two DPI helper spellings is current is one fact the C++ step
+# cannot see on its own: it builds whichever test file is present.
+run_or_skip 'DPI helper pair matches the merged side' \
+	'bash.exe tests/check_dpi_pair.sh'
+run_native 'DPI helper pair self-test' \
+	'bash.exe tests/check_dpi_pair_test.sh'
+
+# The silence window of the 25 stale-retest threads is a dated claim in the
+# census with a close-on-silence rule; the live thread states settle it here.
+run_or_skip 'Silence-window close-out settled' \
+	'bash.exe tests/check_retest_window.sh'
+run_native 'Silence-window gate self-test' \
+	'bash.exe tests/check_retest_window_test.sh'
+
+# The queue snapshot is the deterministic twin of the hand-written PR table:
+# one row per open PR, its head, mergeability, and check conclusions.
+run_or_skip 'Open PR queue snapshot' \
+	'bash.exe tests/check_pr_queue.sh'
+run_native 'PR queue gate self-test' \
+	'bash.exe tests/check_pr_queue_test.sh'
+
 # The same pair for the step lists themselves: a check script no gate runs is a
 # green file that guards nothing, and the two boxes drift apart silently.
 run_native 'Gate wiring covers both boxes' \
