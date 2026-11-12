@@ -58,6 +58,15 @@ for dir in .scratch/*/; do
             printf 'missing Status: line within the first 20 lines of %s\n' "$issue"
             bad=1
         fi
+        # Each appended comment block ends with its AI-declaration footer; a file
+        # whose `## Comments` region carries no footer at all is an unattributed
+        # record, which is the omission `check_pr_commit_declarations.sh` guards
+        # for commits. `.scratch/` is gitignored, so no CI job ever sees it.
+        if grep -q '^## Comments' "$issue" &&
+            ! grep -Eq '^\*\(Comment generated with AI assistance from' "$issue"; then
+            printf 'missing AI-declaration footer under ## Comments of %s\n' "$issue"
+            bad=1
+        fi
         tickets=$((tickets + 1))
         # The blocking edge is written two ways: plain `Blocked by: NN` (the
         # wayfinder child form) and bold `**Blocked by:** NN` (the form the

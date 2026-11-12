@@ -22,7 +22,9 @@ Issues are not used as our work tracker. Tickets stay local to the checkout.
 
 The layout is machine-checked: `bash tests/check_tracker_layout.sh` exits 0 when
 every feature directory carries its spec (or wayfinder map) — or an `ARCHIVE.md`
-when it is a holding — and every ticket is `NN-<slug>.md` with a `Status:` line.
+when it is a holding — every ticket is `NN-<slug>.md` with a `Status:` line, and every
+ticket with a `## Comments` region ends its records with the
+`*(Comment generated with AI assistance from …)*` footer.
 Its summary line also tallies the tickets and the blocking edges it found,
 reading the edge in either the plain `Blocked by: NN` form or the bold
 `**Blocked by:** NN` form the triage records use, so a frontier scan can tell
@@ -52,7 +54,7 @@ Create a new file under `.scratch/<feature-slug>/` (creating the directory if ne
 
 ## When a skill says "fetch the relevant ticket"
 
-Read the file at the referenced path. The user will normally pass the path or the issue number directly.
+Read the file at the referenced path. The user will normally pass the path or the issue number directly. Ticket files are exact paths for `read`; a `NN-*.md` pattern resolves only through `glob`, so glob the directory once, then read the exact names.
 
 ## Wayfinding operations
 
