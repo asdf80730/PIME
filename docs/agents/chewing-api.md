@@ -39,8 +39,12 @@ the ones passed to `chewing_new2`/`chewing_new3`.
 
 ## The shipped data payload
 
-`python/libchewing/data/` must carry exactly what `AssetLoader` looks for by
-name, so the 0.12 set is `word.dat`, `tsi.dat`, `swkb.dat`, `symbols.dat`. The
+`python/libchewing/data/` must carry what `AssetLoader` looks for by name: the
+hash pair `word.dat`, `tsi.dat`, the keyboard and symbol tables `swkb.dat`,
+`symbols.dat`, and the two names `capi/src/io.rs` puts in the default
+dictionary list, `chewing.dat` and `chewing-deleted.dat`. A data dir that
+holds only the first four logs `Dictionary file not found: chewing.dat` and
+`Dictionary file not found: chewing-deleted.dat` from every init. The
 0.5.x trio `dictionary.dat` / `index_tree.dat` / `pinyin.tab` is retired: the
 trie is now split into a word and a tsi file, and the pinyin table is compiled
 into the library. Regenerate the two dictionaries from the nested submodule with
