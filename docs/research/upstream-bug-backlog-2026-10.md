@@ -274,6 +274,22 @@ verdicts in §4.1/§4.2); Line/gvim/PuTTY per-app key-routing (#422; #396's verd
 the lab). The pure `needs-windows-repro` members beyond those cannot be adjudicated from
 this checkout — same stance as triage §4.1.
 
+**Hardware pass 2026-11-13** (installed payload `2.0.0-beta4`, box Windows 11
+`10.0.26300.9711`, tree `77a5e89`; session log in
+`.scratch/upstream-bug-backlog/issues/50-windows-lab-observations.md`). Three desktop-only
+observations landed: #960 per-monitor DPI — one output, `GetDpiForWindow` = 168 on the
+host and on every `WindowFromPoint` hit over it against `GetDpiForMonitor` = 96 for the
+DPI-unaware probe, PR #962 head `4b3807f` named; #481 中州韻 resolved to LANGID `0x0404`
+through the registration path's own `LocaleNameToLCID`, both twins on `zh-Hant-TW`/`zh-TW`
+(#1021); #393/#417/#456 answered `{"result": 1}` for the add and the delete of the
+rare-character row and `{"result": 0}` for a 0-row delete on the real dialog path (#1022),
+with no console print of phrase data left. Comment ids `6831953444`, `6831953865`,
+`6831954312`. The counts in this section's title do not move with them: those five records
+are `fixable-here` or outside the `label:bug` set (#960), so `needs-windows` stays 103 =
+91 `needs-windows-repro` + 5 likely-fixed + 2 stale + 5 unclear as §8 derives it, and the
+Word/Office, fullscreen-game and per-app key-routing clusters still have no hardware
+verdict.
+
 ## 7. libchewing block (16)
 
 #117, #157, #361, #363, #411, #549, #585, #682, #685, #715, #736, #760, #768, #858, #869
