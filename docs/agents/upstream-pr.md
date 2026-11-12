@@ -167,7 +167,9 @@ and hand the compare URL plus body to the human.
   A PR opened as a draft stays a draft until the human clicks "Ready for review".
   `gh api notifications` is 403 as well: list the work with
   `gh search prs --author @me --state open` and read discussion through
-  `gh api repos/EasyIME/PIME/issues/<n>/comments`. A posted comment needs a JSON
+  `gh api repos/EasyIME/PIME/issues/<n>/comments` — the issue endpoint's
+  `comments` field is only a count, so the list needs that second endpoint.
+  A posted comment needs a JSON
   envelope, so pipe it: `jq -Rs '{body:.}' .scratch/<file>.md | gh api
   repos/EasyIME/PIME/issues/<n>/comments --input -` — a bare
   `--input <file>.md` over a plain-text body is 400 `Problems parsing JSON`.

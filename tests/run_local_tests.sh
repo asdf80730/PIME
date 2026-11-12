@@ -370,6 +370,12 @@ step 'Line-citation gate self-test' "$ROOT/tests/check_line_citations_test.sh"
 # reddens here instead of in the next review.
 step 'Census numbers match the joined data' "$ROOT/tests/check_census_partition.sh"
 step 'Census-partition gate self-test' "$ROOT/tests/check_census_partition_test.sh"
+# A close-out comment lives by the identifier it names, and both research docs
+# carry theirs by hand: the SHA rank reddens on a stale commit, the number ranks
+# are a tally. `.scratch/` is git-excluded, so this belongs on the box that holds
+# the tickets.
+step 'Close-out identifiers resolve' "$ROOT/tests/check_closeout_identifiers.sh"
+step 'Close-out identifier gate self-test' "$ROOT/tests/check_closeout_identifiers_test.sh"
 # Every check script has to be named by both gates, or it is decorative: this is
 # the layer that keeps the step lists on the two boxes in lockstep.
 step 'Gate wiring covers both boxes' "$ROOT/tests/check_gate_wiring.sh"

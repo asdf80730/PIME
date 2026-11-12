@@ -248,6 +248,14 @@ run_native 'Census numbers match the joined data' \
 run_native 'Census-partition gate self-test' \
 	'bash.exe tests/check_census_partition_test.sh'
 
+# A close-out comment lives by the identifier it names, and both research docs
+# carry theirs by hand: the SHA rank reddens on a stale commit, the number ranks
+# are a tally.
+run_native 'Close-out identifiers resolve' \
+	'bash.exe tests/check_closeout_identifiers.sh'
+run_native 'Close-out identifier gate self-test' \
+	'bash.exe tests/check_closeout_identifiers_test.sh'
+
 # The same pair for the step lists themselves: a check script no gate runs is a
 # green file that guards nothing, and the two boxes drift apart silently.
 run_native 'Gate wiring covers both boxes' \

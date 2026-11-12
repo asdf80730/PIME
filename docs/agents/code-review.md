@@ -61,6 +61,16 @@ observable the user receives — the committed artifact, the settings page, the
 candidate list — and a claim of *zero* impact carries both the command and what that
 command inspects.
 
+## A quoted identifier names its own settling
+
+A close-out or triage comment quotes a PR number or a commit SHA, and the reader
+cannot tell from the digits alone whether it was read off `git log --oneline -1 <sha>`,
+off `gh pr view <n>`, or carried over from a neighbouring row. Settle each one in the
+comment itself: the object dir it resolves in (the superproject, or the named submodule
+whose pin it is), and the command that answered. A content digest (`sha1sum` output) is a
+different family and says so; a bare digit string says which index it belongs to.
+`tests/check_closeout_identifiers.sh` judges the first family and counts the rest.
+
 ## A Validation line is settled by a re-run on the head SHA
 
 A `Validation:` line is a claim about one tree — the head SHA — so re-run every
