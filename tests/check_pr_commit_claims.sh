@@ -76,7 +76,7 @@ bad=0
 checked=0
 for c in $(git rev-list "$base_ref..$target"); do
     files=$(git show --name-only --format= "$c")
-    if printf '%s\n' "$files" | grep -q '^tests/'; then
+    if printf '%s\n' "$files" | grep -qE '(^|/)tests/'; then
         continue
     fi
     checked=$((checked + 1))

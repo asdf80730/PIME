@@ -120,6 +120,18 @@ Drop the debug prints and consult every return. The new test drives the
 handler through the authenticated decorator.')"
 expect 0 'message claiming a test the commit carries passes' selftest/honest
 
+# 4b. A nested harness path is the branch's own test too: node/tests/... carries
+#     the same meaning as a root tests/ directory, so the gate stays quiet.
+nested_tests=$(printf '100644 blob %s\tloadServices.test.js\n' "$testblob" | git -C "$repo" mktree)
+nested_node=$(printf '040000 tree %s\ttests\n' "$nested_tests" | git -C "$repo" mktree)
+with_nested_tree=$(printf '100644 blob %s\tREADME.md\n040000 tree %s\tnode\n' \
+    "$blob" "$nested_node" | git -C "$repo" mktree)
+git -C "$repo" update-ref refs/heads/selftest/nested \
+    "$(commit_of "$with_nested_tree" 'fix(node): never throw on a guid-less config
+
+Coerce both sides of the comparison. The new test spawns the server twice.')"
+expect 0 'nested node/tests path counts as the commit own test' selftest/nested
+
 # 5. A ref that is not a commit is not applicable, and neither is a detached
 #    HEAD with no argument.
 expect 125 'non-commit ref skips' "$blob"
