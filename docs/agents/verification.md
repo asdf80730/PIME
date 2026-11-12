@@ -352,6 +352,12 @@ Read the count line beside the `OK`, and reach for
 `tests/run_worktree_tests.py <test-file> <worktree>` when the file is a
 worktree-only one — that driver aborts (rc 3) rather than reporting zero.
 
+A third line to expect rather than chase: the rime cases drive the bundled
+`rime.dll`, whose own logger writes an E-prefixed line from customizer.cc:56 to stderr
+reading Error loading config from a temp-dir default.yaml, because a case builds its
+context over a directory that holds no such file. The step still answers OK; the line is
+the DLL own log, not a second failure beside the tally.
+
 Two tracked trees are vendored third-party code and make a repo-wide search time
 out before it reaches anything you wrote: `python/python3/` (the bundled
 interpreter plus its `site-packages`) and `node/`. Name the trees you actually want
