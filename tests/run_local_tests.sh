@@ -389,6 +389,10 @@ step 'Silence-window gate self-test' "$ROOT/tests/check_retest_window_test.sh"
 # in place of a hand-assembled queue table off truncated fields.
 step 'Open PR queue snapshot' "$ROOT/tests/check_pr_queue.sh"
 step 'PR queue gate self-test' "$ROOT/tests/check_pr_queue_test.sh"
+# The 644 stub class of miss: chmod-ed and named through GH_BIN, or the case
+# table depends on which real `gh` the box happens to carry.
+step 'gh stub wiring complete' "$ROOT/tests/check_gh_stubs.sh"
+step 'gh stub wiring self-test' "$ROOT/tests/check_gh_stubs_test.sh"
 # Every check script has to be named by both gates, or it is decorative: this is
 # the layer that keeps the step lists on the two boxes in lockstep.
 step 'Gate wiring covers both boxes' "$ROOT/tests/check_gate_wiring.sh"

@@ -209,6 +209,21 @@ on days the shared desktop had CapsLock on. The fixed test builds the service
 inside the patched window; the reviewer's check is that the patch covers every
 read site, not just the obvious one.
 
+## A pinned value names the engine that fixes it
+
+Two engines answer in the chewing layer and they age differently. The lookup engine is
+deterministic per syllable (`chewing_get_bopomofo`, `chewing_get_phoneSeq`, the menu's own
+`phones`/`candidates`); the phrase engine folds the *learned* user database into the composed
+string, so its char for a syllable can differ between a lone run and the full suite — the same
+second-tone syllable answered 填 alone and 天 once earlier cases had typed 今天天氣. Pin on what
+the module under test writes: the phone sequence for the tone menu, then the neighbour chars
+that must survive, and keep the phrase-engine char out of the assertion. Worked example:
+`tests/test_chewing_tone_menu.py` after `e0f0aaa`, where each case reads
+`seq[self.menu.phone_index]` against `phones[index]` and the mutation check showed 6355 and
+6356 distinguish it. The reviewer's question per assertion: is this value written by the code
+under test, or produced by data and learning — and if the latter, does the assertion still
+mean something when the ordering changes?
+
 ## A test double implements the landed surface
 
 A double stands in for a real object at one seam, so it has to answer every call the

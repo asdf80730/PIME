@@ -148,6 +148,12 @@ and hand the compare URL plus body to the human.
   `gh api repos/EasyIME/PIME/actions/runs/<id>`. Check
   `gh api repos/EasyIME/PIME/commits/<sha>/check-runs` before claiming CI evidence, and
   ask for the approval in the PR conversation.
+  Two `gh` shapes settle a run without a browser. `--jq` only works beside `--json`, and
+  that listing spells its fields camelCase: `gh run list --json databaseId,headSha --jq
+  ".[] | select(.headSha==\"<sha>\") | .databaseId"`; a bare `--jq` dies with `cannot use
+  --jq without specifying --json` and `head_sha` with `Unknown JSON field`. `gh run watch`
+  wants that `databaseId`; the `id` off the `check-runs` endpoint is a *check-run* id, and
+  `watch` on it returns at once while the job is still `in_progress`.
 - Write each `Validation:` line only after its run is green on the exact tree being
   committed: run `tests/verify_windows.sh` first, then compose the commit message.
   A green claim written before the run is credit taken before the sale; if the run

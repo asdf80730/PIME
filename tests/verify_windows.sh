@@ -277,6 +277,14 @@ run_or_skip 'Open PR queue snapshot' \
 run_native 'PR queue gate self-test' \
 	'bash.exe tests/check_pr_queue_test.sh'
 
+# A stub written by `cat >` is 644 and invisible to `command -v`, which is how
+# two green-on-the-box self-tests went red on the runner: the gate fell back to
+# the token-less system `gh`. This pins the chmod and the GH_BIN on every stub.
+run_or_skip 'gh stub wiring complete' \
+	'bash.exe tests/check_gh_stubs.sh'
+run_native 'gh stub wiring self-test' \
+	'bash.exe tests/check_gh_stubs_test.sh'
+
 # The same pair for the step lists themselves: a check script no gate runs is a
 # green file that guards nothing, and the two boxes drift apart silently.
 run_native 'Gate wiring covers both boxes' \

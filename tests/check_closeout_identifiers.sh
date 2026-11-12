@@ -159,6 +159,14 @@ while IFS=$'\t' read -r ticket tok; do
             continue
         fi
         printf 'BROKEN   %s: %s is no commit in this checkout\n' "$ticket" "$tok"
+        # A PR head is the usual reason: only the branches and the PR refs this
+        # checkout fetched are objects here, so an unfetched head reads as a dead
+        # SHA rather than a missing fetch. The ticket names the PR beside it.
+        pr_hint=$(grep -m1 -oE '#[0-9]+' "$ticket" | head -1)
+        if [ -n "$pr_hint" ]; then
+            printf '         a PR head is often simply unfetched: git fetch upstream refs/pull/%s/head\n' \
+                "${pr_hint#\#}"
+        fi
         bad=$((bad + 1))
         continue
     fi
