@@ -357,10 +357,12 @@ step 'Worktree test driver self-test' "$ROOT/tests/run_worktree_tests_test.sh"
 step 'Added files carry an AI declaration' "$ROOT/tests/check_ai_declarations.sh"
 step 'AI declaration gate self-test' "$ROOT/tests/check_ai_declarations_test.sh"
 step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
+step 'Local issue tracker layout self-test' "$ROOT/tests/check_tracker_layout_test.sh"
 # The Documents top level must stay free of agent folders: the 2026-10 litter
 # of sibling worktrees came from the old `../<repo>-<agent>` convention, so
 # every linked tree must live under the main checkout's .worktrees/.
 step 'Worktrees stay under .worktrees/' "$ROOT/tests/check_worktree_hygiene.sh"
+step 'Worktree-hygiene self-test' "$ROOT/tests/check_worktree_hygiene_test.sh"
 step 'Tracked code cites no .scratch/' "$ROOT/tests/check_scratch_refs.sh"
 step 'Scratch-ref gate self-test' "$ROOT/tests/check_scratch_refs_test.sh"
 step 'Line citations resolve' "$ROOT/tests/check_line_citations.sh"
@@ -417,6 +419,7 @@ step 'Commit-declaration gate self-test' "$ROOT/tests/check_pr_commit_declaratio
 # keeps it able to catch the unhardened workflows lives here.
 step 'Fork CI noise gate self-test' "$ROOT/tests/check_fork_ci_noise_test.sh"
 step 'Integration ref candidates' "$ROOT/tests/check_integration_ref.sh"
+step 'Integration-ref candidate self-test' "$ROOT/tests/check_integration_ref_test.sh"
 
 # Scripts committed from a core.filemode=false checkout land 100644, and
 # step() executes them directly: exit 126 right here. The gate pins the

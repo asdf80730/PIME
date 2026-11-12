@@ -346,6 +346,8 @@ run_native 'Fork CI noise gate self-test' \
 # fails (docs/agents/shared-checkout.md).
 run_native 'Integration ref candidates' \
 	'bash.exe tests/check_integration_ref.sh'
+run_native 'Integration-ref candidate self-test' \
+	'bash.exe tests/check_integration_ref_test.sh'
 
 # The tracker lives in .scratch/, which is gitignored, so no CI job can ever see
 # it: the layout check belongs on the box that holds the tickets. Exit 125 means
@@ -364,12 +366,16 @@ if selected 'Local issue tracker layout'; then
 else
 	skipped=$((skipped + 1))
 fi
+run_native 'Local issue tracker layout self-test' \
+	'bash.exe tests/check_tracker_layout_test.sh'
 
 # The Documents top level must stay free of agent folders: the 2026-10 litter
 # of sibling worktrees came from the old `../<repo>-<agent>` convention, so
 # every linked tree must live under the main checkout's .worktrees/.
 run_native 'Worktrees stay under .worktrees/' \
 	'bash.exe tests/check_worktree_hygiene.sh'
+run_native 'Worktree-hygiene self-test' \
+	'bash.exe tests/check_worktree_hygiene_test.sh'
 
 
 # --- Python ---------------------------------------------------------------
