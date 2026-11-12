@@ -298,9 +298,15 @@ same glob dies with `os error 123` on an empty match.
 An optional first word filters the layers: `bash tests/verify_windows.sh ruff`
 or `bash tests/verify_windows.sh "PR bodies"` runs only the labels holding that
 word and prints `filter <word>: N layer(s) skipped` above the tally — measured
-here, `Python lint` answered in 3s against 472s for the full sweep. Use it to
+here, `Python lint` answered in 3s against 472s for the full sweep. The match is
+case-sensitive, so `Census` runs the two census layers while `census` runs none
+(a `0 passed, 0 failed` tally with every layer skipped is the empty-match
+signal, not a green run). Use it to
 re-check one touched layer; the unfiltered run is the authoritative tally, and
-the skipped layers are the ones the earlier full run already judged.
+the skipped layers are the ones the earlier full run already judged. Two runs at
+once in one checkout do not share `.tools/.run/` safely: the later one rewrites
+the numbered `step-<n>` pairs the earlier one is still reading, so its layers
+come back FAIL on missing logs.
 
 Narrowing the Python layer to one file on the shipped interpreter needs
 `discover`: `python/python3/python.exe` is an embedded distribution whose

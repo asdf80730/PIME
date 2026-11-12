@@ -240,6 +240,14 @@ run_native 'Line citations resolve' \
 run_native 'Line-citation gate self-test' \
 	'bash.exe tests/check_line_citations_test.sh'
 
+# The census quotes its partition numbers by hand, so the tally comes straight
+# off the joined data beside it: an edit that moves a record between buckets
+# reddens here instead of in the next review.
+run_native 'Census numbers match the joined data' \
+	'bash.exe tests/check_census_partition.sh'
+run_native 'Census-partition gate self-test' \
+	'bash.exe tests/check_census_partition_test.sh'
+
 # The same pair for the step lists themselves: a check script no gate runs is a
 # green file that guards nothing, and the two boxes drift apart silently.
 run_native 'Gate wiring covers both boxes' \

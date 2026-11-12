@@ -365,6 +365,11 @@ step 'Tracked code cites no .scratch/' "$ROOT/tests/check_scratch_refs.sh"
 step 'Scratch-ref gate self-test' "$ROOT/tests/check_scratch_refs_test.sh"
 step 'Line citations resolve' "$ROOT/tests/check_line_citations.sh"
 step 'Line-citation gate self-test' "$ROOT/tests/check_line_citations_test.sh"
+# The census quotes its partition numbers by hand, so the tally comes straight
+# off the joined data beside it: an edit that moves a record between buckets
+# reddens here instead of in the next review.
+step 'Census numbers match the joined data' "$ROOT/tests/check_census_partition.sh"
+step 'Census-partition gate self-test' "$ROOT/tests/check_census_partition_test.sh"
 # Every check script has to be named by both gates, or it is decorative: this is
 # the layer that keeps the step lists on the two boxes in lockstep.
 step 'Gate wiring covers both boxes' "$ROOT/tests/check_gate_wiring.sh"

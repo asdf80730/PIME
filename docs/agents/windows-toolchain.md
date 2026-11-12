@@ -148,7 +148,13 @@ bash tests/build_windows_installer.sh     # the NSIS installer
 `build_windows_artifacts.sh` configures the upstream CMake project three times
 with the toolchain files in `tests/toolchains/`. They use `clang-cl` and
 `lld-link` from `.tools/mingw64` against the SDK and CRT that `xwin` splatted
-into `.tools/msvc`, so no Visual Studio installation is needed. The script
+into `.tools/msvc`, so no Visual Studio installation is needed. A bare
+`clang-cl`/`cargo rustc` invocation (the `libchewing` cdylib build of
+`docs/agents/chewing-api.md`) names the four directories that splat directly:
+headers `msvc\crt\include`, `msvc\sdk\include\shared`,
+`msvc\sdk\include\um`, `msvc\sdk\include\ucrt`; import and static libraries
+`msvc\crt\lib\x86` (also `x64`, `arm64`), `msvc\sdk\lib\ucrt\x86`,
+`msvc\sdk\lib\um\x86`. The script
 also stages the results in the layout `installer/installer.nsi` expects, under
 `.tools/stage/`.
 
