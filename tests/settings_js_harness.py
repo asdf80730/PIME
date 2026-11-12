@@ -17,6 +17,7 @@ Not a ``test_*.py`` module, so ``unittest discover`` ignores it.
 import json
 import os
 import subprocess
+import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 NODE = os.path.join(ROOT, "node", "node.exe")
