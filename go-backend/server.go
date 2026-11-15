@@ -292,47 +292,8 @@ func (s *Server) sendResponse(clientID string, resp map[string]interface{}) erro
 
 // convertResponse 转换响应格式
 func (s *Server) convertResponse(resp *pime.Response) map[string]interface{} {
-	candidateList := resp.CandidateList
-	if candidateList == nil {
-		candidateList = []string{}
-	}
-	m := map[string]interface{}{
-		"success":           resp.Success,
-		"seqNum":            resp.SeqNum,
-		"cursorPos":         resp.CursorPos,
-		"compositionCursor": resp.CompositionCursor,
-		"candidateCursor":   resp.CandidateCursor,
-		"showCandidates":    resp.ShowCandidates,
-		"compositionString": resp.CompositionString,
-		"candidateList":     candidateList,
-		"selStart":          resp.SelStart,
-		"selEnd":            resp.SelEnd,
-	}
-	if resp.ReturnData != nil {
-		m["return"] = resp.ReturnData
-	} else {
-		m["return"] = resp.ReturnValue
-	}
-
-	if resp.CommitString != "" {
-		m["commitString"] = resp.CommitString
-	}
-	if resp.SetSelKeys != "" {
-		m["setSelKeys"] = resp.SetSelKeys
-	}
-	if len(resp.CustomizeUI) > 0 {
-		m["customizeUI"] = resp.CustomizeUI
-	}
-	if len(resp.AddButton) > 0 {
-		m["addButton"] = resp.AddButton
-	}
-	if len(resp.RemoveButton) > 0 {
-		m["removeButton"] = resp.RemoveButton
-	}
-	if len(resp.ChangeButton) > 0 {
-		m["changeButton"] = resp.ChangeButton
-	}
-	return m
+	// One shape for both servers; see pime.Response.WireMap.
+	return resp.WireMap()
 }
 
 // loadInputMethods 加载所有输入法
