@@ -2,8 +2,172 @@ package pime
 
 import (
 	"encoding/json"
+	"os"
+	"reflect"
+	"strings"
 	"testing"
 )
+
+// readWireFixture loads the one committed request/reply set that every
+// adapter's suite iterates: tests/wire-fixtures.json, two directories up from
+// this package (go test runs with the package directory as the working one).
+func readWireFixture(t *testing.T) map[string]interface{} {
+	t.Helper()
+
+	raw, err := os.ReadFile("../../tests/wire-fixtures.json")
+	if err != nil {
+		t.Fatalf("read tests/wire-fixtures.json: %v", err)
+	}
+	var doc map[string]interface{}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatalf("unmarshal wire fixture: %v", err)
+	}
+	return doc
+}
+
+// wireFold compares the `return` key across the backends: python and node
+// write JSON booleans, this backend writes 1/0 for the same answer.
+func wireFold(value interface{}) interface{} {
+	if flag, ok := value.(bool); ok {
+		if flag {
+			return float64(1)
+		}
+		return float64(0)
+	}
+	return value
+}
+
+func wireSubset(t *testing.T, name string, expected map[string]interface{}, decoded map[string]interface{}) {
+	t.Helper()
+
+	for key, want := range expected {
+		got, ok := decoded[key]
+		if !ok {
+			t.Fatalf("%s: reply lacks %q, got %#v", name, key, decoded)
+		}
+		if !reflect.DeepEqual(wireFold(got), wireFold(want)) {
+			t.Fatalf("%s: %s = %#v, want %#v", name, key, got, want)
+		}
+	}
+}
+
+// TestWireFixturePinsFramingAndReplyKeys drives the shared fixture through the
+// two functions this package owns: ParseRequest for the request keys and
+// Response.ToJSON for the reply key names.
+func TestWireFixturePinsFramingAndReplyKeys(t *testing.T) {
+	doc := readWireFixture(t)
+
+	protocol, _ := doc["protocol"].(map[string]interface{})
+	if protocol["prefix"] != "PIME_MSG" || protocol["separator"] != "|" {
+		t.Fatalf("unexpected framing constants: %#v", protocol)
+	}
+	if maxsplit, ok := protocol["maxsplit"].(float64); !ok || maxsplit != 1 {
+		t.Fatalf("the request must split at the first separator only, got %#v", protocol["maxsplit"])
+	}
+	clientID, _ := doc["clientId"].(string)
+	if clientID == "" {
+		t.Fatal("fixture carries no clientId")
+	}
+	guids, _ := doc["guid"].(map[string]interface{})
+	guid, _ := guids["go"].(string)
+	unknown, _ := doc["unknownGuid"].(string)
+
+	declared := map[string]bool{}
+	for _, list := range []string{"replyKeys", "extraKeys"} {
+		items, _ := doc[list].([]interface{})
+		for _, item := range items {
+			if key, ok := item.(string); ok {
+				declared[key] = true
+			}
+		}
+	}
+
+	cases, _ := doc["cases"].([]interface{})
+	if len(cases) == 0 {
+		t.Fatal("the fixture carries no case")
+	}
+	for _, rawCase := range cases {
+		fixtureCase, _ := rawCase.(map[string]interface{})
+		name, _ := fixtureCase["name"].(string)
+		steps, _ := fixtureCase["steps"].([]interface{})
+		for _, rawStep := range steps {
+			step, _ := rawStep.(map[string]interface{})
+
+			if line, hasRaw := step["raw"].(string); hasRaw {
+				parts := strings.SplitN(line, "|", 2)
+				if len(parts) != 2 {
+					if step["reply"] != nil {
+						t.Fatalf("%s: a frame without a separator must still answer %#v", name, step["reply"])
+					}
+					continue
+				}
+				if parts[0] != clientID {
+					t.Fatalf("%s: client id %q, want %q", name, parts[0], clientID)
+				}
+				if _, err := ParseRequest([]byte(parts[1])); err == nil {
+					t.Fatalf("%s: %q must not parse as a request", name, parts[1])
+				}
+			} else if request, hasRequest := step["request"].(map[string]interface{}); hasRequest {
+				data, err := json.Marshal(request)
+				if err != nil {
+					t.Fatalf("%s: marshal request: %v", name, err)
+				}
+				req, err := ParseRequest(data)
+				if err != nil {
+					t.Fatalf("%s: ParseRequest: %v", name, err)
+				}
+				method, _ := request["method"].(string)
+				if req.Method != method {
+					t.Fatalf("%s: method %q, want %q", name, req.Method, method)
+				}
+				if seqNum, ok := request["seqNum"].(float64); ok && float64(req.SeqNum) != seqNum {
+					t.Fatalf("%s: seqNum %d, want %v", name, req.SeqNum, seqNum)
+				}
+				switch method {
+				case "init":
+					want := guid
+					if id, _ := request["id"].(string); id == "$unknownGuid" {
+						want = unknown
+					}
+					if got := req.ID.StringValue(); got != want {
+						t.Fatalf("%s: init id %q, want %q", name, got, want)
+					}
+				case "onCommand", "onMenu":
+					if id, ok := request["id"].(string); ok && req.ID.StringValue() != id {
+						t.Fatalf("%s: id %q, want %q", name, req.ID.StringValue(), id)
+					}
+				}
+			}
+
+			expected, hasReply := step["reply"].(map[string]interface{})
+			if !hasReply {
+				continue
+			}
+			data, err := json.Marshal(expected)
+			if err != nil {
+				t.Fatalf("%s: marshal reply: %v", name, err)
+			}
+			var resp Response
+			if err := json.Unmarshal(data, &resp); err != nil {
+				t.Fatalf("%s: unmarshal reply: %v", name, err)
+			}
+			out, err := resp.ToJSON()
+			if err != nil {
+				t.Fatalf("%s: ToJSON: %v", name, err)
+			}
+			var decoded map[string]interface{}
+			if err := json.Unmarshal(out, &decoded); err != nil {
+				t.Fatalf("%s: unmarshal serialized reply: %v", name, err)
+			}
+			wireSubset(t, name, expected, decoded)
+			for key := range decoded {
+				if !declared[key] {
+					t.Fatalf("%s: %s is not a declared reply key", name, key)
+				}
+			}
+		}
+	}
+}
 
 func TestResponseJSONIncludesClearedCompositionState(t *testing.T) {
 	resp := NewResponse(1, true)

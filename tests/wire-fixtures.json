@@ -1,0 +1,671 @@
+{
+  "protocol": {
+    "request": "<client_id>|<json>",
+    "reply": "PIME_MSG|<client_id>|<json>",
+    "prefix": "PIME_MSG",
+    "separator": "|",
+    "maxsplit": 1,
+    "echoesSeqNum": true
+  },
+  "clientId": "12345678-1234-1234-1234-123456789abc",
+  "guid": {
+    "python": "{C5F37DA0-274E-4837-9B7C-9BB79FE85D9D}",
+    "node": "{C5F37DA0-274E-4837-9B7C-9BB79FE85D9D}",
+    "go": "{7A1C2E93-5B64-4F88-AE21-3D9C6B70F145}",
+    "rust": "{C5F37DA0-274E-4837-9B7C-9BB79FE85D9D}"
+  },
+  "unknownGuid": "{00000000-0000-0000-0000-000000000000}",
+  "replyKeys": [
+    "success",
+    "seqNum",
+    "return",
+    "compositionString",
+    "compositionCursor",
+    "commitString",
+    "candidateList",
+    "candidateCursor",
+    "showCandidates",
+    "setSelKeys",
+    "openKeyboard",
+    "customizeUI",
+    "addButton",
+    "removeButton",
+    "changeButton",
+    "addPreservedKey",
+    "removePreservedKey",
+    "showMessage",
+    "hideMessage"
+  ],
+  "uiKeys": [
+    "candFontName",
+    "candFontSize",
+    "candFontWeight",
+    "candPerRow",
+    "candUseCursor",
+    "candTextColor",
+    "windowBackgroundColor",
+    "selKeyColor"
+  ],
+  "buttonKeys": [
+    "id",
+    "icon",
+    "text",
+    "tooltip",
+    "commandId",
+    "type",
+    "enable",
+    "toggled"
+  ],
+  "preservedKeyKeys": [
+    "keyCode",
+    "modifiers",
+    "guid"
+  ],
+  "messageKeys": [
+    "message",
+    "duration"
+  ],
+  "extraKeys": [
+    "error",
+    "cursorPos",
+    "selStart",
+    "selEnd"
+  ],
+  "notes": [
+    "One case is one session: a fresh client id, the listed steps in order, one reply line per step that carries one.",
+    "A step's reply is the SUBSET every adapter must answer; an adapter may add keys, and each suite asserts every key it emits is listed in replyKeys or extraKeys (nested maps use uiKeys, buttonKeys, preservedKeyKeys, messageKeys).",
+    "reply null means the frame produces no reply line at all.",
+    "The string '$guid' is replaced by guid[<adapter>]; '$unknownGuid' by unknownGuid. Each backend ships its own ime.json, so the registered guid differs per adapter (docs/adr/0004-per-backend-profile-guids.md); the launcher is a pass-through and reuses the python twin's value.",
+    "The 'return' key answers the TSF eaten/not-eaten question: python and node write JSON booleans, go writes 1/0, so a harness compares it with true folded to 1 and false to 0.",
+    "Where two adapters genuinely disagree, only the keys they share appear in the reply: go answers onCompartmentChanged and onKeyboardStatusChanged with its unknown-method branch, and node drops a seqNum that was absent from the request.",
+    "The go backend's Response struct also writes cursorPos, selStart and selEnd, which no PIMEClient.cpp reader consumes; they sit in extraKeys so a suite can still check every emitted key against this file."
+  ],
+  "cases": [
+    {
+      "name": "init",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        }
+      ]
+    },
+    {
+      "name": "filterKeyDown",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "filterKeyDown",
+            "seqNum": 2,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [128, 0, 0, 0]
+          },
+          "reply": {"success": true, "seqNum": 2, "return": 1}
+        }
+      ]
+    },
+    {
+      "name": "onKeyDown",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onKeyDown",
+            "seqNum": 2,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [128, 0, 0, 0]
+          },
+          "reply": {"success": true, "seqNum": 2, "compositionString": "喵", "return": 1}
+        }
+      ]
+    },
+    {
+      "name": "onKeyDown_twice",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onKeyDown",
+            "seqNum": 2,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [128, 0, 0, 0]
+          },
+          "reply": {"success": true, "seqNum": 2}
+        },
+        {
+          "request": {
+            "method": "onKeyDown",
+            "seqNum": 3,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [128, 0, 0, 0]
+          },
+          "reply": {"success": true, "seqNum": 3}
+        }
+      ]
+    },
+    {
+      "name": "filterKeyUp",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "filterKeyUp",
+            "seqNum": 2,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [0, 0, 0, 0]
+          },
+          "reply": {"success": true, "seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onKeyUp",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onKeyUp",
+            "seqNum": 2,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [0, 0, 0, 0]
+          },
+          "reply": {"success": true, "seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onPreservedKey",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onPreservedKey",
+            "seqNum": 2,
+            "guid": "{c5f37da0-274e-4837-9b7c-9bb79fe85d9d}"
+          },
+          "reply": {"success": true, "seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onCommand",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onCommand",
+            "seqNum": 2,
+            "id": "windows-mode-icon",
+            "type": 0
+          },
+          "reply": {"success": true, "seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onMenu",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onMenu",
+            "seqNum": 2,
+            "id": "windows-mode-icon"
+          },
+          "reply": {"success": true, "seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onActivate",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onActivate",
+            "seqNum": 2,
+            "isKeyboardOpen": true
+          },
+          "reply": {"success": true, "seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onDeactivate",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onActivate",
+            "seqNum": 2,
+            "isKeyboardOpen": true
+          },
+          "reply": {"success": true, "seqNum": 2}
+        },
+        {
+          "request": {
+            "method": "onDeactivate",
+            "seqNum": 3
+          },
+          "reply": {"success": true, "seqNum": 3}
+        }
+      ]
+    },
+    {
+      "name": "onCompartmentChanged",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onCompartmentChanged",
+            "seqNum": 2,
+            "guid": "{c5f37da0-274e-4837-9b7c-9bb79fe85d9d}"
+          },
+          "reply": {"seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onKeyboardStatusChanged",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onKeyboardStatusChanged",
+            "seqNum": 2,
+            "opened": true
+          },
+          "reply": {"seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "onCompositionTerminated",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onKeyDown",
+            "seqNum": 2,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [128, 0, 0, 0]
+          },
+          "reply": {"success": true, "seqNum": 2}
+        },
+        {
+          "request": {
+            "method": "onCompositionTerminated",
+            "seqNum": 3,
+            "forced": true
+          },
+          "reply": {"success": true, "seqNum": 3}
+        }
+      ]
+    },
+    {
+      "name": "close",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "close",
+            "seqNum": 2
+          },
+          "reply": {"success": true, "seqNum": 2}
+        }
+      ]
+    },
+    {
+      "name": "close_without_seq_num",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "close"
+          },
+          "reply": {"success": true}
+        }
+      ]
+    },
+    {
+      "name": "request_before_init",
+      "steps": [
+        {
+          "request": {
+            "method": "onKeyDown",
+            "seqNum": 5,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [128, 0, 0, 0]
+          },
+          "reply": {"success": false, "seqNum": 5}
+        }
+      ]
+    },
+    {
+      "name": "init_unknown_guid",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$unknownGuid",
+            "seqNum": 6,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": false, "seqNum": 6}
+        }
+      ]
+    },
+    {
+      "name": "request_after_unknown_guid",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$unknownGuid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": false, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onKeyUp",
+            "seqNum": 7,
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [0, 0, 0, 0]
+          },
+          "reply": {"success": false, "seqNum": 7}
+        }
+      ]
+    },
+    {
+      "name": "filterKeyDown_without_seq_num",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "filterKeyDown",
+            "charCode": 109,
+            "keyCode": 77,
+            "repeatCount": 1,
+            "scanCode": 0,
+            "isExtended": false,
+            "keyStates": [128, 0, 0, 0]
+          },
+          "reply": {"success": true}
+        }
+      ]
+    },
+    {
+      "name": "payload_with_pipe",
+      "steps": [
+        {
+          "request": {
+            "method": "init",
+            "id": "$guid",
+            "seqNum": 1,
+            "isWindows8Above": true,
+            "isMetroApp": false,
+            "isUiLess": false,
+            "isConsole": false
+          },
+          "reply": {"success": true, "seqNum": 1}
+        },
+        {
+          "request": {
+            "method": "onCommand",
+            "seqNum": 8,
+            "id": "x|y",
+            "type": 2
+          },
+          "reply": {"success": true, "seqNum": 8}
+        }
+      ]
+    },
+    {
+      "name": "malformed_json",
+      "steps": [
+        {
+          "raw": "12345678-1234-1234-1234-123456789abc|{not json",
+          "reply": {"success": false}
+        }
+      ]
+    },
+    {
+      "name": "line_without_separator",
+      "steps": [
+        {
+          "raw": "no_pipe_line",
+          "reply": null
+        }
+      ]
+    }
+  ]
+}

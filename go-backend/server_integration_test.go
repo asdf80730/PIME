@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -90,32 +92,183 @@ func sendProtocolMessage(t *testing.T, server *Server, clientID string, payload 
 	return output, response
 }
 
-func TestServerHandleMessageInitUsesTopLevelID(t *testing.T) {
-	server := newTestServerWithMeow()
+// readWireFixture loads the one committed request/reply set that every
+// adapter's suite iterates: tests/wire-fixtures.json, one directory above this
+// package (go test runs with the package directory as the working one).
+func readWireFixture(t *testing.T) map[string]interface{} {
+	t.Helper()
 
-	_, response := sendProtocolMessage(t, server, "client-1", map[string]interface{}{
-		"method":          "init",
-		"seqNum":          1,
-		"id":              testMeowGUID,
-		"isWindows8Above": true,
-		"isMetroApp":      false,
-		"isUiLess":        false,
-		"isConsole":       false,
-	})
+	raw, err := os.ReadFile("../tests/wire-fixtures.json")
+	if err != nil {
+		t.Fatalf("read tests/wire-fixtures.json: %v", err)
+	}
+	var doc map[string]interface{}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatalf("unmarshal wire fixture: %v", err)
+	}
+	return doc
+}
 
-	if response["success"] != true {
-		t.Fatalf("expected init success, got %#v", response)
+// wireFold compares the `return` key across the backends: python and node
+// write JSON booleans, this backend writes 1/0 for the same answer.
+func wireFold(value interface{}) interface{} {
+	if flag, ok := value.(bool); ok {
+		if flag {
+			return float64(1)
+		}
+		return float64(0)
 	}
-	if response["seqNum"] != float64(1) {
-		t.Fatalf("expected seqNum 1, got %#v", response["seqNum"])
+	return value
+}
+
+// wireResolve fills the fixture's guid sentinels with this backend's values.
+func wireResolve(value interface{}, guid, unknown string) interface{} {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		out := map[string]interface{}{}
+		for key, item := range v {
+			out[key] = wireResolve(item, guid, unknown)
+		}
+		return out
+	case []interface{}:
+		out := make([]interface{}, 0, len(v))
+		for _, item := range v {
+			out = append(out, wireResolve(item, guid, unknown))
+		}
+		return out
+	case string:
+		switch v {
+		case "$guid":
+			return guid
+		case "$unknownGuid":
+			return unknown
+		}
+		return v
+	default:
+		return value
+	}
+}
+
+// pimeReplyLines decodes the PIME_MSG lines of one captured stdout, in order.
+func pimeReplyLines(t *testing.T, output string) []map[string]interface{} {
+	t.Helper()
+
+	var lines []map[string]interface{}
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || !strings.HasPrefix(line, pime.MsgPIME+"|") {
+			continue
+		}
+		rest := strings.TrimPrefix(line, pime.MsgPIME+"|")
+		parts := strings.SplitN(rest, "|", 2)
+		if len(parts) != 2 {
+			t.Fatalf("reply %q is not PIME_MSG|<client_id>|<json>", line)
+		}
+		var payload map[string]interface{}
+		if err := json.Unmarshal([]byte(parts[1]), &payload); err != nil {
+			t.Fatalf("unmarshal reply %q: %v", line, err)
+		}
+		lines = append(lines, payload)
+	}
+	return lines
+}
+
+// TestWireFixtureCasesThroughServer plays every case of the shared wire
+// fixture through Server.Run(), which is the loop the shipped binary uses.
+func TestWireFixtureCasesThroughServer(t *testing.T) {
+	doc := readWireFixture(t)
+
+	clientID, _ := doc["clientId"].(string)
+	guids, _ := doc["guid"].(map[string]interface{})
+	guid, _ := guids["go"].(string)
+	unknown, _ := doc["unknownGuid"].(string)
+	declared := map[string]bool{}
+	for _, list := range []string{"replyKeys", "extraKeys"} {
+		items, _ := doc[list].([]interface{})
+		for _, item := range items {
+			if key, ok := item.(string); ok {
+				declared[key] = true
+			}
+		}
 	}
 
-	client := server.clients["client-1"]
-	if client == nil {
-		t.Fatal("expected client to be registered after init")
+	cases, _ := doc["cases"].([]interface{})
+	if len(cases) == 0 {
+		t.Fatal("the fixture carries no case")
 	}
-	if client.GUID != strings.ToLower(testMeowGUID) {
-		t.Fatalf("expected guid %q, got %q", strings.ToLower(testMeowGUID), client.GUID)
+	for _, rawCase := range cases {
+		fixtureCase, _ := rawCase.(map[string]interface{})
+		name, _ := fixtureCase["name"].(string)
+		steps, _ := fixtureCase["steps"].([]interface{})
+
+		var lines []string
+		var want []map[string]interface{}
+		lastMethod := ""
+		for _, rawStep := range steps {
+			step, _ := rawStep.(map[string]interface{})
+			if line, isRaw := step["raw"].(string); isRaw {
+				lines = append(lines, line)
+			} else {
+				request, _ := step["request"].(map[string]interface{})
+				data, err := json.Marshal(wireResolve(request, guid, unknown))
+				if err != nil {
+					t.Fatalf("%s: marshal request: %v", name, err)
+				}
+				lines = append(lines, clientID+"|"+string(data))
+				lastMethod, _ = request["method"].(string)
+			}
+			if reply, ok := step["reply"].(map[string]interface{}); ok {
+				want = append(want, reply)
+				continue
+			}
+			want = append(want, nil)
+		}
+
+		server := newTestServerWithMeow()
+		server.reader = bufio.NewReader(strings.NewReader(strings.Join(lines, "\n") + "\n"))
+		output := captureStdout(t, func() {
+			if err := server.Run(); err != nil {
+				t.Fatalf("%s: Run: %v", name, err)
+			}
+		})
+
+		got := pimeReplyLines(t, output)
+		expected := 0
+		for _, reply := range want {
+			if reply != nil {
+				expected++
+			}
+		}
+		if len(got) != expected {
+			t.Fatalf("%s: %d reply line(s), want %d (%q)", name, len(got), expected, output)
+		}
+		index := 0
+		for _, reply := range want {
+			if reply == nil {
+				continue
+			}
+			payload := got[index]
+			index++
+			for key, value := range reply {
+				actual, ok := payload[key]
+				if !ok {
+					t.Fatalf("%s: reply lacks %q, got %#v", name, key, payload)
+				}
+				if !reflect.DeepEqual(wireFold(actual), wireFold(value)) {
+					t.Fatalf("%s: %s = %#v, want %#v", name, key, actual, value)
+				}
+			}
+			for key := range payload {
+				if !declared[key] {
+					t.Fatalf("%s: %s is not a declared reply key", name, key)
+				}
+			}
+		}
+		if lastMethod == "close" {
+			if _, ok := server.clients[clientID]; ok {
+				t.Fatalf("%s: expected the client removed after close", name)
+			}
+		}
 	}
 }
 
@@ -134,6 +287,13 @@ func TestServerHandleMessageInitAcceptsLowercaseGUID(t *testing.T) {
 
 	if response["success"] != true {
 		t.Fatalf("expected lowercase guid init success, got %#v", response)
+	}
+	client := server.clients["client-lower"]
+	if client == nil {
+		t.Fatal("expected client to be registered after init")
+	}
+	if client.GUID != strings.ToLower(testMeowGUID) {
+		t.Fatalf("expected guid %q, got %q", strings.ToLower(testMeowGUID), client.GUID)
 	}
 }
 
@@ -227,32 +387,6 @@ func TestServerHandleMessageUninitializedClientReturnsProtocolError(t *testing.T
 	}
 	if response["error"] != "客户端未初始化" {
 		t.Fatalf("expected protocol error for uninitialized client, got %#v", response["error"])
-	}
-}
-
-func TestServerHandleMessageCloseSucceeds(t *testing.T) {
-	server := newTestServerWithMeow()
-
-	sendProtocolMessage(t, server, "client-close", map[string]interface{}{
-		"method":          "init",
-		"seqNum":          1,
-		"id":              testMeowGUID,
-		"isWindows8Above": true,
-		"isMetroApp":      false,
-		"isUiLess":        false,
-		"isConsole":       false,
-	})
-
-	_, response := sendProtocolMessage(t, server, "client-close", map[string]interface{}{
-		"method": "close",
-		"seqNum": 2,
-	})
-
-	if response["success"] != true {
-		t.Fatalf("expected close success, got %#v", response)
-	}
-	if _, ok := server.clients["client-close"]; ok {
-		t.Fatal("expected client to be removed after close")
 	}
 }
 
