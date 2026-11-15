@@ -1,5 +1,6 @@
 import os
 import sys
+import importlib
 import json
 import shutil
 import unittest
@@ -264,6 +265,44 @@ class ServiceManagerTests(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             dir_path_to_import_path(outside, base)
+
+
+class ShippedManifestImportTests(unittest.TestCase):
+    """Every shipped ``ime.json`` names a module its own folder carries.
+
+    All four dispatchers resolve the manifest's ``moduleName`` relative to the
+    IME folder (`python/serviceManager.py:87`, `node/loadServices.js`,
+    `go-backend/server.go`, `PIMETextService/PIMEImeModule.cpp`), so a ``.py``
+    moved out of that folder fails at the first activation instead of in a
+    check. These two cases are the deterministic half of the rule in
+    `docs/agents/code-review.md` ("a writer change lists its readers"); they
+    run on both boxes, so the win32 self-skip of the smoke class cannot hide a
+    dead name.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.manager = TextServiceManager()
+        cls.manager.load(PYTHON_DIR)
+
+    def test_every_manifest_module_imports(self):
+        self.assertTrue(self.manager.services, "no shipped manifest was read")
+        for guid, info in sorted(self.manager.services.items()):
+            with self.subTest(folder=info.moduleName, guid=guid):
+                module = importlib.import_module(info.moduleName)
+                self.assertTrue(
+                    hasattr(module, info.serviceName),
+                    "%s does not define the class %s the manifest names"
+                    % (info.moduleName, info.serviceName))
+
+    def test_module_file_lives_in_the_manifest_folder(self):
+        for guid, info in sorted(self.manager.services.items()):
+            folder = info.moduleName.split(".")[-2]
+            with self.subTest(folder=folder, guid=guid):
+                module = importlib.import_module(info.moduleName)
+                self.assertEqual(
+                    os.path.basename(os.path.dirname(module.__file__)), folder,
+                    "%s is not the folder the manifest sits in" % folder)
 
 
 if __name__ == "__main__":

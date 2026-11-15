@@ -32,8 +32,10 @@ SERVICES = [
     ("chewing", "input_methods.chewing.chewing_ime"),
     ("meow", "input_methods.meow.ime_meow"),
     ("rime", "input_methods.rime.rime_ime"),
-    # The Simplified twin of the same engine: same class, own folder.
-    ("rime-cn", "input_methods.rime_cn.rime_ime"),
+    # The Simplified twin of the same engine: same class, own folder. The
+    # dotted name mirrors the folder, hyphen included: the folder is the
+    # package, so its name is the second-to-last segment.
+    ("rime-cn", "input_methods.rime-cn.rime_ime"),
 ]
 
 # Environment problems, not product failures: the bundled Python bindings need

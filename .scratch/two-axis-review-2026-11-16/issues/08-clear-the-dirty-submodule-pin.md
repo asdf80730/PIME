@@ -18,4 +18,11 @@ Blocked by: None
 `docs/agents/verification.md` records the layout: the payload sits in
 `<submodule>/output/pime/` with `index.js` rebuilt by `build.bat`.
 
+- Push to `openvanilla/McBopomofoWeb.git` was refused (403, no credentials), so
+  the submodule commit `c0c99b2c1e14e0991b09d138c4a280b1d7798204` (answered by
+  `git -C McBopomofoWeb rev-parse HEAD` in `tax-08`; the superproject pin of
+  `omp/tax-08` matches it) travels as
+  `.scratch/mcbopomofoweb-pin-c0c99b2c1e14e0991b09d138c4a280b1d7798204.patch`
+  until upstream can take it.
+
 *(Comment generated with AI assistance from omp (tensorfold/Qwen3.8-Flash-Next))*
