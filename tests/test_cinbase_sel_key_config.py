@@ -68,11 +68,10 @@ class CinbaseSelKeyConfigTests(CinbaseKeyHarness):
     def test_row_is_re_attached_to_the_text_service(self):
         service = self.activate_chesimplex()
         service.cfg.selKeyType = 1
-        service.currentReply = {}
 
-        service.checkConfigChange()
+        reply = service.checkConfigChange()
 
-        self.assertEqual(service.currentReply.get("setSelKeys"), "0123456789")
+        self.assertEqual(reply.get("setSelKeys"), "0123456789")
         self.assertEqual(service.selKeys, "0123456789")
 
     def test_out_of_range_index_falls_back_to_the_default_row(self):

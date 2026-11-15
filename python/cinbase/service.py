@@ -163,16 +163,19 @@ class CinBaseTextService(TextService):
     def checkConfigChange(self):
         self.cinbase.checkConfigChange(self, self.CinTable, self.RCinTable, self.HCinTable)
         self.checkConfigChangeState()
+        return self.currentReply
 
     # 輸入法被使用者啟用
     def onActivate(self):
         TextService.onActivate(self)
         self.cinbase.onActivate(self)
+        return self.currentReply
 
     # 使用者離開輸入法
     def onDeactivate(self):
         TextService.onDeactivate(self)
         self.cinbase.onDeactivate(self)
+        return self.currentReply
 
     # 使用者按下按鍵，在 app 收到前先過濾那些鍵是輸入法需要的。
     # return True，系統會呼叫 onKeyDown() 進一步處理這個按鍵
@@ -196,6 +199,7 @@ class CinBaseTextService(TextService):
 
     def onKeyUp(self, keyEvent):
         self.cinbase.onKeyUp(self, keyEvent)
+        return self.currentReply
 
     def onPreservedKey(self, guid):
         KeyState = self.cinbase.onPreservedKey(self, guid)
@@ -203,6 +207,7 @@ class CinBaseTextService(TextService):
 
     def onCommand(self, commandId, commandType):
         self.cinbase.onCommand(self, commandId, commandType)
+        return self.currentReply
 
     # 開啟語言列按鈕選單
     def onMenu(self, buttonId):
@@ -213,6 +218,7 @@ class CinBaseTextService(TextService):
     def onKeyboardStatusChanged(self, opened):
         TextService.onKeyboardStatusChanged(self, opened)
         self.cinbase.onKeyboardStatusChanged(self, opened)
+        return self.currentReply
 
     # 當中文編輯結束時會被呼叫。若中文編輯不是正常結束，而是因為使用者
     # 切換到其他應用程式或其他原因，導致我們的輸入法被強制關閉，此時
@@ -220,6 +226,7 @@ class CinBaseTextService(TextService):
     def onCompositionTerminated(self, forced):
         TextService.onCompositionTerminated(self, forced)
         self.cinbase.onCompositionTerminated(self, forced)
+        return self.currentReply
 
     # 設定候選字頁數
     def setCandidatePage(self, page):

@@ -105,7 +105,7 @@ class CinbaseColorReadSiteTests(CinbaseKeyHarness):
 
     def test_the_engine_puts_the_three_colors_on_customize_ui(self):
         service = self.activate_chesimplex()
-        ui = service.currentReply["customizeUI"]
+        ui = self.drain(service)["customizeUI"]
         for key in COLOR_KEYS:
             self.assertIn(key, ui, f"{key} never reached the customizeUI reply")
             self.assertEqual(SYSTEM_PALETTE, ui[key])
@@ -115,11 +115,10 @@ class CinbaseColorReadSiteTests(CinbaseKeyHarness):
         service.cfg.candTextColor = 0x00FF00
         service.cfg.windowBackgroundColor = 0x010203
         service.cfg.selKeyColor = 0xFF0000
-        service.currentReply = {}
 
-        service.cinbase.applyConfig(service)
+        reply = service.cinbase.applyConfig(service)
 
-        ui = service.currentReply["customizeUI"]
+        ui = reply["customizeUI"]
         self.assertEqual(0x00FF00, ui["candTextColor"])
         self.assertEqual(0x010203, ui["windowBackgroundColor"])
         self.assertEqual(0xFF0000, ui["selKeyColor"])

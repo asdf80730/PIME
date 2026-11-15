@@ -232,24 +232,34 @@ class TextServiceDispatchTests(unittest.TestCase):
         self.service.showCandidates = True
         self.assertTrue(self.service.isComposing())
 
-    def test_reply_builders(self):
-        self.service.addButton(1, text="A")
-        self.service.changeButton(1, text="B")
-        self.service.removeButton(2)
-        self.service.addPreservedKey(65, 4, "{GUID}")
-        self.service.removePreservedKey("{GUID}")
-        self.service.setCompositionString("中")
-        self.service.setCompositionCursor(1)
-        self.service.setCommitString("文")
-        self.service.setCandidateCursor(0)
-        self.service.setShowCandidates(True)
-        self.service.setSelKeys("1234")
-        self.service.setKeyboardOpen(True)
-        self.service.customizeUI(candPerRow=5)
-        self.service.showMessage("hi", 2)
-        self.service.hideMessage()
+    def test_reply_builders_return_their_partial(self):
+        # every builder answers with the partial it contributed (the hook
+        # contract); the merged view arrives as the next dispatcher reply.
+        self.assertEqual(self.service.addButton(1, text="A"),
+                         {"addButton": [{"text": "A", "id": 1}]})
+        self.assertEqual(self.service.changeButton(1, text="B"),
+                         {"changeButton": [{"text": "B", "id": 1}]})
+        self.assertEqual(self.service.removeButton(2), {"removeButton": [2]})
+        self.assertEqual(self.service.addPreservedKey(65, 4, "{GUID}"),
+                         {"addPreservedKey": [{"keyCode": 65, "modifiers": 4, "guid": "{guid}"}]})
+        self.assertEqual(self.service.removePreservedKey("{GUID}"),
+                         {"removePreservedKey": ["{guid}"]})
+        self.assertEqual(self.service.setCompositionString("中"), {"compositionString": "中"})
+        self.assertEqual(self.service.setCompositionCursor(1), {"compositionCursor": 1})
+        self.assertEqual(self.service.setCommitString("文"), {"commitString": "文"})
+        self.assertEqual(self.service.setCandidateList(["a", "b"]), {"candidateList": ["a", "b"]})
+        self.assertEqual(self.service.setCandidateCursor(0), {"candidateCursor": 0})
+        self.assertEqual(self.service.setShowCandidates(True), {"showCandidates": True})
+        self.assertEqual(self.service.setSelKeys("1234"), {"setSelKeys": "1234"})
+        self.assertEqual(self.service.setKeyboardOpen(True), {"openKeyboard": True})
+        self.assertEqual(self.service.customizeUI(candPerRow=5),
+                         {"customizeUI": {"candPerRow": 5}})
+        self.assertEqual(self.service.showMessage("hi", 2),
+                         {"showMessage": {"message": "hi", "duration": 2}})
+        self.assertEqual(self.service.hideMessage(), {"hideMessage": True})
 
-        reply = self.service.currentReply
+        # the dispatcher merges the accumulated partials into one reply
+        reply = self.call({"method": "noSuchMethod", "seqNum": 9})
         self.assertEqual(reply["addButton"], [{"text": "A", "id": 1}])
         self.assertEqual(reply["changeButton"], [{"text": "B", "id": 1}])
         self.assertEqual(reply["removeButton"], [2])
@@ -258,6 +268,7 @@ class TextServiceDispatchTests(unittest.TestCase):
         self.assertEqual(reply["compositionString"], "中")
         self.assertEqual(reply["compositionCursor"], 1)
         self.assertEqual(reply["commitString"], "文")
+        self.assertEqual(reply["candidateList"], ["a", "b"])
         self.assertEqual(reply["candidateCursor"], 0)
         self.assertTrue(reply["showCandidates"])
         self.assertEqual(reply["setSelKeys"], "1234")
@@ -265,8 +276,15 @@ class TextServiceDispatchTests(unittest.TestCase):
         self.assertEqual(reply["customizeUI"], {"candPerRow": 5})
         self.assertEqual(reply["showMessage"], {"message": "hi", "duration": 2})
         self.assertTrue(reply["hideMessage"])
+        self.assertFalse(reply["success"])
         self.assertEqual(self.service.compositionString, "中")
         self.assertEqual(self.service.commitString, "文")
+
+        # the reply was drained: the next one carries none of those fields
+        next_reply = self.call({"method": "noSuchMethod", "seqNum": 10})
+        self.assertNotIn("commitString", next_reply)
+        self.assertNotIn("addButton", next_reply)
+        self.assertNotIn("showMessage", next_reply)
 
 
 if __name__ == "__main__":

@@ -67,10 +67,9 @@ class CinbaseSelectionKeyTests(CinbaseKeyHarness):
         return event
 
     def send_event(self, service, event):
-        service.currentReply = {}
         if service.filterKeyDown(event):
             service.onKeyDown(event)
-        return service.currentReply.get("commitString", "")
+        return self.drain(service).get("commitString", "")
 
     def three_candidate_table(self, service):
         service.cin = synthetic_cin(
@@ -191,10 +190,10 @@ class CinbaseSelectionKeyTests(CinbaseKeyHarness):
         self.send(service, 0x20, 0x20, printable=True)
         pageBefore = service.candidateView.page
 
-        self.send_event(service, self.num_event(0, VK_ADD))
+        committed = self.send_event(service, self.num_event(0, VK_ADD))
 
         self.assertEqual(service.candidateView.page, pageBefore)
-        self.assertEqual(service.currentReply.get("commitString", ""), "")
+        self.assertEqual(committed, "")
 
     def test_numpad_digit_with_the_window_closed_is_claimed_without_committing(self):
         # issue #730 的措辭：數字鍵在「候選清單開著時」是選字鍵；關著時仍由輸入法接管，

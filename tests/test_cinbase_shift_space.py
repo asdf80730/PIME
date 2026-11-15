@@ -61,7 +61,6 @@ class CinbaseShiftSpaceTests(unittest.TestCase):
         from input_methods.chesimplex import chesimplex_ime
 
         service = chesimplex_ime.CheSimplexTextService(ime_smoke_runner.FakeClient())
-        service.currentReply = {}
         service.isActivated = True  # textService.handleRequest sets this before onActivate
         service.onActivate()
         for _ in range(500):
@@ -72,13 +71,19 @@ class CinbaseShiftSpaceTests(unittest.TestCase):
         return service
 
     @staticmethod
-    def registered_guids(service):
-        return {entry["guid"] for entry in service.currentReply.get("addPreservedKey", [])}
+    def drain(service):
+        """Drain the reply accumulated so far through the dispatcher seam."""
+        return service.handleRequest({"seqNum": 0})
+
+    @staticmethod
+    def registered_guids(reply):
+        return {entry["guid"] for entry in reply.get("addPreservedKey", [])}
 
     def test_shift_space_hotkey_registered_by_default(self):
         service = self.activate_chesimplex()
         self.assertTrue(service.enableShiftSpace, "default keeps the historical hotkey")
-        self.assertIn(cinbase.SHIFT_SPACE_GUID.lower(), self.registered_guids(service))
+        self.assertIn(cinbase.SHIFT_SPACE_GUID.lower(),
+                      self.registered_guids(self.drain(service)))
 
     def test_disabled_shift_space_is_not_registered(self):
         service = self.activate_chesimplex()
@@ -86,9 +91,9 @@ class CinbaseShiftSpaceTests(unittest.TestCase):
         service.cinbase.applyConfig(service)
         self.assertFalse(service.enableShiftSpace)
 
-        service.currentReply = {}
-        service.onActivate()
-        self.assertNotIn(cinbase.SHIFT_SPACE_GUID.lower(), self.registered_guids(service))
+        self.drain(service)  # drop the activation reply; the next one is fresh
+        self.assertNotIn(cinbase.SHIFT_SPACE_GUID.lower(),
+                         self.registered_guids(service.onActivate()))
 
     def test_disabled_shift_space_hotkey_does_not_toggle_shape(self):
         service = self.activate_chesimplex()
@@ -142,11 +147,10 @@ class CinbaseShiftSpaceTests(unittest.TestCase):
         service.cinbase.applyConfig(service)
         self.assertFalse(service.enableShiftSpace)
 
-        service.currentReply = {}
         service.cfg.enableShiftSpace = True
-        service.cinbase.applyConfig(service)
+        reply = service.cinbase.applyConfig(service)
 
-        entries = {e["guid"]: e for e in service.currentReply.get("addPreservedKey", [])}
+        entries = {e["guid"]: e for e in reply.get("addPreservedKey", [])}
         self.assertIn(cinbase.SHIFT_SPACE_GUID.lower(), entries)
         self.assertEqual(entries[cinbase.SHIFT_SPACE_GUID.lower()]["keyCode"], VK_SPACE)
         self.assertEqual(entries[cinbase.SHIFT_SPACE_GUID.lower()]["modifiers"], cinbase.TF_MOD_SHIFT)
@@ -154,12 +158,11 @@ class CinbaseShiftSpaceTests(unittest.TestCase):
     def test_disabling_mid_session_unregisters_hotkey(self):
         service = self.activate_chesimplex()
         service.isActivated = True
-        service.currentReply = {}
 
         service.cfg.enableShiftSpace = False
-        service.cinbase.applyConfig(service)
+        reply = service.cinbase.applyConfig(service)
 
-        self.assertIn(cinbase.SHIFT_SPACE_GUID.lower(), service.currentReply.get("removePreservedKey", []))
+        self.assertIn(cinbase.SHIFT_SPACE_GUID.lower(), reply.get("removePreservedKey", []))
         self.assertFalse(service.enableShiftSpace)
 
     def test_old_user_config_keeps_hotkey_enabled(self):

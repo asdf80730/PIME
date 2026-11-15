@@ -274,7 +274,7 @@ class CinbaseConfigReadSiteTests(CinbaseKeyHarness):
         service = self.activate_chesimplex()
 
         self.assertEqual("MingLiu",
-                         service.currentReply["customizeUI"]["candFontName"])
+                         self.drain(service)["customizeUI"]["candFontName"])
         self.assertEqual(service.cfg.getSelKeys(), service.selKeys)
         self.assertEqual("`", service.leadInKey)
         self.assertIs(True, service.enableCtrlSymbols)
@@ -282,12 +282,11 @@ class CinbaseConfigReadSiteTests(CinbaseKeyHarness):
     def test_a_configured_font_name_reaches_the_candidate_window(self):
         service = self.activate_chesimplex()
         service.cfg.candFontName = "Noto Sans TC"
-        service.currentReply = {}
 
-        service.cinbase.applyConfig(service)
+        reply = service.cinbase.applyConfig(service)
 
         self.assertEqual("Noto Sans TC",
-                         service.currentReply["customizeUI"]["candFontName"])
+                         reply["customizeUI"]["candFontName"])
 
 
 class ChewingConfigReadSiteTests(unittest.TestCase):
@@ -314,6 +313,7 @@ class ChewingConfigReadSiteTests(unittest.TestCase):
         context = mock.MagicMock()
         service = chewing_ime.ChewingTextService.__new__(
             chewing_ime.ChewingTextService)
+        service.isActivated = False
         service.configVersion = None
         service.chewingContext = context
         service.currentReply = {}
@@ -334,7 +334,7 @@ class ChewingConfigReadSiteTests(unittest.TestCase):
             cfg.candFontName = previous
 
         self.assertEqual("Noto Sans TC",
-                         service.currentReply["customizeUI"]["candFontName"])
+                         service.handleRequest({"seqNum": 0})["customizeUI"]["candFontName"])
 
 
 if __name__ == "__main__":

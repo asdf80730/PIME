@@ -66,13 +66,22 @@ class CinbaseKeyHarness(unittest.TestCase):
         event.isKeyToggled.return_value = False
         return event
 
-    def send(self, service, char_code, key_code=None, printable=False, shift=False):
-        """Dispatch one keydown and return the commitString it produced."""
+    @staticmethod
+    def drain(service):
+        """Drain the reply accumulated so far through the dispatcher seam."""
+        return service.handleRequest({"seqNum": 0})
+
+    def send_reply(self, service, char_code, key_code=None, printable=False, shift=False):
+        """Dispatch one keydown through handleRequest; return its merged reply."""
         event = self.key_event(char_code, key_code, printable, shift)
-        service.currentReply = {}
         if service.filterKeyDown(event):
             service.onKeyDown(event)
-        return service.currentReply.get("commitString", "")
+        return self.drain(service)
+
+    def send(self, service, char_code, key_code=None, printable=False, shift=False):
+        """Dispatch one keydown and return the commitString it produced."""
+        return self.send_reply(
+            service, char_code, key_code, printable, shift).get("commitString", "")
 
     def activate_chepinyin_roman(self):
         """The 拼音 service on its 通用拼音 table, the one shipped cinbase

@@ -128,7 +128,7 @@ class CinbaseFontWeightReadSiteTests(CinbaseKeyHarness):
 
     def test_the_weight_rides_the_customize_ui_reply(self):
         service = self.activate_chesimplex()
-        ui = service.currentReply["customizeUI"]
+        ui = self.drain(service)["customizeUI"]
         self.assertIn("candFontWeight", ui,
                       "candFontWeight never reached the customizeUI reply")
         self.assertEqual(FW_NORMAL, ui["candFontWeight"])
@@ -138,11 +138,10 @@ class CinbaseFontWeightReadSiteTests(CinbaseKeyHarness):
         service.cfg.candFontName = "Noto Sans TC"
         service.cfg.fontSize = 16
         service.cfg.candFontWeight = FW_BOLD
-        service.currentReply = {}
 
-        service.cinbase.applyConfig(service)
+        reply = service.cinbase.applyConfig(service)
 
-        ui = service.currentReply["customizeUI"]
+        ui = reply["customizeUI"]
         self.assertEqual("Noto Sans TC", ui["candFontName"])
         self.assertEqual(16, ui["candFontSize"])
         self.assertEqual(FW_BOLD, ui["candFontWeight"])

@@ -59,12 +59,13 @@ class CinbaseCtrlSymbolsTests(CinbaseKeyHarness):
         service = self.activate_chesimplex()
         service.cfg.enableCtrlSymbols = False
         service.enableCtrlSymbols = False
-        before = dict(service.currentReply)
+        self.drain(service)  # baseline: the activation reply is in the table
 
         event = self.ctrl_event(ord("\\"), VK_OEM_5)
         self.assertFalse(service.filterKeyDown(event),
                          "Ctrl+\\ should be handed back to the application")
-        self.assertEqual(service.currentReply, before)
+        self.assertEqual(self.drain(service), {"success": False, "seqNum": 0},
+                         "the unclaimed key must add no reply field")
 
     def test_default_keeps_the_capture(self):
         service = self.activate_chesimplex()  # applyConfig copies the shipped value

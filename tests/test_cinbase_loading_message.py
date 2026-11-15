@@ -55,10 +55,10 @@ class CinbaseLoadingMessageTests(CinbaseKeyHarness):
         pending = concurrent.futures.Future()  # never completed: a slow load
         self.module.CinTable.future = pending
 
-        self.send(service, ord('a'), ord('a'), printable=True)
+        reply = self.send_reply(service, ord('a'), ord('a'), printable=True)
 
-        self.assertIn("showMessage", service.currentReply)
-        self.assertEqual(service.currentReply["showMessage"]["message"],
+        self.assertIn("showMessage", reply)
+        self.assertEqual(reply["showMessage"]["message"],
                          LOADING_MESSAGE)
         pending.set_result(service.cin)
 
@@ -68,8 +68,8 @@ class CinbaseLoadingMessageTests(CinbaseKeyHarness):
         loaded = table.cin
         pending = concurrent.futures.Future()
         table.future = pending
-        self.send(service, ord('a'), ord('a'), printable=True)
-        self.assertEqual(service.currentReply["showMessage"]["message"],
+        reply = self.send_reply(service, ord('a'), ord('a'), printable=True)
+        self.assertEqual(reply["showMessage"]["message"],
                          LOADING_MESSAGE)
         pending.set_result(loaded)
 
@@ -77,8 +77,7 @@ class CinbaseLoadingMessageTests(CinbaseKeyHarness):
         # Every key is answered, and none of them re-arms the toast.
         toasts = []
         for code in (0x38, 0x20, ord('a'), ord('b')):  # '*' space a b
-            self.send(service, code, code, printable=True)
-            reply = service.currentReply
+            reply = self.send_reply(service, code, code, printable=True)
             self.assertIsInstance(reply, dict,
                                   "key %r got no reply at all" % code)
             if "showMessage" in reply:
@@ -93,9 +92,9 @@ class CinbaseLoadingMessageTests(CinbaseKeyHarness):
         self.module.CinTable.future = done
         service.cin = None
 
-        self.send(service, 0x20, 0x20)
+        reply = self.send_reply(service, 0x20, 0x20)
 
-        self.assertNotIn("showMessage", service.currentReply)
+        self.assertNotIn("showMessage", reply)
 
 
 if __name__ == "__main__":
