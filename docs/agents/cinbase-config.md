@@ -38,7 +38,8 @@ the whole declaration of a setting; every other copy is derived from it:
    Service is the deterministic writer `write_shipped_configs()`: a row with
    no `overrides` ships everywhere as `default`, a row with `overrides` ships
    only to the Services it names (value = `overrides[ime]`), so the former
-   eight-file trap is just this writer's per-`overrides` map
+   eight-file trap — the original eight, `chebihua` making nine today — is just
+   this writer's per-`overrides` map
    (regenerate with `python/python3/python.exe` and the module's
    `write_shipped_configs()`; the committed files are its bytes);
 3. the shared config page (`python/cinbase/config/config.htm` scripted by

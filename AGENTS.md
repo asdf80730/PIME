@@ -32,6 +32,15 @@ index of agent docs.
 - **Every added file declares its AI authorship** (`INV-03`) in its header;
   `tests/hooks/pre-commit` fails the commit on a missing one, and the category
   forms live in the standing rules of `docs/agents/code-review.md`.
+- **Maintainer's plan, every session** (settled by @PCMan on 2026-11-13, recorded
+  per PR in `.scratch/maintainer-plan-2026-11-13/`): **v2.0 first, features after**.
+  The framework is brought to a stable and robust state and tagged; new features are
+  withheld until that tag exists, then added on top of it. So a `feat(...)` PR
+  (#1013 `shiftLetterSwitchToEnglish`, #1029 筆畫, #1032 the three UI colors) waits,
+  while the stabilizing set (#1004 #1014 #1022 #1026 #1031 #1033 #1034 #1035 #1036
+  and the libIME2/libchewing pins) is what moves toward the tag. Every PR still
+  carries exactly one problem: fixes and features never share a PR, and a rename or
+  move is its own commit.
 - **Reply language**: what the human reads is **zh-Hant** — answers, questions,
   and progress reports. What the machines and the upstream author read stays
   **English**: GitHub issue/PR comments, commit messages and PR bodies, and the
