@@ -79,6 +79,7 @@ class CinbaseKeyHarness(unittest.TestCase):
         table whose keyname map holds no ``w``/``y``: exactly those letters
         reach the not-isInKeyName half of the key dispatch."""
         from input_methods.chepinyin import chepinyin_ime
+        from cinbase import LoadCinTable
 
         service = chepinyin_ime.ChePinyinTextService(ime_smoke_runner.FakeClient())
         service.onActivate()
@@ -88,7 +89,7 @@ class CinbaseKeyHarness(unittest.TestCase):
             time.sleep(0.02)
         service.cfg.selCinType = 2
         service.reLoadCinTable = True
-        loader = chepinyin_ime.LoadCinTable(service, chepinyin_ime.CinTable)
+        loader = LoadCinTable(service, chepinyin_ime.CinTable)
         future = loader.start()
         if future is None:  # the pre-#1004 loader is a threading.Thread
             loader.join(30)

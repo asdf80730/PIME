@@ -21,8 +21,9 @@ maintainers have not made.
   `CinTable.cin`/`curCinType` (`:3306-3307`) and ends in `except Exception:
   pass` (`:3321-3322`) with `finally: loading = False` (`:3324`), so a failed
   load is unobservable from outside without editing that file.
-- **Generalise to all nine Services now** — rejected: eight still carry the
-  identical busy-spin (e.g. `python/input_methods/checj/checj_ime.py:64`), none
+- **Generalise to all nine Services now** — rejected: the eight cin Services then
+  carried the identical busy-spin (e.g. `python/cinbase/service.py:141-146`, the shared body
+  every thin binding now inherits), none
   has a test that would notice a mistake, and one Service's test surface is not
   a reason to put eight shipped input methods at risk. Two adapters make a seam
   worth extracting; one does not.
