@@ -39,10 +39,11 @@ run's stdout, which only the pipeline's wall time reveals.
 
 Individual commands, if you want to narrow the loop:
 
-- **Python backend** — the full `tests/` suite (protocol loop over the one wire
+  - **Python backend** — the full `tests/` suite (protocol loop over the one wire
   fixture and its reply-key list, `INV-05` and `INV-10`; TextService
   dispatch, service manager, cin counting, input-method smoke, docs pages,
-  README build contract):
+  README build contract, shipped-payload contract for `version.txt` and the
+  libchewing data dir):
 
   ```
   python3 -m unittest discover -s tests -p "test_*.py" -v

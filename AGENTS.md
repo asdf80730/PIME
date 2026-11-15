@@ -77,14 +77,14 @@ cinbase tables are `.cin` sources run through the converter into committed runti
 ### Cinbase configuration
 
 Adding a cinbase setting is one `CONFIG_RECORDS` row (`INV-02`) and hides the
-per-Service shipped-config trap (nine `config.json` today) in the shipped
-defaults. `docs/agents/cinbase-config.md` names
+per-Service shipped-config trap in the shipped defaults. `docs/agents/cinbase-config.md` names
 the files and the working example PR.
 
 ### Chewing backend
 
-Return conventions of the pinned libchewing submodule — which ships
-**uninitialized** — are settled from that pinned source, never guessed or
+Return conventions of the pinned libchewing submodule — `git -C libchewing status`
+answers the pin, and `git submodule update --init libchewing` restores it when the
+checkout is uninitialized — are settled from that pinned source, never guessed or
 analogy-carried between neighbouring APIs. `docs/agents/chewing-api.md` has
 the init command, the files that answer what, and the verified userphrase
 return table.
@@ -97,6 +97,7 @@ declarations, never carried over from libchewing. `docs/agents/librime-api.md`
 has the re-derive commands, the verified config/option return table, the
 case-sensitive profile matching, the one-`RimeSetup`-per-process rule, and the
 expected `E1112`/`E1113` glog lines (`INV-04`).
+
 ### Verification
 
 `tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled
