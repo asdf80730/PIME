@@ -7,15 +7,31 @@ folder's `ime.json` declares `"moduleName": "rime_ime"` and all four readers
 `ImeModule::loadImeInfo`) resolve that name inside the folder, so the file has to
 be a tracked object.
 
-Status: ready-for-agent
+Status: resolved
 Category: bug
 Blocked by: None
 
-- [ ] `git ls-tree -r HEAD --name-only python/input_methods/rime` lists `rime_ime.py`
-- [ ] `python/python3/python.exe tests/run_worktree_tests.py tests/test_service_manager.py .`
+- [x] `git ls-tree -r HEAD --name-only python/input_methods/rime` lists `rime_ime.py`
+- [x] `python/python3/python.exe tests/run_worktree_tests.py tests/test_service_manager.py .`
       stays green, both `ShippedManifestImportTests` cases included
-- [ ] The same run from a fresh `git worktree add` of `c635689` is green, which is the
+- [x] The same run from a fresh `git worktree add` of the tip is green, which is the
       reading a clean clone gets
+
+## Answer
+
+Two commits carry it: `0fdcb85` tracks the 15-line wrapper that `ime.json` names, and
+`26e9e98` keeps it beside the engine module after the `a1bdc44` move (the `tax-02`
+rename had deleted it as a pure move). Settled 2026-11-16 at the integration tip:
+
+- `git ls-tree -r HEAD --name-only python/input_methods/rime` → `brise`, `ime.json`,
+  `rime_ime.py`.
+- `python/python3/python.exe tests/run_worktree_tests.py tests/test_service_manager.py .`
+  → `OK`, including `ShippedManifestImportTests.test_module_file_lives_in_the_manifest_folder`
+  and the `moduleName`-resolves case.
+- The same suite from a fresh `git worktree add` of the tip → `Ran 14 tests ... OK`.
+
+Both `python/rimebase/rime_service.py` (engine) and the folder-local wrapper are tracked,
+so the `zh-Hant` side now matches the `rime-cn` twin.
 
 ## Comments
 

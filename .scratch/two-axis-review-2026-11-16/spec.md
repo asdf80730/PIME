@@ -3,10 +3,12 @@
 Status: in-progress
 Category: enhancement
 
-Fixed point `origin/master` = `2342734`; head `c635689`. Diff command
-`git diff origin/master...HEAD` (33 commits, 168 files), plus the uncommitted
-half through `git diff HEAD` (12 modified, 2 untracked). Both axes ran as
-parallel reviewer sub-agents and were reported separately, never merged.
+Fixed point `origin/master` = `2342734`; head `65c6fec`. Diff command
+`git diff origin/master...HEAD` (61 commits, 187 files), linear on the first-parent
+line. The half that was still uncommitted at the first pass is now six one-problem
+commits, and the two bundled harness commits are four (`a263973`, `0adcff5`, `5504909`,
+`d1a02aa`), so every commit states one problem. Both axes ran as parallel reviewer
+sub-agents and were reported separately, never merged.
 
 Standards axis: 3 hard documented-standard breaches + 5 judgement calls.
 Spec axis: 1 missing requirement + 5 warnings. The worst item on both axes is
