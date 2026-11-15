@@ -231,6 +231,21 @@ class CinbaseConfigRecordListTests(unittest.TestCase):
         self.assertIn("name=\"keyboardLayout\"", self.script, "the page radio follows")
         self.assertNotIn("keyboardLayout", TABLE_AFFECTING_KEYS)
 
+    def test_every_record_key_is_read_by_the_engine(self):
+        # The fifth projection, the one the page and shipped-JSON checks above
+        # do not reach: a row no engine function reads is a dead option. This
+        # is the shape that let defaultEnglish/defaultFullSpace go stale.
+        sources = []
+        for directory in (CINBASE_DIR, CONFIG_DIR):
+            for root, _dirs, files in os.walk(directory):
+                for name in files:
+                    if name.endswith(".py"):
+                        sources.append(read_text(os.path.join(root, name)))
+        engine = "\n".join(sources)
+        for row in self.records:
+            self.assertRegex(engine, r"\b%s\b" % row[0],
+                             "%s is declared but never read by the engine" % row[0])
+
     def test_invalid_values_fall_back_and_sel_key_rows(self):
         cfg = fresh_config()
 
@@ -278,6 +293,22 @@ class CinbaseConfigReadSiteTests(CinbaseKeyHarness):
         self.assertEqual(service.cfg.getSelKeys(), service.selKeys)
         self.assertEqual("`", service.leadInKey)
         self.assertIs(True, service.enableCtrlSymbols)
+
+    def test_the_two_default_rows_reapply_on_the_live_path(self):
+        # defaultEnglish and defaultFullSpace used to be read only at instance
+        # construction (initCinBaseContext, behind the initCinBaseState guard),
+        # so saving the page left the running Service on the old pair.
+        from cinbase import CHINESE_MODE, ENGLISH_MODE, FULLSHAPE_MODE, HALFSHAPE_MODE
+        service = self.activate_chesimplex()
+        self.assertEqual(CHINESE_MODE, service.langMode, "setup: the shipped default")
+        self.assertEqual(HALFSHAPE_MODE, service.shapeMode, "setup: the shipped default")
+
+        service.cfg.defaultEnglish = True
+        service.cfg.defaultFullSpace = True
+        service.cinbase.applyConfig(service)
+
+        self.assertEqual(ENGLISH_MODE, service.langMode)
+        self.assertEqual(FULLSHAPE_MODE, service.shapeMode)
 
     def test_a_configured_font_name_reaches_the_candidate_window(self):
         service = self.activate_chesimplex()

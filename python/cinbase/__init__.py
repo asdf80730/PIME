@@ -1176,6 +1176,8 @@ class CinBase:
                 # 優先於快速輸入符號；要切回中文模式，單按 Shift 即可(switchLangWithShift)
                 elif (cbTS.shiftLetterSwitchToEnglish and self.isLetterChar(keyCode)
                         and not cbTS.isComposing() and not cbTS.showCandidates):
+                    CommitStr = (self.charCodeToFullshape(cbTS, charCode, keyCode)
+                                 if cbTS.shapeMode == FULLSHAPE_MODE else charStr)
                     if cbTS.outputSmallLetterWithShift:
                         CommitStr = charStr.upper() if cbTS.capsStates else charStr.lower()
                     cbTS.langMode = ENGLISH_MODE
@@ -1368,7 +1370,8 @@ class CinBase:
                 # 按下的鍵不在 CIN 字根表時也要切換，優先於全形標點
                 elif (cbTS.shiftLetterSwitchToEnglish and self.isLetterChar(keyCode)
                         and not cbTS.isComposing() and not cbTS.showCandidates):
-                    CommitStr = charStr
+                    CommitStr = (self.charCodeToFullshape(cbTS, charCode, keyCode)
+                                 if cbTS.shapeMode == FULLSHAPE_MODE else charStr)
                     if cbTS.outputSmallLetterWithShift:
                         CommitStr = charStr.upper() if cbTS.capsStates else charStr.lower()
                     cbTS.langMode = ENGLISH_MODE
@@ -2177,7 +2180,8 @@ class CinBase:
                         and not cbTS.imeDirName == "cheez"
                         and not keyEvent.isKeyDown(VK_CONTROL) and not keyEvent.isKeyDown(VK_MENU)):
                     # 放棄聯想字候選，直接切成英文模式並輸出字母(issue #890)
-                    CommitStr = charStr
+                    CommitStr = (self.charCodeToFullshape(cbTS, charCode, keyCode)
+                                 if cbTS.shapeMode == FULLSHAPE_MODE else charStr)
                     if cbTS.outputSmallLetterWithShift:
                         CommitStr = charStr.upper() if cbTS.capsStates else charStr.lower()
                     cbTS.setCommitString(CommitStr)
@@ -3173,6 +3177,12 @@ class CinBase:
         cfg = cbTS.cfg # 所有 TextService 共享一份設定物件
         cbTS.configVersion = cfg.getVersion()
 
+        # 預設中英文/全半形也跟隨設定檔 (issue #844 同一條路)：這兩個值過去只在
+        # initCinBaseContext 的第一次建立時套用，改過設定檔後不會更新。
+        cbTS.langMode = ENGLISH_MODE if cfg.defaultEnglish else CHINESE_MODE
+        cbTS.shapeMode = FULLSHAPE_MODE if cfg.defaultFullSpace else HALFSHAPE_MODE
+        self.updateLangButtons(cbTS)
+
         # 每列顯示幾個候選字
         try:
             candPerRow = int(cfg.candPerRow)
@@ -3334,9 +3344,9 @@ class CinBase:
         # mirror to compare and the effect its change has.
         if not CinTable.loading:
             for record in CONFIG_RECORDS:
-                if not record[3]:
+                if not record.table_affecting:
                     continue
-                key, _default, _control, _affecting, mirror, effect, _overrides = record
+                key, mirror, effect = record.key, record.mirror, record.effect
                 if effect == "reload":
                     if not getattr(CinTable, mirror) == getattr(cfg, key):
                         reLoadCinTable = True

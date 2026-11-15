@@ -100,6 +100,16 @@ Individual commands, if you want to narrow the loop:
   cannot run that Node build (`EBADF` while loading builtins), so the bundled
   runtime is exercised on Windows CI instead: `server.test.js` spawns
   `process.execPath`, which is the shipped `node.exe` there.
+
+  The three JavaScript Services are submodules (`McBopomofoWeb`, `McFoximWeb`,
+  `McTabimWeb`); their PIME payload is `<submodule>/output/pime/`, tracked in
+  each submodule except `index.js`, the webpack bundle of `src/<name>.ts`
+  (`webpack.config.pime.js`). So a page file such as
+  `McBopomofoWeb/output/pime/config_tool.py` is edited in the submodule and
+  `git status` there shows it, while `index.js` is rebuilt by `build.bat`,
+  which also copies the directory into `node/input_methods/<Name>/`.
+  `tests/test_js_ime_options.py` parses those page scripts and pins each
+  `onchange` key against its control id.
 - **Go backend** — `cd go-backend && set "APPDATA=" && go.exe test -count=1 ./...`
   (4 packages), the exact form `tests/verify_windows.sh` runs: the rime runtime
   test resolves `rime.dll` from `APPDATA`, so leaving the variable set makes that
@@ -291,6 +301,16 @@ The skip code is part of that contract: the PR gates judge a branch under
 delivery, so on an integration or local ref they answer
 `SKIP … (… is an integration or local branch)` with **125**, and 125 is the
 satisfied answer there — only exit 1 is a red.
+
+The two desktop instruments for the issue-859 shape live in the scratch dir and are
+the fastest way to re-answer the per-window questions on a Windows box:
+`.scratch/desktop-859.ps1` (pins the TIP list, types into one notepad window at a
+time, flushes the launcher and judges the per-client table: `CHECK_TIP`,
+`CHECK_PROBE`, `CHECK_PIME`, `CHECK_HEALTHY`, `CLIENT_ROWS`, `VERDICT`) and
+`.scratch/pipe-client-859.py` (drives `filterKeyDown`/`onKeyDown` against the live
+python backend and prints the raw `compositionString` answers). Run the first with
+`powershell -NoProfile -ExecutionPolicy Bypass -File .scratch/desktop-859.ps1`; it
+leaves one live `PIMELauncher` and no notepad behind.
 
 **The agent docs have their own check, and it is not a layer.**
 `tests/test_agent_docs.py` resolves every backticked or linked token ending in md, sh,

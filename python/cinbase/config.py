@@ -18,6 +18,7 @@
 import json
 import os
 import time
+from collections import namedtuple
 
 from pimepaths import appdata
 import shutil
@@ -60,7 +61,13 @@ selKeys=(
 # The shipped python/input_methods/<ime>/config/config.json files, the
 # settings page surface, and the checkConfigChange() diff are all derived
 # from this list; a setting is written exactly once.
-CONFIG_RECORDS = [
+# The row type is that one declaration in code: readers name the seven
+# fields instead of indexing them by place.
+ConfigRecord = namedtuple(
+    "ConfigRecord",
+    "key default control table_affecting mirror effect overrides")
+
+CONFIG_RECORDS = [ConfigRecord(*row) for row in [
     ("candPerRow", 3, "text", False, None, None, {"chedayi": 1}),
     ("defaultEnglish", False, "checkbox", False, None, None, {}),
     ("defaultFullSpace", False, "checkbox", False, None, None, {}),
@@ -129,7 +136,7 @@ CONFIG_RECORDS = [
     ("keyboardLayout", 0, "radio", False, None, None, {}),
     ("colorCandWnd", True, "none", False, None, None, {}),
     ("directCommitString", False, "none", False, None, None, {}),
-]
+]]
 
 # The Services that ship a derived config.json: the eight of the original
 # quartet plus chebihua, which joined on the same CinBaseConfig seam.
@@ -144,12 +151,12 @@ def shipped_defaults_for(ime_dir_name):
     the identical value through the layer-0 ``__init__`` seed, which the
     same list feeds)."""
     shipped = {}
-    for key, default, _control, _affecting, _mirror, _effect, overrides in CONFIG_RECORDS:
-        if overrides:
-            if ime_dir_name in overrides:
-                shipped[key] = overrides[ime_dir_name]
+    for record in CONFIG_RECORDS:
+        if record.overrides:
+            if ime_dir_name in record.overrides:
+                shipped[record.key] = record.overrides[ime_dir_name]
         else:
-            shipped[key] = default
+            shipped[record.key] = record.default
     return shipped
 
 
@@ -175,7 +182,7 @@ class CinBaseConfig:
         # architecture review). Only scalars live in CONFIG_RECORDS, so the
         # shared default values carry no mutable-state aliasing.
         for record in CONFIG_RECORDS:
-            setattr(self, record[0], record[1])
+            setattr(self, record.key, record.default)
 
         self.ignoreSaveList = ["ignoreSaveList", "curdir", "cinFileList", "selCinFile", "imeDirName", "_version", "_lastUpdateTime"]
         self.curdir = os.path.abspath(os.path.dirname(__file__))
