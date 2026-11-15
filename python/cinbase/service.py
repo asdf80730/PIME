@@ -28,7 +28,6 @@ argument order of every ``self.cinbase.*`` call are load-bearing; the engine
 (``cinbase/__init__.py``) reads them straight off the Service.
 """
 
-import copy
 import os.path
 
 from textService import TextService
@@ -89,10 +88,9 @@ class CinBaseTextService(TextService):
         self.cinbase.initTextService(self, TextService)
         self.initServiceState()
 
-        # 載入用戶設定值
-        CinBaseConfig.__init__()
-        self.configVersion = CinBaseConfig.getVersion()
-        self.cfg = copy.deepcopy(CinBaseConfig)
+        # 載入用戶設定值：每個 Service 自備一個 private 實例
+        self.cfg = CinBaseConfig()
+        self.configVersion = self.cfg.getVersion()
         self.cfg.imeDirName = self.imeDirName
         self.cfg.cinFileList = self.cinFileList
         self.cfg.load()

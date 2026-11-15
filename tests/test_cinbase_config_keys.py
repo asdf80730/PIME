@@ -49,8 +49,8 @@ PAGE_SIDE_ONLY = {
 
 
 def fresh_config():
-    from cinbase.config import CinBaseConfigClass
-    return CinBaseConfigClass()
+    from cinbase.config import CinBaseConfig
+    return CinBaseConfig()
 
 
 def read_text(path):

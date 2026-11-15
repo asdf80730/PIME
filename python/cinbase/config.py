@@ -432,8 +432,8 @@ class CinBaseConfig:
         return currentVersion[1:] != self._version[1:]
 
 
-# globally shared config object
-# load configurations from a user-specific config file
-# 類別本身先另存一個名字，讓測試能建立獨立實例（類別會被單例遮蔽）
-CinBaseConfigClass = CinBaseConfig
-CinBaseConfig = CinBaseConfig()
+# The globally shared config object, named as a module-level constant so the
+# class name above stays the class. Each Service builds its own config with
+# CinBaseConfig(); this object is what the config tool reads, as the carrier of
+# the version stamps.
+CIN_BASE_CONFIG = CinBaseConfig()

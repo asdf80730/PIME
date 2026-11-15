@@ -24,11 +24,11 @@ import random
 import json
 
 try:
-    from cinbase.config import CinBaseConfig, CONFIG_RECORDS, selKeys
+    from cinbase.config import CIN_BASE_CONFIG, CONFIG_RECORDS, selKeys
 except ModuleNotFoundError:
-    from config import CinBaseConfig, CONFIG_RECORDS, selKeys
+    from config import CIN_BASE_CONFIG, CONFIG_RECORDS, selKeys
 
-cfg = CinBaseConfig
+cfg = CIN_BASE_CONFIG
 cfg.imeDirName = sys.argv[2]
 config_dir = os.path.join(cfg.getConfigDir())
 current_dir = os.path.abspath(os.path.dirname(__file__))

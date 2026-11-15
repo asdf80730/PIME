@@ -3,13 +3,14 @@
 
 """Regression coverage for per-IME config isolation in the cinbase backends.
 
-``python/cinbase/config.py`` rebinds the ``CinBaseConfig`` class name to one
-module-level shared instance. While each cinbase input method built its
-settings via ``CinBaseConfig.__init__()`` plus ``copy.deepcopy()`` of that
-shared object, constructing a backend reset the singleton every time —
-clobbering the same object ``configtool`` reads — and two backends started
-concurrently could race between the reset and the copy. Backends must build
-a private instance from the exported class instead (``CinBaseConfigClass``).
+``python/cinbase/config.py`` answers the class as ``CinBaseConfig`` and the one
+shared object as the module-level constant ``CIN_BASE_CONFIG``. While each
+cinbase input method built its settings via ``CinBaseConfig.__init__()`` plus
+``copy.deepcopy()`` of that shared object, constructing a backend reset the
+shared instance every time — clobbering the same object ``configtool`` reads —
+and two backends started concurrently could race between the reset and the copy.
+Backends must build a private instance from the class instead, with
+``CinBaseConfig()``.
 """
 
 import importlib.util
@@ -46,7 +47,7 @@ def load_config_module():
 
 # The export and the service guarantee ship together with the fix; stay
 # skipped on trees that predate it so the local suite stays green.
-_FIX_PRESENT = hasattr(load_config_module(), "CinBaseConfigClass")
+_FIX_PRESENT = hasattr(load_config_module(), "CIN_BASE_CONFIG")
 
 
 def _per_ime_config_present():
@@ -59,7 +60,7 @@ def _per_ime_config_present():
         checj_ime.CheCJTextService.__init__)
 
 
-@unittest.skipUnless(_FIX_PRESENT, "cinbase exports CinBaseConfigClass only after the per-IME config fix")
+@unittest.skipUnless(_FIX_PRESENT, "cinbase exports CIN_BASE_CONFIG only after the per-IME config fix")
 class CinbaseConfigExportTests(unittest.TestCase):
     """Fresh configs must not share state with the module-level singleton."""
 
@@ -67,11 +68,11 @@ class CinbaseConfigExportTests(unittest.TestCase):
         self.config = load_config_module()
 
     def test_exported_class_builds_independent_instances(self):
-        shared = self.config.CinBaseConfig
+        shared = self.config.CIN_BASE_CONFIG
         shared.candPerRow = 9
         shared.defaultEnglish = True
 
-        cfg = self.config.CinBaseConfigClass()
+        cfg = self.config.CinBaseConfig()
         self.assertIsNot(cfg, shared)
         self.assertIs(type(cfg), type(shared))
 
@@ -83,7 +84,7 @@ class CinbaseConfigExportTests(unittest.TestCase):
         self.assertTrue(shared.defaultEnglish)
 
         # A second private config starts from the constructor defaults.
-        other = self.config.CinBaseConfigClass()
+        other = self.config.CinBaseConfig()
         self.assertEqual(other.candPerRow, 3)
         self.assertFalse(other.defaultEnglish)
 
@@ -115,7 +116,7 @@ class CinbaseServiceConfigTests(unittest.TestCase):
     def test_service_startup_does_not_reset_the_shared_singleton(self):
         from cinbase import config as cinbase_config
 
-        shared = cinbase_config.CinBaseConfig
+        shared = cinbase_config.CIN_BASE_CONFIG
         shared.candPerRow = 9
         shared.defaultEnglish = True
 

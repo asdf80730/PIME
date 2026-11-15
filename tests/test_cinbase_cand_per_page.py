@@ -27,7 +27,7 @@ class CinbaseCandPerPageTests(unittest.TestCase):
         self.cinbase_mod = cinbase
 
     def test_sanitize_cand_per_page_empty_and_invalid(self):
-        cfg = self.config_mod.CinBaseConfig
+        cfg = self.config_mod.CinBaseConfig()
         for bad_val in ["", "0", 0, -1, "invalid", None]:
             cfg.candPerPage = bad_val
             cfg.candPerRow = bad_val
@@ -38,7 +38,7 @@ class CinbaseCandPerPageTests(unittest.TestCase):
             self.assertEqual(cfg.fontSize, self.config_mod.DEF_FONT_SIZE)
 
     def test_sanitize_cand_per_page_valid_range(self):
-        cfg = self.config_mod.CinBaseConfig
+        cfg = self.config_mod.CinBaseConfig()
         cfg.candPerPage = 5
         cfg.candPerRow = 3
         cfg.sanitize()

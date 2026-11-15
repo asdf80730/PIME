@@ -47,8 +47,8 @@ SYSTEM_PALETTE = 0  # the "follow GetSysColor" sentinel
 
 
 def fresh_config():
-    from cinbase.config import CinBaseConfigClass
-    return CinBaseConfigClass()
+    from cinbase.config import CinBaseConfig
+    return CinBaseConfig()
 
 
 class CinbaseColorQuartetTests(unittest.TestCase):

@@ -168,8 +168,8 @@ class CinbaseShiftSpaceTests(unittest.TestCase):
     def test_old_user_config_keeps_hotkey_enabled(self):
         # A user config saved before this option existed must keep the
         # historical hotkey: the config layers default it to enabled.
-        # the module-level CinBaseConfig is the shared instance; take a fresh one
-        cfg = type(cinbase_config.CinBaseConfig)()
+        # CIN_BASE_CONFIG is the shared instance; take a fresh one from the class
+        cfg = cinbase_config.CinBaseConfig()
         cfg.imeDirName = "chesimplex"
         with open(cfg.getConfigFile(), "w", encoding="utf-8") as f:
             json.dump({"candPerPage": 9}, f)

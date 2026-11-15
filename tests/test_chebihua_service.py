@@ -438,8 +438,9 @@ class ChebihuaServiceTests(unittest.TestCase):
         empty_dir = os.path.join(self.temp_dir.name, "no-json")
         os.makedirs(empty_dir, exist_ok=True)
         settings = cinbase_config.CinBaseConfig
-        settings.getJsonDir = lambda: empty_dir
-        self.addCleanup(delattr, settings, "getJsonDir")
+        original_get_json_dir = settings.getJsonDir
+        settings.getJsonDir = lambda self: empty_dir
+        self.addCleanup(setattr, settings, "getJsonDir", original_get_json_dir)
         holder = table_loaders.CinTable
         holder.reset()
 

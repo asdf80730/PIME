@@ -56,8 +56,8 @@ FW_BOLD = 700    # the other value the two fonts in use already give
 
 
 def fresh_config():
-    from cinbase.config import CinBaseConfigClass
-    return CinBaseConfigClass()
+    from cinbase.config import CinBaseConfig
+    return CinBaseConfig()
 
 
 class CinbaseFontWeightQuartetTests(unittest.TestCase):
@@ -112,13 +112,13 @@ class CinbaseFontWeightQuartetTests(unittest.TestCase):
     def test_a_user_config_without_the_key_still_answers_the_default(self):
         # an APPDATA config written before the key existed must not blank the
         # weight: layer 2 only overlays the keys it carries.
-        from cinbase.config import CinBaseConfigClass
+        from cinbase.config import CinBaseConfig
         with tempfile.TemporaryDirectory() as temp_dir:
             with mock.patch.dict(os.environ, {"APPDATA": temp_dir}):
                 with open(os.path.join(temp_dir, "config.json"), "w",
                           encoding="utf-8") as handle:
                     json.dump({"candFontName": "MingLiu"}, handle)
-                cfg = CinBaseConfigClass()
+                cfg = CinBaseConfig()
                 cfg.imeDirName = "chesimplex"
                 cfg.load()
                 self.assertEqual(FW_NORMAL, cfg.candFontWeight)
