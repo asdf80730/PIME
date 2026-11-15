@@ -63,6 +63,11 @@ var selHCins = [
 
 var debugMode = false;
 var checjConfig = {};
+// the one record list served by /config (python/cinbase/config.py
+// CONFIG_RECORDS); the page derives its defaults and option rows from it
+var pythonRecords = [];
+var pythonDefaults = {};
+var selKeysData = [];
 var cinCount = {};
 var CONFIG_URL = '/config';
 var VERSION_URL = '/version.txt';
@@ -129,14 +134,20 @@ if (!Date.now) {
 function loadConfig() {
     $.get(CONFIG_URL, function(data, status) {
         checjConfig = data.config;
+        pythonRecords = data.records || [];
+        pythonDefaults = {};
+        for (var ri = 0; ri < pythonRecords.length; ++ri) {
+            pythonDefaults[pythonRecords[ri][0]] = pythonRecords[ri][1];
+        }
+        selKeysData = data.selKeys || [];
         if (imeFolderName == "chedayi" && typeof checjConfig.intelligentSelect === "undefined") {
-            checjConfig.intelligentSelect = true;
+            checjConfig.intelligentSelect = pythonDefaults["intelligentSelect"];
         }
         if (imeFolderName == "chedayi" && typeof checjConfig.intelligentSelectRecent === "undefined") {
-            checjConfig.intelligentSelectRecent = true;
+            checjConfig.intelligentSelectRecent = pythonDefaults["intelligentSelectRecent"];
         }
         if (imeFolderName == "chedayi" && typeof checjConfig.intelligentSelectContext === "undefined") {
-            checjConfig.intelligentSelectContext = true;
+            checjConfig.intelligentSelectContext = pythonDefaults["intelligentSelectContext"];
         }
         cinCount = data.cincount;
         symbolsData = data.symbols;
@@ -275,11 +286,26 @@ function updateConfig() {
         case "number":
             var inputValue = inputItem.value;
             if ($.isNumeric(inputValue)) {
-                inputValue = parseInt(inputValue, 10);
+                if (inputItem.name === "candTextColor" ||
+                    inputItem.name === "windowBackgroundColor" ||
+                    inputItem.name === "selKeyColor") {
+                    // Radix 0 reads both documented forms: 0xRRGGBB and
+                    // decimal; radix 10 truncates the hex form at the x.
+                    inputValue = parseInt(inputValue, 0);
+                } else {
+                    inputValue = parseInt(inputValue, 10);
+                }
             } else if (inputItem.name === "candPerPage") {
-                inputValue = 9;
+                inputValue = pythonDefaults["candPerPage"];
             } else if (inputItem.name === "candPerRow") {
-                inputValue = 1;
+                inputValue = pythonDefaults["candPerRow"];
+            } else if (inputItem.name === "candFontWeight") {
+                // the record default, i.e. the weight the candidate font already carries
+                inputValue = pythonDefaults["candFontWeight"];
+            }
+            if (inputItem.name === "candFontWeight" && !inputValue) {
+                // 0 is FW_DONTCARE; collapse onto the same default
+                inputValue = pythonDefaults["candFontWeight"];
             }
             checjConfig[inputItem.name] = inputValue;
             break;
@@ -306,7 +332,7 @@ function checkDataFormat(checkData, checkType, elementId, dataDesc) {
     for (var i = 0; i < data_array.length; i++) {
         switch (checkType) {
             case "1":
-                if (! /^[A-Za-z] .{1,10}$/.test(data_array[i])) {
+                if (! /^[A-Za-z0-9`\-=\[\]\\;',./] .{1,10}$/.test(data_array[i])) {
                     errorState = true;
                     $.jAlert({
                         'title': '糟糕！',
@@ -338,15 +364,15 @@ function checkDataFormat(checkData, checkType, elementId, dataDesc) {
                 }
                 break;
             case "3":
-                if (! /^[A-Za-z\d]+ .{1,40}$/.test(data_array[i])) {
+                if (! /^[A-Za-z0-9`\-=\[\]\\;',./]+ .{1,40}$/.test(data_array[i])) {
                     if (!(data_array.length == 1 && data_array[0].length == 0))
                     {
                         errorState = true;
                         if (data_array[i].length == 0) {
-                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行為空行！<br>請去除該空行或使用「英數 + 空格 + 字詞」的格式。'
+                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行為空行！<br>請去除該空行或使用「英數符號 + 空格 + 字詞」的格式。'
                         }
                         else {
-                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行「'+ data_array[i] +'」格式錯誤！<br>請使用「英數 + 空格 + 字詞」的格式。'
+                            alertContent = dataDesc + '設定第 ' + (i + 1) + ' 行「'+ data_array[i] +'」格式錯誤！<br>請使用「英數符號 + 空格 + 字詞」的格式。'
                         }
 
                         $.jAlert({
@@ -461,7 +487,13 @@ function pageReady() {
         $("#candPerRow").TouchSpin({min:1, max:10});
         $("#candPerPage").TouchSpin({min:1, max:10});
     }
-    if (imeFolderName != "chedayi") {
+    // The 智慧選字 block belongs to the Services the Capability roster grants
+    // Intelligent select to; capabilities.CAPABILITIES in
+    // python/cinbase/capabilities.py is the source of truth for that
+    // allow-list. Hiding the block also clears the inputs' name, which makes
+    // the checkboxes unsavable (updateConfig skips nameless inputs), so gate
+    // on the roster, not on one folder name.
+    if (["chedayi", "chebihua"].indexOf(imeFolderName) === -1) {
         $("#dayiSmartSelectionOptions").hide();
         $("#dayiSmartSelectionOptions input").attr("name", "");
     }
@@ -532,6 +564,17 @@ function pageReady() {
         selWildcardType.append(item);
     }
     selWildcardType.children().eq(checjConfig.selWildcardType).prop("selected", true);
+
+    // 選字鍵順序 (issue #463/#539)：選項與索引 fallback 皆取自 /config 帶回的
+    // 同一份宣告（python/cinbase/config.py 的 selKeys 與 CONFIG_RECORDS）
+    var selKeyType = $("#selKeyType");
+    var selKeyTypeIndex = (typeof checjConfig.selKeyType === "undefined") ? pythonDefaults["selKeyType"] : checjConfig.selKeyType;
+    for(var i = 0; i < selKeysData.length; ++i) {
+        var selSelKey = selKeysData[i];
+        var item = '<option value="' + i + '">' + selSelKey + '</option>';
+        selKeyType.append(item);
+    }
+    selKeyType.children().eq(selKeyTypeIndex).prop("selected", true);
 
     var keyboard_ddmenu = $("#keyboard_ddmenu");
     if(imeFolderName == "chephonetic") {
