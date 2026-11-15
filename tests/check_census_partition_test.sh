@@ -11,6 +11,8 @@
 
 set -u
 
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
 root=$(git rev-parse --show-toplevel 2>/dev/null) || {
     printf 'SKIP  census-partition self-test (no git checkout)\n'
     exit 0
@@ -21,21 +23,9 @@ if [ ! -f "$check" ]; then
     exit 1
 fi
 
-# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
-# git.exe then maps a /tmp argument to C:\tmp while bash sees %TEMP%.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE")
-else
-    tmpbase=${TMPDIR:-/tmp}
-fi
-tmp=$(mktemp -d "$tmpbase/pime-census-partition-selftest.XXXXXX")
+gate_sandbox pime-census-partition-selftest
 sandbox=$tmp/repo
 mkdir -p "$sandbox/docs/research" "$sandbox/.scratch/upstream-bugs"
-
-cleanup() {
-    rm -rf "$tmp"
-}
-trap cleanup EXIT
 
 git -C "$sandbox" init -q >/dev/null || {
     printf 'git init failed in sandbox\n' >&2

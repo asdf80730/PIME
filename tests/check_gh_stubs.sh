@@ -23,11 +23,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  gh stub wiring (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'gh stub wiring' || exit $?
 
 tests=${1:-tests}
 [ -d "$tests" ] || {

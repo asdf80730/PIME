@@ -14,6 +14,8 @@
 
 set -u
 
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
 root=$(git rev-parse --show-toplevel 2>/dev/null) || {
     printf 'no git checkout; run from the repo root\n' >&2
     exit 1
@@ -27,13 +29,8 @@ fi
 # Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp while native
 # git.exe maps that name elsewhere, so a sandbox built there can be invisible
 # to the shell that created it. Same reasoning as the claims self-test.
-tmpbase=/tmp
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE")
-fi
-tmp=$(mktemp -d "$tmpbase/pime-commit-decls-selftest.XXXXXX")
+gate_sandbox pime-commit-decls-selftest
 repo=$tmp/repo
-trap 'rm -rf "$tmp"' EXIT
 
 export GIT_AUTHOR_NAME=selftest GIT_AUTHOR_EMAIL=selftest@example.invalid
 export GIT_COMMITTER_NAME=selftest GIT_COMMITTER_EMAIL=selftest@example.invalid

@@ -9,6 +9,8 @@
 
 set -u
 
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
 root=$(git rev-parse --show-toplevel 2>/dev/null) || {
     printf 'SKIP  gate-wiring self-test (no git checkout)\n'
     exit 125
@@ -19,21 +21,9 @@ if [ ! -f "$check" ]; then
     exit 1
 fi
 
-# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp while native
-# git.exe maps a /tmp argument to C:\tmp.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE")
-else
-    tmpbase=${TMP:-.}
-fi
-tmp=$(mktemp -d "$tmpbase/pime-gate-wiring-selftest.XXXXXX")
+gate_sandbox pime-gate-wiring-selftest
 sandbox=$tmp/repo
 mkdir -p "$sandbox/tests"
-
-cleanup() {
-    rm -rf "$tmp"
-}
-trap cleanup EXIT
 
 git -C "$sandbox" init -q >/dev/null
 

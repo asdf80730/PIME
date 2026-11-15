@@ -12,31 +12,18 @@
 
 set -u
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  pr_bodies self-test (not inside a git checkout)\n'
-    exit 125
-}
-check=$root/tests/check_pr_bodies.sh
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'pr_bodies self-test' || exit $?
+check=$ROOT/tests/check_pr_bodies.sh
 [ -f "$check" ] || {
     printf 'FAIL  pr_bodies self-test: %s not found\n' "$check"
     exit 1
 }
 
-# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
-# tools then map a /tmp argument somewhere bash cannot see it.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE")
-else
-    tmpbase=${TMPDIR:-/tmp}
-fi
-tmp=$(mktemp -d "$tmpbase/pime-pr-bodies-selftest.XXXXXX")
+gate_sandbox pime-pr-bodies-selftest
 sandbox=$tmp/repo
 mkdir -p "$sandbox/.scratch"
-
-cleanup() {
-    rm -rf "$tmp"
-}
-trap cleanup EXIT
 
 git -C "$sandbox" init -q >/dev/null || {
     printf 'SKIP  pr_bodies self-test (git init failed)\n'

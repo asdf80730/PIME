@@ -20,11 +20,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  gate wiring (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'gate wiring' || exit $?
 
 GATE_LINUX="tests/run_local_tests.sh"
 GATE_WINDOWS="tests/verify_windows.sh"

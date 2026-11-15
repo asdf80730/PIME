@@ -19,11 +19,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  PR queue (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'PR queue' || exit $?
 
 REPO=${1:-EasyIME/PIME}
 # `GH_BIN` lets the self-test point at a stub; a box without the CLI still

@@ -12,27 +12,17 @@
 
 set -u
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  fork-ci-noise self-test (not inside a git checkout)\n'
-    exit 125
-}
-gate=$root/tests/check_fork_ci_noise.sh
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'fork-ci-noise self-test' || exit $?
+gate=$ROOT/tests/check_fork_ci_noise.sh
 if [ ! -f "$gate" ]; then
     printf 'fork-ci-noise self-test: gate missing at %s\n' "$gate" >&2
     exit 1
 fi
 
-# Not a bare /tmp: a native git.exe and this bash disagree about where that
-# name lives (docs/agents/…Windows notes), so the sandbox is built under
-# %USERPROFILE% like tests/check_pr_bodies_test.sh does.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "${USERPROFILE:-}")
-else
-    tmpbase=${TMPDIR:-/tmp}
-fi
-tmp=$(mktemp -d "$tmpbase/pime-fork-noise-selftest.XXXXXX")
+gate_sandbox pime-fork-noise-selftest
 repo=$tmp/repo
-trap 'rm -rf "$tmp"' EXIT
 
 export GIT_AUTHOR_NAME=selftest GIT_AUTHOR_EMAIL=selftest@example.invalid
 export GIT_COMMITTER_NAME=selftest GIT_COMMITTER_EMAIL=selftest@example.invalid

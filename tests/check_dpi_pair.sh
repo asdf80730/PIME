@@ -19,11 +19,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  DPI helper pair (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'DPI helper pair' || exit $?
 
 SERVICE="PIMETextService/PIMETextService.cpp"
 [ -f "$SERVICE" ] || {

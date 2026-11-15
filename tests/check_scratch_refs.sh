@@ -14,11 +14,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  scratch refs (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'scratch refs' || exit $?
 
 # Allowlist: files whose job is to operate on or validate the tracker itself,
 # so the string .scratch/ is their mechanism, not a pointer for their reader.

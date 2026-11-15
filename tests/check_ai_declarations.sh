@@ -15,17 +15,15 @@
 
 set -u
 
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
 mode=${1:-head}
 case "$mode" in
     head)   list='git diff --name-only --diff-filter=A origin/master...HEAD' ;;
     staged) list='git diff --cached --name-only --diff-filter=A' ;;
     *)      printf 'unknown mode: %s (want head|staged)\n' "$1" >&2; exit 2 ;;
 esac
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  AI declarations (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+gate_root 'AI declarations' || exit $?
 
 if [ "$mode" = head ] && ! git rev-parse --verify --quiet origin/master >/dev/null; then
     printf 'SKIP  AI declarations (origin/master is absent; fetch it first)\n'

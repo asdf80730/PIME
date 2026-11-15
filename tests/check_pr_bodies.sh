@@ -19,11 +19,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  PR bodies (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'PR bodies' || exit $?
 
 files=()
 [ -d .scratch ] && mapfile -t files < <(find .scratch -maxdepth 1 -type f -name 'pr-*-body.md' -print)

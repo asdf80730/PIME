@@ -13,10 +13,9 @@
 # inside a git checkout).
 set -u
 
-git rev-parse --show-toplevel >/dev/null 2>&1 || {
-    printf 'SKIP  worktree hygiene (not inside a git checkout)\n'
-    exit 125
-}
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'worktree hygiene' || exit $?
 common=$(git rev-parse --path-format=absolute --git-common-dir) || {
     printf 'SKIP  worktree hygiene (no git common dir)\n'
     exit 125

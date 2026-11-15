@@ -33,11 +33,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  PR scope (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT"
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'PR scope' || exit $?
 
 target=${1:-}
 if [ -z "$target" ]; then

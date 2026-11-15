@@ -11,31 +11,18 @@
 
 set -u
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  AI declaration self-test (not inside a git checkout)\n'
-    exit 125
-}
-check=$root/tests/check_ai_declarations.sh
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'AI declaration self-test' || exit $?
+check=$ROOT/tests/check_ai_declarations.sh
 [ -f "$check" ] || {
     printf 'SKIP  AI declaration self-test (check absent on this branch)\n'
     exit 125
 }
 
-# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
-# git.exe then maps a /tmp argument to C:\tmp while bash sees %TEMP%.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE/AppData/Local/Temp")
-else
-    tmpbase="${TMPDIR:-/tmp}"
-fi
-tmp=$(mktemp -d "$tmpbase/pime-ai-decl-selftest.XXXXXX")
+gate_sandbox pime-ai-decl-selftest
 sandbox=$tmp/repo
 mkdir -p "$sandbox"
-
-cleanup() {
-    rm -rf "$tmp"
-}
-trap cleanup EXIT
 
 git -C "$sandbox" init -q >/dev/null || {
     printf 'SKIP  AI declaration self-test (git init failed)\n'

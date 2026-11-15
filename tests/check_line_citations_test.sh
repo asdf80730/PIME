@@ -10,6 +10,8 @@
 
 set -u
 
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
 root=$(git rev-parse --show-toplevel 2>/dev/null) || {
     printf 'SKIP  line-citation self-test (no git checkout)\n'
     exit 125
@@ -20,21 +22,9 @@ if [ ! -f "$check" ]; then
     exit 1
 fi
 
-# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
-# git.exe then maps a /tmp argument to C:\tmp while bash sees %TEMP%.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE")
-else
-    tmpbase=${TMP:-.}
-fi
-tmp=$(mktemp -d "$tmpbase/pime-line-citations-selftest.XXXXXX")
+gate_sandbox pime-line-citations-selftest
 sandbox=$tmp/repo
 mkdir -p "$sandbox/python" "$sandbox/tests" "$sandbox/docs"
-
-cleanup() {
-    rm -rf "$tmp"
-}
-trap cleanup EXIT
 
 git -C "$sandbox" init -q >/dev/null
 

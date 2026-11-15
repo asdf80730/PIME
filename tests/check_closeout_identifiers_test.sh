@@ -12,32 +12,19 @@
 
 set -u
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  close-out identifiers self-test (not inside a git checkout)\n'
-    exit 125
-}
-check=$root/tests/check_closeout_identifiers.sh
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'close-out identifiers self-test' || exit $?
+check=$ROOT/tests/check_closeout_identifiers.sh
 if [ ! -f "$check" ]; then
     printf 'FAIL  close-out identifiers self-test (no %s)\n' "$check"
     exit 1
 fi
 
-# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
-# git.exe then maps a /tmp argument to C:\tmp while bash sees %TEMP%.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -u "$USERPROFILE")
-else
-    tmpbase=${TMPDIR:-/tmp}
-fi
-tmp=$(mktemp -d "$tmpbase/pime-closeout-identifiers-selftest.XXXXXX")
+gate_sandbox pime-closeout-identifiers-selftest
 sandbox=$tmp/repo
 plain=$tmp/plain
 mkdir -p "$sandbox/.scratch/feat/issues" "$plain"
-
-cleanup() {
-    rm -rf "$tmp"
-}
-trap cleanup EXIT
 
 git -C "$sandbox" init -q >/dev/null
 printf 'x\n' > "$sandbox/f.txt"

@@ -14,26 +14,16 @@
 
 set -u
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  PR scope self-test (not inside a git checkout)\n'
-    exit 125
-}
-gate=$root/tests/check_pr_scope.sh
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'PR scope self-test' || exit $?
+gate=$ROOT/tests/check_pr_scope.sh
 [ -f "$gate" ] || {
     printf 'SKIP  PR scope self-test (gate absent on this branch)\n'
     exit 125
 }
 
-# Not a bare /tmp: MSYS child shells default TMP/TEMP to /tmp, and native
-# git.exe then maps a /tmp argument to C:\tmp while bash sees %TEMP% — the
-# worktree lands where the shell cannot find it. A real WinTEMP template
-# yields a C:/... path both bash and git.exe resolve identically.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE/AppData/Local/Temp")
-else
-    tmpbase="${TMPDIR:-/tmp}"
-fi
-tmp=$(mktemp -d "$tmpbase/pime-pr-scope-selftest.XXXXXX")
+gate_sandbox pime-pr-scope-selftest
 branch_bad=selftest/scope-dirty.$$
 branch_ok=selftest/scope-clean.$$
 branch_pyc=selftest/scope-pyc.$$
@@ -79,16 +69,16 @@ expect() {
 }
 
 # 1. Integration and local record branch names skip, whatever the checkout looks like.
-expect 125 'integration branch name skips' "$root" local/linux-master
-expect 125 'local record branch skips' "$root" local/stroke-parked
+expect 125 'integration branch name skips' "$ROOT" local/linux-master
+expect 125 'local record branch skips' "$ROOT" local/stroke-parked
 
 # 1b. The same names as a pull-request base: harness work is the base's own
 # content there, so the scope rules cannot judge it. The retired mirror keeps its
 # entry because PRs delivered before the merge still carry it as their base.
 EXPECT_ENV=(GITHUB_BASE_REF=local/stroke-parked)
-expect 125 'base on the integration ref skips' "$root" pr/scope-sample
+expect 125 'base on the integration ref skips' "$ROOT" pr/scope-sample
 EXPECT_ENV=(GITHUB_BASE_REF=local/linux-master)
-expect 125 'base on the retired mirror skips' "$root" pr/scope-sample
+expect 125 'base on the retired mirror skips' "$ROOT" pr/scope-sample
 EXPECT_ENV=()
 
 # 2. Detached HEAD with no argument is not applicable, not a silent pass.

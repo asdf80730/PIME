@@ -13,11 +13,10 @@
 
 set -u
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  worktree driver self-test (not inside a git checkout)\n'
-    exit 125
-}
-driver=$root/tests/run_worktree_tests.py
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'worktree driver self-test' || exit $?
+driver=$ROOT/tests/run_worktree_tests.py
 [ -f "$driver" ] || {
     printf 'SKIP  worktree driver self-test (driver absent on this branch)\n'
     exit 125
@@ -26,7 +25,7 @@ driver=$root/tests/run_worktree_tests.py
 # Bundled interpreter first, then the system one — probed by a real run,
 # never by command -v alone (the Store stub answers -v and dies on use).
 py=""
-for cand in "$root/python/python3/python.exe" "$root/python/python3/python"; do
+for cand in "$ROOT/python/python3/python.exe" "$ROOT/python/python3/python"; do
     if [ -x "$cand" ] && "$cand" -c 'import sys' >/dev/null 2>&1; then
         py=$cand
         break
@@ -43,16 +42,10 @@ fi
 # Same WinTEMP rule as check_pr_scope_test.sh: the driver runs under a
 # native interpreter that resolves /tmp as C:\tmp, so create and pass one
 # Windows-form path both sides agree on.
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE/AppData/Local/Temp")
-else
-    tmpbase="${TMPDIR:-/tmp}"
-fi
-tmp=$(mktemp -d "$tmpbase/pime-wt-driver-selftest.XXXXXX") || {
+gate_sandbox pime-wt-driver-selftest || {
     printf 'FAIL  worktree driver self-test (cannot create temp dir)\n'
     exit 1
 }
-trap 'rm -rf "$tmp"' EXIT
 
 failures=0
 

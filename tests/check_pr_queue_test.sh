@@ -10,18 +10,14 @@
 # Exit codes: 0 all cases pass, 1 a case mismatched, 2 setup failed.
 set -u
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_top
 GATE="$ROOT/tests/check_pr_queue.sh"
 [ -f "$GATE" ] || { echo "self-test: gate not found at $GATE" >&2; exit 2; }
 
-if command -v cygpath >/dev/null 2>&1 && [ -n "${USERPROFILE:-}" ]; then
-    tmpbase=$(cygpath -w "$USERPROFILE/AppData/Local/Temp")
-else
-    tmpbase="${TMPDIR:-/tmp}"
-fi
-SANDBOX="$(mktemp -d "$tmpbase/pime-pr-queue-selftest.XXXXXX")" || {
-    echo "self-test: no sandbox" >&2; exit 2; }
-trap 'rm -rf "$SANDBOX"' EXIT
+gate_sandbox pime-pr-queue-selftest || { echo "self-test: no sandbox" >&2; exit 2; }
+SANDBOX=$tmp
 
 cat >"$SANDBOX/gh" <<'STUB'
 #!/usr/bin/env bash

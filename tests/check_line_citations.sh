@@ -32,11 +32,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  line citations (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'line citations' || exit $?
 
 # The two name lists go to plain files next to the checkout: a native awk maps a
 # /tmp argument differently from this shell, so both sides get the same string.

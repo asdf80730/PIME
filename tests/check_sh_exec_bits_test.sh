@@ -11,14 +11,14 @@
 # Exit codes: 0 all cases pass, 1 a case mismatched, 2 setup failed.
 set -u
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_top
 GATE="$ROOT/tests/check_sh_exec_bits.sh"
 [ -f "$GATE" ] || { echo "self-test: gate not found at $GATE" >&2; exit 2; }
 
-SANDBOX="$(mktemp -d)"
-trap 'rm -rf "$SANDBOX"' EXIT
-[ -n "$SANDBOX" ] && [ -d "$SANDBOX" ] || { echo "self-test: no sandbox" >&2; exit 2; }
-SANDBOX="$(cd "$SANDBOX" && pwd)"
+gate_sandbox pime-sh-exec-bits-selftest || { echo "self-test: no sandbox" >&2; exit 2; }
+SANDBOX="$(cd "$tmp" && pwd)"
 
 failures=0
 check() { # name want-cmd got-cmd

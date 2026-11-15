@@ -13,7 +13,9 @@
 
 set -u
 
-ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_top
 cd "$ROOT"
 
 BUILD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/pime-local-tests.XXXXXX")
@@ -47,80 +49,26 @@ skipped=0
 HEAD_BEFORE=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)
 STATUS_BEFORE=$(git -C "$ROOT" status --porcelain 2>/dev/null || echo unknown)
 
-pass() { printf 'PASS  %s\n' "$1"; }
 skip() { printf 'SKIP  %s (%s)\n' "$1" "$2"; skipped=$((skipped + 1)); }
 
 # Wine answers an unimplemented import by starting winedbg and waiting, so a
 # single new test can hold the whole run: 25 minutes of CI budget went into one
 # such hang. Bound every step, and take the step's whole session with it, since
 # the hung program is a grandchild (wine -> winedbg) that a plain `timeout`
-# would leave behind holding the Wine prefix.
+# would leave behind holding the Wine prefix. The bounded run and the status
+# wording live in tests/gate_lib.sh (gate_run / gate_run_bounded).
 STEP_TIMEOUT=${STEP_TIMEOUT:-600}
-
-run_bounded() {
-    local seconds=$1
-    shift
-
-    if ! command -v setsid >/dev/null 2>&1; then
-        "$@"
-        return
-    fi
-
-    setsid bash -c 'set -u; "$@"' _ "$@" &
-    local pid=$!
-    local marker="$BUILD_DIR/hung.$$"
-    local watchdog
-
-    # The watchdog gets its own session too: killing it with `kill $watchdog`
-    # would leave its `sleep` child holding the run's stdout, so the pipeline
-    # that started the suite would not finish until the deadline passed.
-    setsid bash -c '
-        sleep "$1"
-        : >"$2"
-        kill -TERM -- "-$3" 2>/dev/null
-        sleep 5
-        kill -KILL -- "-$3" 2>/dev/null
-    ' _ "$seconds" "$marker" "$pid" &
-    watchdog=$!
-
-    local status=0
-    ACTIVE_STEP=$pid
-    ACTIVE_WATCHDOG=$watchdog
-    wait "$pid" || status=$?
-    ACTIVE_STEP=
-    ACTIVE_WATCHDOG=
-    kill -TERM -- "-$watchdog" 2>/dev/null
-    wait "$watchdog" 2>/dev/null
-
-    if [ -e "$marker" ]; then
-        rm -f "$marker"
-        return 124
-    fi
-    return "$status"
-}
 
 step() {
     local name=$1
     shift
     printf '\n== %s ==\n' "$name"
     local status=0
-    run_bounded "$STEP_TIMEOUT" "$@" || status=$?
+    gate_run "$name" "$STEP_TIMEOUT" "$@" || status=$?
     case "$status" in
-        0)
-            pass "$name"
-            ;;
-        124)
-            printf 'HANG  %s (killed after %ss; rerun by hand: %s)\n' \
-                "$name" "$STEP_TIMEOUT" "$*"
-            failures=$((failures + 1))
-            ;;
-        125)
-            skip "$name" 'not applicable here'
-            ;;
-        *)
-            printf 'FAIL  %s (exit %s)\n' "$name" "$status"
-            failures=$((failures + 1))
-            ;;
+        0) ;;
+        125) skipped=$((skipped + 1)) ;;
+        *) failures=$((failures + 1)) ;;
     esac
 }
 
@@ -248,53 +196,37 @@ cpp_json_test() {
     # -include cstdint: the vendored 1.10 gtest names uintptr_t in
     # gtest-death-test.cc without including it, which the newer libstdc++
     # headers no longer pull in transitively.
-    g++ -std=c++17 -O1 -pthread -include cstdint \
-        -I PIMETextService \
-        -I json/single_include \
-        -I "$gtest/include" -I "$gtest" \
-        tests/json_utils_test.cpp \
-        "$gtest/src/gtest-all.cc" "$gtest/src/gtest_main.cc" \
-        -o "$BUILD_DIR/json_utils_test" &&
-        "$BUILD_DIR/json_utils_test"
+    cpp_test tests/json_utils_test.cpp g++ \
+        "-pthread -include cstdint" \
+        "-I PIMETextService -I json/single_include -I $gtest/include -I $gtest" \
+        "$gtest/src/gtest-all.cc $gtest/src/gtest_main.cc"
 }
 
 cpp_cursor_wine_test() {
     # Linux wchar_t is 32-bit; the helper indexes a Windows UTF-16 buffer, so
     # cross-compile and run under Wine instead of building for the host.
-    i686-w64-mingw32-g++ -std=c++17 -O1 -static \
-        -I PIMETextService \
-        tests/composition_cursor_test.cpp \
-        -o "$BUILD_DIR/composition_cursor_test.exe" &&
-        WINEDEBUG=-all wine "$BUILD_DIR/composition_cursor_test.exe"
+    cpp_test tests/composition_cursor_test.cpp i686-w64-mingw32-g++ \
+        "-static" "-I PIMETextService" "" wine
 }
 
 cpp_guids_test() {
     # The helper reads only std::string and nlohmann/json, so a host g++
     # build runs it; no Wine needed.
-    g++ -std=c++17 -O1 -static \
-        -I PIMETextService -I json/single_include \
-        tests/ime_profile_guids_test.cpp \
-        -o "$BUILD_DIR/ime_profile_guids_test" &&
-        "$BUILD_DIR/ime_profile_guids_test"
+    cpp_test tests/ime_profile_guids_test.cpp g++ \
+        "-static" "-I PIMETextService -I json/single_include"
 }
 
 cpp_dpi_wine_test() {
     # The helper calls user32 directly (GetDpiForWindow/GetDeviceCaps), so
     # the cross-built exe runs under Wine, like the cursor test.
-    i686-w64-mingw32-g++ -std=c++17 -O1 -static \
-        -I PIMETextService \
-        tests/dpi_helper_test.cpp \
-        -o "$BUILD_DIR/dpi_helper_test.exe" -luser32 -lgdi32 &&
-        WINEDEBUG=-all wine "$BUILD_DIR/dpi_helper_test.exe"
+    cpp_test tests/dpi_helper_test.cpp i686-w64-mingw32-g++ \
+        "-static" "-I PIMETextService" "-luser32 -lgdi32" wine
 }
 
 cpp_ui_colors_test() {
     # The mapping reads only nlohmann/json, so a host g++ build runs it.
-    g++ -std=c++17 -O1 -static \
-        -I PIMETextService -I json/single_include \
-        tests/ui_colors_test.cpp \
-        -o "$BUILD_DIR/ui_colors_test" &&
-        "$BUILD_DIR/ui_colors_test"
+    cpp_test tests/ui_colors_test.cpp g++ \
+        "-static" "-I PIMETextService -I json/single_include"
 }
 
 go_all_tests() {
@@ -334,7 +266,8 @@ rust_lint() {
 export ROOT BUILD_DIR GO CARGO PY
 export -f python_syntax yaml_parse nsis_smoke python_tests python_bundled_tests \
     node_tests cpp_json_test cpp_cursor_wine_test cpp_guids_test cpp_dpi_wine_test \
-    cpp_ui_colors_test go_all_tests go_windows_build \
+    cpp_ui_colors_test cpp_test \
+    go_all_tests go_windows_build \
     rust_tests rust_lint shellcheck_all ruff_all
 
 printf 'PIME local verification (root: %s)\n' "$ROOT"

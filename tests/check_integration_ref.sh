@@ -18,10 +18,9 @@
 
 set -u
 
-git rev-parse --show-toplevel >/dev/null 2>&1 || {
-    printf 'SKIP  integration ref (not inside a git checkout)\n'
-    exit 125
-}
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'integration ref' || exit $?
 
 head_ref=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
 carriers=()

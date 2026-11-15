@@ -14,11 +14,9 @@
 
 set -u
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'SKIP  layer filter (not inside a git checkout)\n'
-    exit 125
-}
-cd "$ROOT" || exit 1
+. "${BASH_SOURCE[0]%/*}/gate_lib.sh"
+
+gate_root 'layer filter' || exit $?
 
 GATE="tests/verify_windows.sh"
 [ -f "$GATE" ] || {
