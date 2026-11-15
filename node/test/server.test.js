@@ -83,13 +83,24 @@ function payloadOf(reply) {
   return JSON.parse(reply.slice(second + 1));
 }
 
-// Fills the fixture's guid sentinels with this adapter's own values.
+// Fills the fixture's guid sentinels with this adapter's own values, at every
+// depth: a request is an object, so the walk has to descend into it.
 function resolve(value) {
   if (value === '$guid') {
     return GUID;
   }
   if (value === '$unknownGuid') {
     return FIXTURE.unknownGuid;
+  }
+  if (Array.isArray(value)) {
+    return value.map(resolve);
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [key, item] of Object.entries(value)) {
+      out[key] = resolve(item);
+    }
+    return out;
   }
   return value;
 }

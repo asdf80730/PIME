@@ -119,7 +119,10 @@ mod tests {
                 // Request direction: one frame per line, split at the first '|'.
                 let frame = match step.get("raw") {
                     Some(raw) => raw.as_str().expect("raw line").to_string(),
-                    None => format_backend_input(client_id, &step["request"].to_string()),
+                    None => format_backend_input(
+                        client_id,
+                        &resolve(&step["request"], &root).to_string(),
+                    ),
                 };
                 match parse_backend_input(&frame) {
                     None => {
