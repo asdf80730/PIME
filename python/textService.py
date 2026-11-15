@@ -66,7 +66,11 @@ class TextService:
         self.keyboardOpen = False
         self.showCandidates = False
 
-        self.currentReply = {}  # reply to the events
+        # per-request merge table: the setter methods below drop their field
+        # into it and handleRequest() drains it after dispatching the hook.
+        # Not part of the interface; observe the reply through the return
+        # value of handleRequest() (or of a hook called directly).
+        self.currentReply = {}
         self.compositionString = ""
         self.commitString = ""
         self.candidateList = []
@@ -80,59 +84,73 @@ class TextService:
     def checkConfigChange(self):
         pass
 
+    @staticmethod
+    def _mergePartial(reply, result):
+        """Fold one hook result into the reply.
+
+        A dict is a partial reply and merges in call order; any other value
+        is the hook's own ``return`` value (or None for a no-op hook).
+        """
+        if isinstance(result, dict):
+            reply.update(result)
+            return None
+        return result
+
     def handleRequest(self, msg):  # msg is a json object
         method = msg.get("method", None)
         seqNum = msg.get("seqNum", 0)
         success = True  # if the method is successfully handled
         ret = None  # the return value of the method, if any
+        reply = {}  # the reply, merged from hook partials in call order
 
         if self.isActivated:
-            self.checkConfigChange()  # check if configurations are changed
+            # check if configurations are changed
+            self._mergePartial(reply, self.checkConfigChange())
 
-        self.updateStatus(msg)
+        self._mergePartial(reply, self.updateStatus(msg))
         if method == "filterKeyDown":
             keyEvent = KeyEvent(msg)
-            ret = self.filterKeyDown(keyEvent)
+            ret = self._mergePartial(reply, self.filterKeyDown(keyEvent))
         elif method == "onKeyDown":
             keyEvent = KeyEvent(msg)
-            ret = self.onKeyDown(keyEvent)
+            ret = self._mergePartial(reply, self.onKeyDown(keyEvent))
         elif method == "filterKeyUp":
             keyEvent = KeyEvent(msg)
-            ret = self.filterKeyUp(keyEvent)
+            ret = self._mergePartial(reply, self.filterKeyUp(keyEvent))
         elif method == "onKeyUp":
             keyEvent = KeyEvent(msg)
-            ret = self.onKeyUp(keyEvent)
+            ret = self._mergePartial(reply, self.onKeyUp(keyEvent))
         elif method == "onPreservedKey":
             guid = msg["guid"].lower()
-            ret = self.onPreservedKey(guid)
+            ret = self._mergePartial(reply, self.onPreservedKey(guid))
         elif method == "onCommand":
             commandId = msg["id"]
             commandType = msg["type"]
-            self.onCommand(commandId, commandType)
+            self._mergePartial(reply, self.onCommand(commandId, commandType))
         elif method == "onMenu":
             buttonId = msg["id"]
-            ret = self.onMenu(buttonId)
+            ret = self._mergePartial(reply, self.onMenu(buttonId))
         elif method == "onCompartmentChanged":
             guid = msg["guid"].lower()
-            self.onCompartmentChanged(guid)
+            self._mergePartial(reply, self.onCompartmentChanged(guid))
         elif method == "onKeyboardStatusChanged":
             opened = msg["opened"]
-            self.onKeyboardStatusChanged(opened)
+            self._mergePartial(reply, self.onKeyboardStatusChanged(opened))
         elif method == "onCompositionTerminated":
             forced = msg["forced"]
-            self.onCompositionTerminated(forced)
+            self._mergePartial(reply, self.onCompositionTerminated(forced))
         elif method == "onActivate":
             self.isActivated = True
             self.keyboardOpen = msg["isKeyboardOpen"]
-            self.onActivate()
+            self._mergePartial(reply, self.onActivate())
         elif method == "onDeactivate":
-            self.onDeactivate()
+            self._mergePartial(reply, self.onDeactivate())
             self.isActivated = False
         else:
             success = False
 
-        # fetch the current reply of the method
-        reply = self.currentReply
+        # drain the setter merge table, then the fixed trailing fields
+        reply.update(self.currentReply)
         self.currentReply = {}
         if ret is not None:
             reply["return"] = ret
@@ -198,10 +216,12 @@ class TextService:
         info = kwargs
         info["id"] = button_id
         buttons.append(info)
+        return {"addButton": buttons}
 
     def removeButton(self, button_id):
         buttons = self.currentReply.setdefault("removeButton", [])
         buttons.append(button_id)
+        return {"removeButton": buttons}
 
     """
     See addButton() for allowed arguments.
@@ -211,6 +231,7 @@ class TextService:
         info = kwargs
         info["id"] = button_id
         buttons.append(info)
+        return {"changeButton": buttons}
 
     # preserved keys
     def addPreservedKey(self, keyCode, modifiers, guid):
@@ -219,41 +240,51 @@ class TextService:
             "keyCode" : keyCode,
             "modifiers": modifiers,
             "guid": guid.lower()})
+        return {"addPreservedKey": keys}
 
     def removePreservedKey(self, guid):
         keys = self.currentReply.setdefault("removePreservedKey", [])
         keys.append(guid.lower())
+        return {"removePreservedKey": keys}
 
     # composition string
     def setCompositionString(self, s):
         self.compositionString = s
         self.currentReply["compositionString"] = s
+        return {"compositionString": s}
 
     def setCompositionCursor(self, pos):
         self.compositionCursor = pos
         self.currentReply["compositionCursor"] = pos
+        return {"compositionCursor": pos}
 
     def setCommitString(self, s):
         self.commitString = s
         self.currentReply["commitString"] = s
+        return {"commitString": s}
 
     def setCandidateList(self, cand):
         self.candidateList = cand
         self.currentReply["candidateList"] = cand
+        return {"candidateList": cand}
 
     def setCandidateCursor(self, pos):
         self.candidateCursor = pos
         self.currentReply["candidateCursor"] = pos
+        return {"candidateCursor": pos}
 
     def setShowCandidates(self, show):
         self.showCandidates = show
         self.currentReply["showCandidates"] = show
+        return {"showCandidates": show}
 
     def setSelKeys(self, keys):
         self.currentReply["setSelKeys"] = keys
+        return {"setSelKeys": keys}
 
     def setKeyboardOpen(self, opened):
         self.currentReply["openKeyboard"] = opened
+        return {"openKeyboard": opened}
 
     '''
     Valid arguments:
@@ -262,6 +293,7 @@ class TextService:
     def customizeUI(self, **kwargs):
         data = self.currentReply.setdefault("customizeUI", {})
         data.update(kwargs)
+        return {"customizeUI": data}
 
     def isComposing(self):
         return (self.compositionString != "" or self.showCandidates)
@@ -273,10 +305,13 @@ class TextService:
     The currently shown message, if there is any, will be replaced by calling this method.
     '''
     def showMessage(self, message, duration=3):
-        self.currentReply["showMessage"] = {
+        info = {
             "message": message,
             "duration": duration
         }
+        self.currentReply["showMessage"] = info
+        return {"showMessage": info}
 
     def hideMessage(self):
         self.currentReply["hideMessage"] = True
+        return {"hideMessage": True}

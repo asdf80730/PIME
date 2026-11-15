@@ -3252,6 +3252,7 @@ class CinBase:
         if cbTS.imeDirName == "chedayi":
             cbTS.selDayiSymbolCharType = cfg.selDayiSymbolCharType
 
+        return cbTS.currentReply
 
     # 檢查設定檔是否有被更改，是否需要套用新設定
     def checkConfigChange(self, cbTS, CinTable, RCinTable, HCinTable):
