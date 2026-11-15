@@ -8,7 +8,7 @@ cuts. The libchewing data dir is the other hand-maintained set: ``chewing_new2``
 looks its names up literally, so a retired or missing file changes the answers
 without any import error.
 
-Ticket: ``.scratch/two-axis-review-2026-11-16/issues/05-name-the-two-orphan-test-files.md``.
+Ticket 05 ``name-the-two-orphan-test-files`` (two-axis review 2026-11-16).
 Pins the shipped-payload reply-key set against ``tests/wire-fixtures.json`` —
 ``replyKeys`` plus ``extraKeys``, the ``INV-10`` pair.
 

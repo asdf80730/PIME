@@ -7,7 +7,9 @@ Status: ready-for-human
 Category: bug
 Blocked by: None
 
-- [ ] Record `C:\\Program Files (x86)\\PIME\\version.txt` and `cmd.exe /c ver`
+- [x] Record `C:\\Program Files (x86)\\PIME\\version.txt` and `cmd.exe /c ver` —
+      `version.txt` = `2.0.0-beta4`, `cmd.exe /c ver` = `Microsoft Windows [版本 10.0.26300.9974]`
+      (both read on 2026-11-16 from this box)
 - [ ] In Word with PIME Bopomofo, type the bopomofo for the test syllable, press Space,
       record the committed string
 - [ ] Drag the ruler first-line indent handle, record PASS or FAIL
