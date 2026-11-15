@@ -50,6 +50,15 @@ index of agent docs.
 
 ## Agent skills
 
+### Answers render as one page
+
+`answer-me-with-html always-on` is on: every reply that carries a conclusion,
+summary, plan, comparison or explanation also gets a small page (2–4 panels, one
+callout with the conclusion plus one table or diagram, rendered with `--no-open`,
+page link on the last line). Plain text covers small talk, a one-line answer, raw
+command output, and any reply the user asked to keep as text. The skill lives at
+`~/.agents/skills/answer-me-with-html`; run its CLI through `./.tools/node/node.exe`.
+
 ### Issue tracker
 
 Issues live as local markdown under `.scratch/` in this checkout, and a **parked**
