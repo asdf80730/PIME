@@ -16,12 +16,12 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { resolve, fold } = require('../wireHelpers.js');
 
 const NODE_DIR = path.join(__dirname, '..');
 const FIXTURE = JSON.parse(
   fs.readFileSync(path.join(NODE_DIR, '..', 'tests', 'wire-fixtures.json'), 'utf8'));
 const CLIENT_ID = FIXTURE.clientId;
+const GUID = FIXTURE.guid.node;
 const DECLARED_KEYS = new Set(FIXTURE.replyKeys.concat(FIXTURE.extraKeys));
 const TIMEOUT_MS = 5000;
 
@@ -83,7 +83,38 @@ function payloadOf(reply) {
   return JSON.parse(reply.slice(second + 1));
 }
 
-// The shared resolve()/fold() pair lives in node/wireHelpers.js.
+// Fills the fixture's guid sentinels with this adapter's own values, at every
+// depth: a request is an object, so the walk has to descend into it.
+function resolve(value) {
+  if (value === '$guid') {
+    return GUID;
+  }
+  if (value === '$unknownGuid') {
+    return FIXTURE.unknownGuid;
+  }
+  if (Array.isArray(value)) {
+    return value.map(resolve);
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [key, item] of Object.entries(value)) {
+      out[key] = resolve(item);
+    }
+    return out;
+  }
+  return value;
+}
+
+// The `return` key is a JSON boolean here and 1/0 in the go backend.
+function fold(value) {
+  if (value === true) {
+    return 1;
+  }
+  if (value === false) {
+    return 0;
+  }
+  return value;
+}
 
 async function main() {
   const {child, state} = startServer();

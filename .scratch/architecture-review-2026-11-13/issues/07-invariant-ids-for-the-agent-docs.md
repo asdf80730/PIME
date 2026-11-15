@@ -118,19 +118,5 @@ gate self-test` and `PASS  [INV-02] [INV-04] [INV-05] [INV-07] [INV-08]
 declaration` step answers `SKIP` — exit 125 on the integration branch — so it
 prints no id-bearing PASS line that run).
 
-**Correction (2026-11-16, re-measured at the close SHA):**
-`wc -l docs/agents/invariants.md` → `24 docs/agents/invariants.md`, still the
-ten rows `INV-01`…`INV-10` (the `- **INV-NN**` lines at
-`docs/agents/invariants.md:12-21`). The per-file deltas above drifted with
-later commits; measured at the close SHA: `AGENTS.md` 141,
-`docs/agents/cinbase-config.md` 67, `docs/agents/code-review.md` 384,
-`docs/agents/librime-api.md` 80, `docs/agents/input-method-tables.md` 177,
-`docs/agents/verification.md` 498, `tests/gate_lib.sh` 175,
-`tests/check_gate_lib_test.sh` 77, `tests/run_local_tests.sh` 511,
-`tests/verify_windows.sh` 484, `tests/test_agent_docs.py` 260,
-`tests/check_ai_declarations.sh` 60, `tests/check_pr_bodies.sh` 138,
-`tests/check_pr_commit_declarations.sh` 88, `tests/check_gate_wiring.sh` 92.
-Numbers checkable as of 45618cb.
-
 *(Comment generated with AI assistance from omp (Qwen3.8-Flash-Next))*
 
