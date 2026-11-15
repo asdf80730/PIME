@@ -133,6 +133,11 @@ reading. One review placed `self.cbTS.cin.__del__()` at
 `python/cinbase/__init__.py:3298-3299`; the call is at `:3297`, and the wrong pair
 had already reached the round record before a grep corrected it.
 
+A superseded decision is the same defect in record form. When a ticket replaces an
+ADR's answer, the ADR gains a dated `Superseded in part by …` note naming the new
+home of each moved fact; the reviewer's job is to check the note exists and every
+quoted range in it still resolves.
+
 ## A comment that documents a divergence is a finding
 
 `X says A although the code does B` is not an accepted state; it is a defect with a
