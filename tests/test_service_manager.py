@@ -37,7 +37,7 @@ class ServiceManagerTests(unittest.TestCase):
         shutil.rmtree(self.test_root, ignore_errors=True)
 
     def _create_dummy_ime(self, subdir_name, guid, module_name="my_ime",
-                          class_name="MyService", additional_profiles=None):
+                          class_name="MyService"):
         pkg_dir = os.path.join(self.test_root, "input_methods")
         os.makedirs(pkg_dir, exist_ok=True)
         init_file = os.path.join(pkg_dir, "__init__.py")
@@ -54,8 +54,6 @@ class ServiceManagerTests(unittest.TestCase):
             "serviceName": class_name,
             "guid": guid,
         }
-        if additional_profiles is not None:
-            payload["additionalProfiles"] = additional_profiles
         with open(ime_json, "w", encoding="utf-8") as f:
             json.dump(payload, f)
         py_file = os.path.join(im_dir, f"{module_name}.py")
@@ -85,52 +83,69 @@ class ServiceManagerTests(unittest.TestCase):
         self.assertIn(guid.lower(), mgr.services)
         self.assertEqual(mgr.services[guid.lower()].name, "Test IME")
 
-    def test_additional_profile_guid_resolves_to_the_same_service(self):
-        # #481: 中州韻 registers a second TSF language profile for the other
-        # Windows input locale, and that profile activates with its own GUID.
-        # The dispatcher must know it, or the client gets no service.
-        guid = "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}"
-        extra = "{53C15256-7A5F-4B54-86E8-0636E0745C3E}"
-        self._create_dummy_ime(
-            "dummy_extra", guid, module_name="extra_mod", class_name="ExtraClass",
-            additional_profiles=[{"guid": extra, "locale": "zh-CN",
-                                  "fallbackLocale": "zh-CN"},
-                                 {"locale": "no-guid"}, "not-an-object"])
+    def test_two_language_folders_resolve_to_their_own_service(self):
+        # #481: the rime engine serves two Windows input languages, so it ships
+        # one folder per language and each profile activates with its own GUID.
+        # The dispatcher must know both, or the client gets no service.
+        traditional = "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}"
+        simplified = "{53C15256-7A5F-4B54-86E8-0636E0745C3E}"
+        self._create_dummy_ime("dummy_tw", traditional,
+                               module_name="tw_mod", class_name="TwClass")
+        self._create_dummy_ime("dummy_cn", simplified,
+                               module_name="cn_mod", class_name="CnClass")
 
         mgr = TextServiceManager()
         mgr.load(self.test_root)
 
-        self.assertEqual([extra.lower(), guid.lower()],
+        self.assertEqual([simplified.lower(), traditional.lower()],
                          sorted(mgr.services, key=str.lower)[:2])
-        self.assertIs(mgr.services[guid.lower()], mgr.services[extra.lower()])
-        service = mgr.createService("dummy_client", extra)
-        self.assertIsNotNone(service,
-                             "the additional profile GUID started no service")
-        self.assertEqual(service.client, "dummy_client")
+        self.assertIsNot(mgr.services[traditional.lower()],
+                         mgr.services[simplified.lower()],
+                         "each folder carries its own info")
+        for guid in (traditional, simplified):
+            service = mgr.createService("dummy_client", guid)
+            self.assertIsNotNone(service,
+                                 "the profile GUID %s started no service" % guid)
+            self.assertEqual(service.client, "dummy_client")
 
-    def test_shipped_rime_manifest_registers_both_profiles(self):
-        # The synthetic fixture above proves the loader reads the array; this
-        # case drives the same dispatcher over the product's own registration
-        # data, so a key the shipped manifest forgets — or a dispatcher that
-        # stops reading it — reddens here instead of at the first client that
-        # activates the second locale.
+    def test_shipped_rime_manifests_register_both_profiles(self):
+        # The synthetic fixture above proves the loader reads one guid per
+        # manifest; this case drives the same dispatcher over the product's own
+        # registration data, so a key a shipped manifest forgets — or a
+        # dispatcher that stops reading it — reddens here instead of at the
+        # first client that activates that locale.
         mgr = TextServiceManager()
         mgr.load(PYTHON_DIR)
 
-        with open(os.path.join(PYTHON_DIR, "input_methods", "rime", "ime.json"),
-                  encoding="utf-8") as fp:
-            manifest = json.load(fp)
-        primary = manifest["guid"].lower()
-        extra = manifest["additionalProfiles"][0]["guid"].lower()
-        # Pinned literally as well: the two GUIDs DllRegisterServer hands to
-        # AddLanguageProfile, so a silent rename in the manifest is a finding.
-        self.assertEqual("{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}", primary)
-        self.assertEqual("{53c15256-7a5f-4b54-86e8-0636e0745c3e}", extra)
-        self.assertIn(primary, mgr.services)
-        self.assertIn(extra, mgr.services,
-                      "the shipped second profile is unknown to the dispatcher")
-        self.assertIs(mgr.services[primary], mgr.services[extra],
-                      "the second profile is a second key, not a second service")
+        guids = {}
+        for name, expected in (
+                ("rime", "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}"),
+                ("rime-cn", "{53c15256-7a5f-4b54-86e8-0636e0745c3e}")):
+            with open(os.path.join(PYTHON_DIR, "input_methods", name,
+                                   "ime.json"), encoding="utf-8") as fp:
+                manifest = json.load(fp)
+            guid = manifest["guid"].lower()
+            # Pinned literally as well: the GUID DllRegisterServer hands to
+            # AddLanguageProfile for this folder, so a silent rename in the
+            # manifest is a finding.
+            self.assertEqual(expected, guid)
+            self.assertIn(guid, mgr.services,
+                          "the shipped %s profile is unknown to the dispatcher"
+                          % name)
+            self.assertEqual(mgr.services[guid].guid, guid)
+            self.assertNotIn("additionalProfiles", manifest,
+                             "one manifest is one language profile")
+            guids[name] = guid
+        self.assertIsNot(mgr.services[guids["rime"]],
+                         mgr.services[guids["rime-cn"]],
+                         "the two folders are two infos, not one shared key")
+        # Both profiles run the same engine, so the Simplified one is a second
+        # window on one implementation: same module file name, same class name
+        # (each folder's dotted module name is its own, per its directory).
+        for field in ("moduleName", "serviceName"):
+            self.assertEqual(getattr(mgr.services[guids["rime"]], field).split(".")[-1],
+                             getattr(mgr.services[guids["rime-cn"]], field).split(".")[-1],
+                             "the two rime folders load different %s" % field)
 
         # meow is the other IME this tree serves, and the one IME shipping in
         # all three backends: its own shipped key has to answer in this runner
@@ -167,20 +182,19 @@ class ServiceManagerTests(unittest.TestCase):
             seen += 1
             with open(path, encoding="utf-8") as fp:
                 manifest = json.load(fp)
-            keys = [manifest["guid"].lower()]
-            for entry in manifest.get("additionalProfiles", []):
-                if isinstance(entry, dict) and entry.get("guid"):
-                    keys.append(entry["guid"].lower())
-            for guid in keys:
-                with self.subTest(ime=name, guid=guid):
-                    self.assertIn(guid, mgr.services,
-                                  "a shipped profile GUID is unknown to the dispatcher")
-                    self.assertIs(mgr.services[guid], mgr.services[keys[0]],
-                                  "every GUID of one ime.json names one service")
-        # 14 named cases today: the 12 cinbase/chewing IMEs, meow and rime. An
-        # added directory has to show up here as its own named lookup, so this
-        # count is the guard against a profile slipping in unnamed.
-        self.assertEqual(seen, 14, "the python tree ships 14 ime.json files")
+            guid = manifest["guid"].lower()
+            with self.subTest(ime=name, guid=guid):
+                self.assertIn(guid, mgr.services,
+                              "a shipped profile GUID is unknown to the dispatcher")
+                self.assertEqual(mgr.services[guid].guid, guid,
+                                 "the key is the info's own guid, not a neighbour's")
+                self.assertTrue(mgr.services[guid].name,
+                                "a registered profile carries no display name")
+        # 15 named cases today: the 12 cinbase/chewing IMEs, meow, and the two
+        # rime language folders. An added directory has to show up here as its
+        # own named lookup, so this count is the guard against a profile
+        # slipping in unnamed.
+        self.assertEqual(seen, 15, "the python tree ships 15 ime.json files")
         self.assertIsNone(mgr.createService(None, "{00000000-0000-0000-0000-000000000001}"),
                           "an id no shipped manifest names starts no service")
 

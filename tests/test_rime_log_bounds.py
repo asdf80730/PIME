@@ -2,7 +2,7 @@
 
 Two places grew without a limit: the engine's glog files in the log directory
 (three per engine start) and the ``sync`` snapshot folders in the rime user
-directory. ``python/input_methods/rime/librime.py`` now runs one bounded prune
+directory. ``python/rimebase/librime.py`` now runs one bounded prune
 pass per backend start and documents the numbers in its module docstring; this
 module measures the pass with before/after file counts.
 
@@ -25,7 +25,7 @@ PYTHON_DIR = os.path.join(ROOT, "python")
 if PYTHON_DIR not in sys.path:
     sys.path.insert(0, PYTHON_DIR)
 
-from input_methods.rime import librime  # noqa: E402 - plain-Python helpers
+from rimebase import librime  # noqa: E402 - plain-Python helpers
 
 APP_NAME = "PIME"
 LOG_PREFIX = "%s.%s." % (librime.RIME, APP_NAME)
