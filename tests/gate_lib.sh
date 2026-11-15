@@ -95,18 +95,35 @@ gate_run_bounded() {
     return "$status"
 }
 
-# gate_run NAME TIMEOUT CMD... — run CMD bounded and print the step line in
-# the wording both gates pin: PASS for 0, HANG for the watchdog's 124, SKIP
-# for the not-applicable 125, FAIL (exit N) otherwise. Returns the status so
-# the caller moves its own counters.
+# gate_run NAME TIMEOUT [INV-NN...] CMD... — run CMD bounded and print the step
+# line in the wording both gates pin: PASS for 0, HANG for the watchdog's 124,
+# SKIP for the not-applicable 125, FAIL (exit N) otherwise. Each optional
+# `INV-NN` word right after the timeout is an invariant id from
+# `docs/agents/invariants.md` and is printed inside the PASS line as
+# `PASS  [INV-NN] <name>`; with none, the line keeps the bare `PASS  <name>`.
+# Returns the status so the caller moves its own counters.
 gate_run() {
     local name=$1 timeout=$2
     shift 2
+    local ids=()
+    while [ "${1:-}" != "" ] && [ "${1#INV-}" != "${1}" ]; do
+        ids+=("$1")
+        shift
+    done
+    local label="$name"
+    if [ "${#ids[@]}" -gt 0 ]; then
+        label=""
+        local id
+        for id in "${ids[@]}"; do
+            label+="[$id] "
+        done
+        label+="$name"
+    fi
     local status=0
     gate_run_bounded "$timeout" "$@" || status=$?
     case "$status" in
         0)
-            printf 'PASS  %s\n' "$name"
+            printf 'PASS  %s\n' "$label"
             ;;
         124)
             printf 'HANG  %s (killed after %ss; rerun by hand: %s)\n' \

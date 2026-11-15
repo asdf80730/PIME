@@ -291,6 +291,10 @@ run_native 'Gate wiring covers both boxes' \
 	'bash.exe tests/check_gate_wiring.sh'
 run_native 'Gate-wiring gate self-test' \
 	'bash.exe tests/check_gate_wiring_test.sh'
+# The gate library itself is one implementation (INV-06): its step-line form —
+# PASS with or without the declared invariant ids — is pinned on both boxes.
+run_native 'Gate-library self-test' \
+	'bash.exe tests/check_gate_lib_test.sh'
 
 # The optional first word is what makes a one-line edit's re-check seconds
 # instead of eight minutes, so its tally gets the same pinning as the others.

@@ -26,7 +26,8 @@ next to `tests/check_fork_ci_noise_test.sh`); local `master` commits in a produc
 tests/run_local_tests.sh
 ```
 
-Every step is bounded (`STEP_TIMEOUT`, default 600s) and reports `HANG` when the
+Every step is bounded (`STEP_TIMEOUT`, default 600s, `INV-06` — the one
+gate-library implementation behind the step lines) and reports `HANG` when the
 deadline fires, so one stuck Wine call cannot eat the run. A run reads the script
 incrementally: leave `tests/run_local_tests.sh` untouched while a background run
 is still going, or run a copy.
@@ -38,7 +39,8 @@ run's stdout, which only the pipeline's wall time reveals.
 
 Individual commands, if you want to narrow the loop:
 
-- **Python backend** — the full `tests/` suite (protocol loop, TextService
+- **Python backend** — the full `tests/` suite (protocol loop over the one wire
+  fixture and its reply-key list, `INV-05` and `INV-10`; TextService
   dispatch, service manager, cin counting, input-method smoke, docs pages,
   README build contract):
 

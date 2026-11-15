@@ -28,7 +28,8 @@ Stroke-order and other attribute tables derive from the 全字庫 open-data rele
 
 ### Stroke table (筆畫表)
 
-`python/cinbase/cin/CnsStroke.cin` is generated, never hand-edited. To rebuild it
+`INV-08` settles the source: `python/cinbase/cin/CnsStroke.cin` is generated,
+never hand-edited. To rebuild it
 against a new release, unzip `Properties.zip` and `MapingTables.zip` and read the
 version out of `release.txt`, then:
 

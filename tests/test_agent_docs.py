@@ -50,6 +50,14 @@ OPTIONAL_REFERENCES = {
 }
 
 
+# The numbered invariant list; its rows are the only source of ids the closure
+# check accepts, and it is excluded from the citing set so a row cannot settle
+# its own citation.
+INVARIANT_DOC = os.path.join(AGENTS_DOCS_DIR, "invariants.md")
+INVARIANT_ROW = re.compile(r"^- \*\*(INV-\d{2})\*\*", re.M)
+INVARIANT_TOKEN = re.compile(r"\bINV-\d{2}\b")
+
+
 def markdown_under(directory):
     """Every Markdown file directly under `directory`, sorted by name."""
     return [os.path.join(directory, name)
@@ -108,6 +116,25 @@ def resolves(doc_path, reference):
     return False
 
 
+def invariant_citing_files():
+    """Files whose `INV-NN` tokens the closure check judges: the index, the agent
+    docs excepting the list itself, and the gate scripts that print or name ids.
+    """
+    files = [os.path.join(ROOT, "AGENTS.md")]
+    files += [path for path in markdown_under(AGENTS_DOCS_DIR)
+              if os.path.basename(path) != "invariants.md"]
+    tests_dir = os.path.join(ROOT, "tests")
+    for name in sorted(os.listdir(tests_dir)):
+        if name.startswith("check_") and name.endswith(".sh"):
+            files.append(os.path.join(tests_dir, name))
+    # The two gate scripts print the ids through gate_run; gate_lib.sh carries
+    # the parser's own documentation of the form.
+    files += [os.path.join(tests_dir, script)
+              for script in ("gate_lib.sh", "run_local_tests.sh",
+                             "verify_windows.sh")]
+    return files
+
+
 class AgentDocTests(unittest.TestCase):
     def test_agent_docs_exist(self):
         self.assertTrue(os.path.isdir(AGENTS_DOCS_DIR),
@@ -156,6 +183,31 @@ class AgentDocTests(unittest.TestCase):
                 self.assertIn(name, named,
                               f"docs/adr/{name} is named by neither AGENTS.md nor "
                               f"any file under docs/agents/")
+
+    def test_invariant_ids_close_the_list(self):
+        """The invariant list in docs/agents/invariants.md is the one source:
+        every id cited by a doc or printed by a gate exists in it, and every row
+        is cited by at least one place — no dangling cites, no orphan rows. The
+        list itself cannot settle its own citations, so it stays out of the
+        citing set."""
+        with open(INVARIANT_DOC, encoding="utf-8") as doc:
+            listed = INVARIANT_ROW.findall(doc.read())
+        self.assertTrue(listed, "invariants.md must carry the numbered row list")
+        self.assertEqual(len(listed), len(set(listed)),
+                         "a duplicated invariant id in docs/agents/invariants.md")
+
+        cited = set()
+        for path in invariant_citing_files():
+            with open(path, encoding="utf-8") as doc:
+                cited.update(INVARIANT_TOKEN.findall(doc.read()))
+
+        dangling = sorted(cited - set(listed))
+        self.assertEqual([], dangling,
+                         "ids cited without a row in docs/agents/invariants.md: "
+                         + ", ".join(dangling))
+        orphans = sorted(set(listed) - cited)
+        self.assertEqual([], orphans,
+                         "rows cited by nowhere: " + ", ".join(orphans))
 
     def test_agents_md_is_cited_by_heading_not_by_number(self):
         """The rules prose moved to the standing rules of docs/agents/code-review.md

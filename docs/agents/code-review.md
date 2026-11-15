@@ -285,7 +285,8 @@ verbatim; judge every diff against **each** rule, and flag the breaks a gate
 missed — a rule with no gate beside it is the reviewer's alone to enforce.
 The build architectures, the Windows-10 floor and the comment-language rule
 are stated once in `AGENTS.md`'s hard limits, so they are absent here by
-design.
+design. The AI-declaration forms (§2 and §4) are `INV-03`; the mechanical
+gates named in the table are its enforcers.
 
 | Standing rule | Mechanical enforcement |
 | --- | --- |

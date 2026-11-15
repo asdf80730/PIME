@@ -22,6 +22,9 @@ for the loader-side surface and its pending fixes.
 
 ## Adding a key is one row
 
+`INV-02` — the invariant list row in `docs/agents/invariants.md` is the sentence;
+this section is its expansion.
+
 Since ticket 02 of the 2026-11-13 architecture review, `CinBaseConfig` owns
 ONE record list, `CONFIG_RECORDS` in `python/cinbase/config.py`. Each row is
 `(key, default, control, table_affecting, mirror, effect, overrides)` and is

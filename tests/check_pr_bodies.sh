@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The standing rules in docs/agents/code-review.md put the AI declaration at
+# INV-03: the standing rules in docs/agents/code-review.md put the AI declaration at
 # the end of the message, and the body is pasted by hand: a missing last line
 # makes the human add it.
 # #996 split the declaration three ways; the pre-#996 one-liner is still

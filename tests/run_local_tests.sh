@@ -287,8 +287,8 @@ fi
 step 'PR branch starts at origin/master' "$ROOT/tests/check_pr_scope.sh"
 step 'PR scope gate self-test' "$ROOT/tests/check_pr_scope_test.sh"
 step 'Worktree test driver self-test' "$ROOT/tests/run_worktree_tests_test.sh"
-step 'Added files carry an AI declaration' "$ROOT/tests/check_ai_declarations.sh"
-step 'AI declaration gate self-test' "$ROOT/tests/check_ai_declarations_test.sh"
+step 'Added files carry an AI declaration' INV-03 "$ROOT/tests/check_ai_declarations.sh"
+step 'AI declaration gate self-test' INV-03 "$ROOT/tests/check_ai_declarations_test.sh"
 step 'Local issue tracker layout' "$ROOT/tests/check_tracker_layout.sh"
 step 'Local issue tracker layout self-test' "$ROOT/tests/check_tracker_layout_test.sh"
 # The Documents top level must stay free of agent folders: the 2026-10 litter
@@ -332,11 +332,14 @@ step 'gh stub wiring self-test' "$ROOT/tests/check_gh_stubs_test.sh"
 # the layer that keeps the step lists on the two boxes in lockstep.
 step 'Gate wiring covers both boxes' "$ROOT/tests/check_gate_wiring.sh"
 step 'Gate-wiring gate self-test' "$ROOT/tests/check_gate_wiring_test.sh"
+# The gate library itself is one implementation (INV-06): its step-line form —
+# PASS with or without the declared invariant ids — is pinned here.
+step 'Gate-library self-test' INV-06 "$ROOT/tests/check_gate_lib_test.sh"
 # The gate's own optional first word (layer filter) is pinned by a nested pair of
 # filtered runs; it skips (125) where `.tools/` holds no Windows toolchain.
 step 'Layer filter self-test' "$ROOT/tests/check_gate_filter_test.sh"
-step 'PR bodies carry the AI declaration' "$ROOT/tests/check_pr_bodies.sh"
-step 'PR body gate self-test' "$ROOT/tests/check_pr_bodies_test.sh"
+step 'PR bodies carry the AI declaration' INV-03 "$ROOT/tests/check_pr_bodies.sh"
+step 'PR body gate self-test' INV-03 "$ROOT/tests/check_pr_bodies_test.sh"
 
 # Product PR branches carry no tests/, so a commit message carried over by
 # `git commit -C` promises a test the upstream reviewer cannot find. The gate
@@ -346,8 +349,8 @@ step 'Commit-claims gate self-test' "$ROOT/tests/check_pr_commit_claims_test.sh"
 # The same carried-over commit can also lose the #996 declaration outright: PR #1010
 # shipped two commits whose messages carry none and no gate noticed. Both sides of
 # the pair run on either box now, so the two gates cover the same layers.
-step 'PR commit messages carry the AI declaration' "$ROOT/tests/check_pr_commit_declarations.sh"
-step 'Commit-declaration gate self-test' "$ROOT/tests/check_pr_commit_declarations_test.sh"
+step 'PR commit messages carry the AI declaration' INV-03 "$ROOT/tests/check_pr_commit_declarations.sh"
+step 'Commit-declaration gate self-test' INV-03 "$ROOT/tests/check_pr_commit_declarations_test.sh"
 # The gate needs a ref to read, so it runs at delivery time; the contract that
 # keeps it able to catch the unhardened workflows lives here.
 step 'Fork CI noise gate self-test' "$ROOT/tests/check_fork_ci_noise_test.sh"
@@ -379,7 +382,10 @@ export PYTHONDONTWRITEBYTECODE=1
 PY="$(python_cmd)" || PY=''
 if [ -n "$PY" ]; then
     step 'Python syntax (all input methods)' python_syntax
-    step 'Python backend tests' python_tests
+    # The suite's own modules are the mechanical halves of the invariant list:
+    # config quartet, rime log lines, wire fixture and reply keys, profile
+    # GUIDs/locale pair, stroke table, load policy.
+    step 'Python backend tests' INV-02 INV-04 INV-05 INV-07 INV-08 INV-09 python_tests
 else
     skip 'Python backend tests' 'no runnable python3 (PATH stub exits 49, bundled exe failed to run)'
 fi

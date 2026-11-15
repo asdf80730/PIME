@@ -11,6 +11,9 @@ index of agent docs.
 
 ## Hard limits, every edit
 
+- **Invariant ids**: the load-bearing invariants live once, as a numbered list
+  of `INV-NN` rows, in `docs/agents/invariants.md`; prose and gate headers cite
+  the id instead of restating the sentence.
 - **Read `HACKING.txt` first** before proposing an architectural change,
   adding a feature, or touching IPC logic: it is the authority on the C++
   client (TSF) and the Python/Node.js backend server architecture.
@@ -20,14 +23,13 @@ index of agent docs.
 - **Do not break the build**: the PIME DLL must support 32-bit (x86), 64-bit
   (x64), and ARM64 architectures; `PIMELauncher` and the backend servers are
   deliberately kept x86 to maximize compatibility.
-- **OS compatibility**: the minimum supported OS is **Windows 10** (Windows
-  8.1 is end of life and deliberately unsupported); use APIs available since
-  Windows 10. `docs/adr/0001-windows-support-floor.md` records why the payload
-  cannot go lower.
+- **OS compatibility** (`INV-01`): the minimum supported OS is **Windows 10**;
+  use APIs available since Windows 10. The floor and its reason are settled by
+  `docs/adr/0001-windows-support-floor.md`.
 - **Comment languages**: in the core framework, **English only**; in input
   method modules, comments in the local language (e.g., zh_TW for a
   Traditional Chinese IM) are welcomed. Otherwise default to English.
-- **Every added file declares its AI authorship** in its header;
+- **Every added file declares its AI authorship** (`INV-03`) in its header;
   `tests/hooks/pre-commit` fails the commit on a missing one, and the category
   forms live in the standing rules of `docs/agents/code-review.md`.
 - **Reply language**: what the human reads is **zh-Hant** — answers, questions,
@@ -49,14 +51,15 @@ a work tracker. See `docs/agents/issue-tracker.md`.
 
 Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 Every decision record, and the one fact each settles:
-`docs/adr/0001-windows-support-floor.md` (the Windows 10 floor),
+`docs/adr/0001-windows-support-floor.md` (the Windows 10 floor, `INV-01`),
 `docs/adr/0002-stroke-table-from-cns11643-with-prefix-expansion.md` (the Five-stroke
-table comes from the CNS11643 stroke-sequence data with every prefix emitted),
+table comes from the CNS11643 stroke-sequence data with every prefix emitted,
+`INV-08`),
 `docs/adr/0003-table-load-policy-lives-with-the-service.md` (the cinbase load policy
-belongs to the Service, not the loader), and
+belongs to the Service, not the loader, `INV-09`), and
 `docs/adr/0004-per-backend-profile-guids.md` (one `ime.json` per backend per IME:
 profile GUIDs distinct within one file and never compared across twins, the
-`locale`/`fallbackLocale` pair the only cross-twin invariant).
+`locale`/`fallbackLocale` pair the only cross-twin invariant, `INV-07`).
 
 ### Input method tables
 
@@ -64,9 +67,9 @@ cinbase tables are `.cin` sources run through the converter into committed runti
 
 ### Cinbase configuration
 
-Adding a cinbase setting touches four places and hides an eight-file trap in the
-shipped defaults. `docs/agents/cinbase-config.md` names the files and the working
-example PR.
+Adding a cinbase setting is one `CONFIG_RECORDS` row (`INV-02`) and hides an
+eight-file trap in the shipped defaults. `docs/agents/cinbase-config.md` names
+the files and the working example PR.
 
 ### Chewing backend
 
@@ -82,7 +85,8 @@ Return conventions of the bundled `rime.dll` — the librime source is not
 vendored here — are settled by probing that DLL and by the `RimeApi._fields_`
 declarations, never carried over from libchewing. `docs/agents/librime-api.md`
 has the re-derive commands, the verified config/option return table, the
-case-sensitive profile matching, and the one-`RimeSetup`-per-process rule.
+case-sensitive profile matching, the one-`RimeSetup`-per-process rule, and the
+expected `E1112`/`E1113` glog lines (`INV-04`).
 ### Verification
 
 `tests/run_local_tests.sh` runs every Linux-verifiable layer (host and bundled

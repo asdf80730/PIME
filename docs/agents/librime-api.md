@@ -66,9 +66,11 @@ log files land in the log directory that the tray menu opens
 (`%TEMP%` on Windows, the same value `ID_LOG_DIR` reports in
 `python/input_methods/rime/rime_ime.py`) as one glog triple per start, named
 `Rime.<app>.<host>.<user>.log.{INFO,WARNING,ERROR}.<stamp>.<pid>`.
-An `E1112 … Error loading config from '<tmp>\default.yaml'` in that stream is the
-expected reading of the empty traits file, printed by every rime test run: the
-Python layer's `OK` line is the verdict, and `E1112` is not one of its failures.
+The two glog lines are `INV-04` (see `docs/agents/invariants.md`): an
+`E1112 … Error loading config from '<tmp>\default.yaml'` in that stream is the
+expected reading of the empty traits file, printed by every rime test run, and
+the `E1113 …` line beside it is its pair; the
+Python layer's `OK` line is the verdict, and neither is one of its failures.
 `RimeGetSyncDir` returns `<user dir>/sync`. Both directories are bounded by the
 retention pass documented in `python/input_methods/rime/librime.py`; the
 profile keys that layer reads are listed in its module docstring, and the

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The standing rules (docs/agents/code-review.md) demand an AI declaration in
+# INV-03: the standing rules (docs/agents/code-review.md) demand an AI declaration in
 # every commit message, split three ways by #996. File headers have had a gate
 # since the start (check_ai_declarations.sh) and PR bodies since #1013
 # (check_pr_bodies.sh); commit messages had none, and PR #1010 shipped two
