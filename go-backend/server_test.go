@@ -1,10 +1,85 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/EasyIME/pime-go/pime"
 )
+
+// #481: the rime engine is used under both Chinese Windows input languages, so
+// it ships one input_methods folder per language, each with its own profile
+// GUID. The loader registers every folder it scans, so both GUIDs have to
+// resolve, or the init request from that profile answers 未知的输入法.
+func TestShippedRimeManifestsNameOneProfileGuidEach(t *testing.T) {
+	type want struct {
+		guid, locale, fallback string
+	}
+	cases := map[string]want{
+		"rime":    {"{3f6b5a12-8d44-4e71-9a2e-6b4f9c1d2a30}", "zh-Hant-TW", "zh-TW"},
+		"rime-cn": {"{9882e350-9462-4d42-9882-7847044ea725}", "zh-CN", "zh-CN"},
+	}
+	seen := map[string]string{}
+	for dir, expected := range cases {
+		data, err := os.ReadFile(filepath.Join("input_methods", dir, "ime.json"))
+		if err != nil {
+			t.Fatalf("read the shipped %s manifest: %v", dir, err)
+		}
+		var imeConfig map[string]interface{}
+		if err := json.Unmarshal(data, &imeConfig); err != nil {
+			t.Fatalf("parse the shipped %s manifest: %v", dir, err)
+		}
+		guid, _ := imeConfig["guid"].(string)
+		guid = strings.ToLower(guid)
+		if guid != expected.guid {
+			t.Errorf("%s guid = %s, want %s", dir, guid, expected.guid)
+		}
+		for key, value := range map[string]string{
+			"locale":         expected.locale,
+			"fallbackLocale": expected.fallback,
+		} {
+			if got, _ := imeConfig[key].(string); got != value {
+				t.Errorf("%s %s = %q, want %q", dir, key, got, value)
+			}
+		}
+		// One manifest is one Windows input language: no folded array.
+		if extra, ok := imeConfig["additionalProfiles"]; ok {
+			t.Errorf("%s still carries additionalProfiles: %v", dir, extra)
+		}
+		if other, clash := seen[guid]; clash {
+			t.Errorf("%s and %s share the guid %s", dir, other, guid)
+		}
+		seen[guid] = dir
+	}
+	if len(seen) != 2 {
+		t.Fatalf("the two rime folders gave %d distinct GUIDs, want 2", len(seen))
+	}
+}
+
+// The meow IME is the other IME shipping in this go tree, so its shipped
+// manifest is looked up here by its own guid in this backend's own runner.
+func TestMeowShippedManifestResolvesByItsOwnGuid(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("input_methods", "meow", "ime.json"))
+	if err != nil {
+		t.Fatalf("read the shipped meow manifest: %v", err)
+	}
+	var imeConfig map[string]interface{}
+	if err := json.Unmarshal(data, &imeConfig); err != nil {
+		t.Fatalf("parse the shipped meow manifest: %v", err)
+	}
+
+	primary, _ := imeConfig["guid"].(string)
+	primary = strings.ToLower(primary)
+	if primary != "{7a1c2e93-5b64-4f88-ae21-3d9c6b70f145}" {
+		t.Fatalf("primary guid = %s, want {7a1c2e93-5b64-4f88-ae21-3d9c6b70f145}", primary)
+	}
+	if _, ok := imeConfig["additionalProfiles"]; ok {
+		t.Fatalf("the meow manifest must stay one manifest, one profile")
+	}
+}
 
 func TestConvertResponseIncludesClearedCompositionState(t *testing.T) {
 	server := NewServer()

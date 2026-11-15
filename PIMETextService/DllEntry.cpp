@@ -79,6 +79,11 @@ STDAPI DllUnregisterServer(void) {
 	return module ? module->unregisterServer() : E_FAIL;
 }
 
+// One ime.json is one language profile: `guid` names the profile and
+// "locale"/"fallbackLocale" the Windows input-language bucket it appears under
+// (PIMETextService/DllEntry.cpp → libIME2/ImeModule.cpp:registerLangProfiles).
+// An IME that serves two buckets ships one folder per bucket, so
+// langProfileFromJson returns the single profile the manifest declares.
 static inline std::optional<Ime::LangProfileInfo> langProfileFromJson(const std::wstring& file, bool useWin8Icon) {
 	// load the json file to get the info of input method
 	std::ifstream fp(file, std::ifstream::binary);
