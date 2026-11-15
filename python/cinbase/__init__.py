@@ -3177,6 +3177,12 @@ class CinBase:
         cfg = cbTS.cfg # 所有 TextService 共享一份設定物件
         cbTS.configVersion = cfg.getVersion()
 
+        # 預設中英文/全半形也跟隨設定檔 (issue #844 同一條路)：這兩個值過去只在
+        # initCinBaseContext 的第一次建立時套用，改過設定檔後不會更新。
+        cbTS.langMode = ENGLISH_MODE if cfg.defaultEnglish else CHINESE_MODE
+        cbTS.shapeMode = FULLSHAPE_MODE if cfg.defaultFullSpace else HALFSHAPE_MODE
+        self.updateLangButtons(cbTS)
+
         # 每列顯示幾個候選字
         try:
             candPerRow = int(cfg.candPerRow)
