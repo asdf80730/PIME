@@ -49,16 +49,10 @@ the whole declaration of a setting; every other copy is derived from it:
    no page control and none is expected;
 4. for table-affecting rows only, `mirror` names the `CinTable` attribute
    `checkConfigChange` compares and `effect` its reload consequence, so the
-   diff loop iterates the flagged rows instead of a hand-written sequence;
-5. the engine reads it: `initCinBaseContext` (the one-shot pair
-   `defaultEnglish`/`defaultFullSpace`, which `applyConfig` re-applies too, so
-   a saved page reaches the running Service) and `applyConfig` (everything
-   else), reached live through `checkConfigChange`.
+   diff loop iterates the flagged rows instead of a hand-written sequence.
 
 `tests/test_cinbase_config_keys.py` pins these derivations and stays green as
-the single cross-file check: one test per projection, plus the engine-side scan
-(`test_every_record_key_is_read_by_the_engine`) that a row no engine function
-reads is a dead option. `keyboardLayout`, `colorCandWnd` and
+the single cross-file check. `keyboardLayout`, `colorCandWnd` and
 `directCommitString` are the worked example: each was an orphan present only
 in the shipped JSONs, and one row each brought it to the class, the JSONs,
 the page, and the diff table.

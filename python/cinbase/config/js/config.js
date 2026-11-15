@@ -137,7 +137,7 @@ function loadConfig() {
         pythonRecords = data.records || [];
         pythonDefaults = {};
         for (var ri = 0; ri < pythonRecords.length; ++ri) {
-            pythonDefaults[pythonRecords[ri].key] = pythonRecords[ri].default;
+            pythonDefaults[pythonRecords[ri][0]] = pythonRecords[ri][1];
         }
         selKeysData = data.selKeys || [];
         if (imeFolderName == "chedayi" && typeof checjConfig.intelligentSelect === "undefined") {

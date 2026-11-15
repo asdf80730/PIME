@@ -88,9 +88,8 @@ class ConfigHandler(BaseHandler):
             "imename": cfg.imeDirName,
             "config": self.load_config(),
             # the one record list, so the page derives its controls and
-            # defaults from it instead of restating them (ticket 02); the
-            # rows arrive as the ConfigRecord fields, read by name
-            "records": [record._asdict() for record in CONFIG_RECORDS],
+            # defaults from it instead of restating them (ticket 02)
+            "records": [list(record) for record in CONFIG_RECORDS],
             "selKeys": list(selKeys),
             "cincount": self.load_cindata(),
             "symbols": self.load_data("symbols.dat"),

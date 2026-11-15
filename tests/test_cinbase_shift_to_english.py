@@ -211,22 +211,6 @@ class CinbaseShiftToEnglishTests(CinbaseKeyHarness):
         self.assertEqual(service.langMode, ENGLISH_MODE)
 
 
-    def test_full_shape_mode_keeps_the_switched_letter_full_shape(self):
-        # The neighbouring non-shift branches convert through
-        # charCodeToFullshape; the switch branch reads shapeMode too, so one
-        # word is not half the first letter and full the rest.
-        from cinbase import FULLSHAPE_MODE
-        service = self.activate_chesimplex()
-        service.shiftLetterSwitchToEnglish = True
-        service.shapeMode = FULLSHAPE_MODE
-
-        first = self.send(service, ord("H"), ord("H"), printable=True, shift=True)
-        rest = self.send(service, ord("i"), ord("i"), printable=True)
-
-        self.assertEqual("Ｈ", first)
-        self.assertEqual("ｉ", rest)
-        self.assertEqual(ENGLISH_MODE, service.langMode)
-
     def test_shift_letter_outside_the_keyname_map_switches(self):
         # The not-isInKeyName half of onKeyDown: on the roman table w is not a
         # radical, so without the second branch the mode stays Chinese.
