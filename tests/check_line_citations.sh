@@ -46,7 +46,8 @@ trap 'rm -f "$all_list" "$scan_list"' EXIT
 # installer/ included) while the scan covers the material that carries citations.
 git ls-files > "$all_list"
 # Only regular files become awk inputs: a directory argument is a warning and a
-# skipped record (python/input_methods/rime/brise is the tracked submodule mount).
+# skipped record (python/input_methods/rime/brise is the tracked submodule mount,
+# and python/rimebase is the shared rime engine package).
 while IFS= read -r name; do
     [ -f "$name" ] && printf '%s\n' "$name" >> "$scan_list"
 done < <(git ls-files -- python tests docs GLOSSARY.md HACKING.txt)

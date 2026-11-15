@@ -155,8 +155,8 @@ mod tests {
                 let (reply_id, reply_payload) =
                     parse_backend_output(&line).unwrap_or_else(|| panic!("{name}: {line}"));
                 assert_eq!(reply_id, client_id, "{name}: reply client id");
-                let decoded: Value = serde_json::from_str(&reply_payload)
-                    .unwrap_or_else(|e| panic!("{name}: {e}"));
+                let decoded: Value =
+                    serde_json::from_str(&reply_payload).unwrap_or_else(|e| panic!("{name}: {e}"));
                 assert_eq!(&decoded, reply, "{name}: reply payload");
                 match reply.get("seqNum") {
                     Some(seq_num) => assert_eq!(
