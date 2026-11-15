@@ -35,7 +35,7 @@ set -u
 gate_root 'census partition' || exit $?
 
 census=${1:-docs/research/upstream-bug-backlog-2026-10.md}
-joined=${2:-.scratch/upstream-bugs/joined.json}
+joined=${2:-$DATA/.scratch/upstream-bugs/joined.json}
 
 if [ ! -f "$joined" ]; then
     printf 'SKIP  census partition (no %s in this checkout)\n' "$joined"

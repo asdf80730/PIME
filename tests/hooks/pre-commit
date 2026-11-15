@@ -59,6 +59,19 @@ if ! (cd "$root" && bash tests/check_ai_declarations.sh staged); then
     exit 1
 fi
 
+# The installer's File globs cost ~13 s (one `git check-ignore` per directive),
+# so the step is paid only when a staged path can break it: the script itself or
+# a tree it reads. A zero-match directive is the makensis abort that the
+# `/nonfatal` rewrite hides from the Linux NSIS layer.
+if git -C "$root" diff --cached --name-only --diff-filter=ACMRD -- \
+        'installer/installer.nsi' 'tests/check_nsi_file_globs.sh' | grep -q .; then
+    if ! (cd "$root" && bash tests/check_nsi_file_globs.sh); then
+        printf 'pre-commit: a File directive of installer/installer.nsi matches no path\n' >&2
+        printf '(compare each name with the .gitmodules path for a submodule).\n' >&2
+        exit 1
+    fi
+fi
+
 # `.git` is a directory in the main checkout but a plain file in a linked
 # worktree, so the log has to be addressed through the git dir itself: the
 # plain `$root/.git/...` form dies on its own redirect there and every

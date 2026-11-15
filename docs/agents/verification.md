@@ -195,7 +195,11 @@ Individual commands, if you want to narrow the loop:
   build output is absent. `tests/run_local_tests.sh` therefore copies
   `installer/` plus `version.txt`, `LGPL-2.0.txt`, `PSF.txt` and `LICENSE.txt`
   into a temp directory, rewrites each `File ` to `File /nonfatal`, and compiles, so a
-  broken script, include or LogicLib block fails locally. What that does not
+  broken script, include or LogicLib block fails locally. That rewrite also
+  silences the zero-match class, so `tests/check_nsi_file_globs.sh` runs the
+  strict form on both boxes: every `File` directive must reach at least one
+  path, a `.gitignore`d path counts as `build.bat` output, and a miss names its
+  own line. What that does not
   prove: packaging and signing, plugin behaviour at install time, and the
   payload, since the installer packages the JavaScript input methods
   `build.bat` generates (`node/input_methods/McBopomofo`, `McFoxim`,
@@ -270,7 +274,9 @@ The run prints its own tally — quote that line rather than a counted number:
 the AI-declaration check, the PR-body declaration check, the PR scope-gate,
 AI-declaration, PR-body and scratch-ref self-tests, and the local
 issue-tracker layout check (`.scratch/` is gitignored, so no CI job can ever
-run these — the Windows box holds the tickets and writes the PR bodies), the
+run these — the Windows box holds the tickets and writes the PR bodies; `gate_root`
+also exports `DATA`, the main checkout holding that directory, so a linked worktree
+judges the same ticket set instead of redning on its tracked subset), the
 GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the shipped
 `python/python3/python.exe`, the Python lint layer (`ruff check --config ruff.toml python
 tests`: the settled `F` + `E9` error-class rules, `F403`/`F405` off per the measurement in
@@ -324,8 +330,10 @@ same glob dies with `os error 123` on an empty match.
 
 An optional first word filters the layers: `bash tests/verify_windows.sh ruff`
 or `bash tests/verify_windows.sh "PR bodies"` runs only the labels holding that
-word and prints `filter <word>: N layer(s) skipped` above the tally — measured
-here, `Python lint` answered in 3s against 472s for the full sweep. The match is
+word and prints `filter <word>: N layer(s) skipped`. The seconds beside each
+`PASS` line and the tally below it are the run's own figures, so quote those
+rather than a remembered total (a full sweep on this box measured 846 s, the
+`ruff` layer 1 s inside it). The match is
 case-sensitive, so `Census` runs the two census layers while `census` runs none
 (a `0 passed, 0 failed` tally with every layer skipped is the empty-match
 signal, not a green run). Use it to
@@ -456,7 +464,21 @@ The AppVeyor side answers only at the bare project URL,
 latest build and its PR head SHA; `.../builds` and `.../build/<n>` return the
 HTML SPA shell or `Build not found`, so a numbered build is read as
 `build/<branch> build <n>-<jobsuffix>` taken verbatim from the project JSON's
-`Version` field.
+`Version` field. One more form does answer, and it is the cheap one for a
+multi-PR comparison: the numeric `BuildId` at the end of the check's
+`details_url` — `https://ci.appveyor.com/api/projects/EasyIME/pime/builds/55084565`
+— returns that build's JSON, whose `PullRequestHeadCommitId` ties it to a head
+and whose job carries `started`/`finished`, `compilationErrorsCount` and
+`testsCount`. Those four numbers grade a red on their own: an environment abort
+is seconds with zero errors and zero tests, a real failure carries a count. The
+job-level pair `/api/jobs/<JobId>` and `/api/jobs/<JobId>/log` answers 404
+without a token, so the per-step text is unavailable — name the missing half
+rather than guessing at it.
+Reading the GitHub side: `gh api "repos/EasyIME/PIME/commits/<sha>/check-runs"`
+is the per-commit verdict table, and `gh run view --log` prefixes every line with
+`<job>\t<step>\t<timestamp>`, so the text is field three —
+`awk -F'\t' '{print $3}'` — which is how the `makensis` block above was read
+without the `UNKNOWN STEP` column burying it.
 Per-step durations come from the jobs payload, each step's `started_at` and
 `completed_at`:
 

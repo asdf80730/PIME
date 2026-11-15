@@ -57,7 +57,7 @@ Create a new file under `.scratch/<feature-slug>/` (creating the directory if ne
 
 ## When a skill says "fetch the relevant ticket"
 
-Read the file at the referenced path. The user will normally pass the path or the issue number directly. Ticket files are exact paths for `read`; a `NN-*.md` pattern resolves only through `glob`, so glob the directory once, then read the exact names.
+Read the file at the referenced path. The user will normally pass the path or the issue number directly. Ticket files are exact paths for `read`; a `NN-*.md` pattern resolves only through `glob`, so glob the directory once, then read the exact names. With only an upstream PR number, one grep answers: every record that judges a PR names it in its `## Answer` or `## Comments`, so `grep -rln "1021" .scratch` returns the ticket and its drafts together.
 
 ## Wayfinding operations
 

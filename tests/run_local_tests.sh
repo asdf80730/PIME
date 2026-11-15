@@ -41,6 +41,9 @@ trap 'exit 130' INT TERM
 
 failures=0
 skipped=0
+# Names of the reddened layers, so the final tally is enough to re-run just
+# those: the per-step FAIL lines scroll away under a 70k-byte sweep.
+failed_names=()
 
 # The run is long: a file edited while it goes leaves every PASS above
 # predating that edit, invisibly. Snapshot the tree the run speaks for so the
@@ -68,7 +71,7 @@ step() {
     case "$status" in
         0) ;;
         125) skipped=$((skipped + 1)) ;;
-        *) failures=$((failures + 1)) ;;
+        *) failures=$((failures + 1)); failed_names+=("$name") ;;
     esac
 }
 
@@ -281,8 +284,15 @@ fi
 if command -v makensis >/dev/null 2>&1; then
     step 'NSIS installer script assembles' nsis_smoke
 else
-    skip 'NSIS installer script assembles' 'makensis missing; apt-get install nsis'
+    skip 'NSIS installer script assembles' 'makensis missing; apt-get install makensis'
 fi
+
+# The `/nonfatal` rewrite above silences the zero-match class, so the strict
+# form runs beside it: every File directive of installer/installer.nsi has to
+# reach at least one path, which is what makensis aborts on eight minutes into
+# the build-and-sign job.
+step 'Installer File globs resolve' "$ROOT/tests/check_nsi_file_globs.sh"
+step 'Installer File glob self-test' "$ROOT/tests/check_nsi_file_globs_test.sh"
 
 step 'PR branch starts at origin/master' "$ROOT/tests/check_pr_scope.sh"
 step 'PR scope gate self-test' "$ROOT/tests/check_pr_scope_test.sh"
@@ -493,5 +503,9 @@ if [ "$STATUS_NOW" != "$STATUS_BEFORE" ]; then
 fi
 printf '\n%d failed, %d skipped\n' "$failures" "$skipped"
 if [ "$failures" -ne 0 ]; then
+    printf 'failed layers:\n'
+    for name in "${failed_names[@]}"; do
+        printf '  %s\n' "$name"
+    done
     exit 1
 fi
