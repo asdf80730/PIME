@@ -1,4 +1,9 @@
 #! python3
+# Architecture and design by asdf80730.
+# Implementation generated with AI assistance from omp (Qwen3.8-Flash-Next):
+# the hook-partial-reply dispatcher, the shared TableHolder policy and the
+# named CONFIG_RECORDS reads on top of the upstream engine.
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either

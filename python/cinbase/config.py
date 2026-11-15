@@ -1,6 +1,11 @@
 #! python3
 # Copyright (C) 2016 Hong Jen Yee (PCMan) <pcman.tw@gmail.com>
 #
+# Architecture and design by asdf80730.
+# Implementation generated with AI assistance from omp (Qwen3.8-Flash-Next):
+# the one CONFIG_RECORDS list and the shipped-config writer added on top of the
+# upstream settings helpers.
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either

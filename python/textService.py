@@ -1,6 +1,10 @@
 #! python3
 # Copyright (C) 2015 - 2016 Hong Jen Yee (PCMan) <pcman.tw@gmail.com>
 #
+# Architecture and design by asdf80730.
+# Implementation generated with AI assistance from omp (Qwen3.8-Flash-Next):
+# the hooks return their partial reply and the dispatcher merges them.
+#
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
 # License as published by the Free Software Foundation; either
