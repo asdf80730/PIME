@@ -110,3 +110,34 @@ box (`command -v` per name), so their evidence is the Windows box's
 line is the known non-failure.
 
 *(Comment generated with AI assistance from omp (Qwen3.8-Flash-Next))*
+
+## Follow-up: the Windows box ran the four SKIPped layers
+
+`20f790d` on `local/stroke-parked` settles what the SKIP line above left open.
+Four layers were red on the first native run and are green now:
+
+- `node/tests/nimeServer.test.js` and `node/test/server.test.js`: their
+  `resolve` was a bare-string comparison, so an object request kept the literal
+  `"$guid"` and every case answered `success: false`. `resolve` now descends
+  into arrays and objects, as the python and go adapters already did.
+  `node --test tests/nimeServer.test.js` → 23 tests, 23 pass, 0 fail;
+  `node test/server.test.js` → `node backend: 23 wire fixture case(s) answered`.
+- `go-backend/pime/protocol_test.go`: marshalled the unresolved request, so the
+  `init` id stayed `"$guid"`. A `resolveWireValue` helper now fills the two
+  sentinels before `json.Marshal`, and the `init` branch compares the resolved
+  id against `guid`/`unknown`.
+- The go reply shape moved to `pime.Response.WireMap`, the exact map
+  `main.Server.convertResponse` builds; `ToJSON` marshals it and
+  `convertResponse` delegates, so the fixture's `return` key (the one
+  `PIMETextService/PIMEClient.cpp` reads) is no longer missing on the
+  package-local path and `ReturnData` carries the `json:"return,omitempty"` tag
+  instead of `-`. `go.exe test -count=1 ./...` with `APPDATA` cleared: `ok` for
+  the root, `input_methods/meow`, `input_methods/rime` and `pime`.
+- `PIMELauncher/src/protocol.rs`: the frame is built from the resolved request,
+  so the round-trip compares like-for-like. `cargo test --target
+  x86_64-pc-windows-gnu` → 16 passed (lib), 1, 2 for the other targets, 0 failed.
+
+`tests/wire-fixtures.json` itself is unchanged: the four runners now honour the
+substitution rule its `notes` already state.
+
+*(Comment generated with AI assistance from omp (Qwen3.8-Flash-Next))*
