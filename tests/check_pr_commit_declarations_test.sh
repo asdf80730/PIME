@@ -16,13 +16,10 @@ set -u
 
 . "${BASH_SOURCE[0]%/*}/gate_lib.sh"
 
-root=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    printf 'no git checkout; run from the repo root\n' >&2
-    exit 1
-}
-gate=$root/tests/check_pr_commit_declarations.sh
+gate_root 'commit-declarations self-test' || exit $?
+gate=$ROOT/tests/check_pr_commit_declarations.sh
 if [ ! -f "$gate" ]; then
-    printf 'gate missing: %s\n' "$gate" >&2
+    printf 'commit-declarations self-test: gate missing at %s\n' "$gate" >&2
     exit 1
 fi
 
