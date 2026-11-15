@@ -20,7 +20,7 @@ gate_root() {
         printf 'SKIP  %s (not inside a git checkout)\n' "$1"
         return 125
     }
-    # `.scratch/` is git-excluded, so a linked worktree carries only the tracked
+    # The `.scratch` tree is git-excluded, so a linked worktree carries only the
     # subset of it: the data root is the main checkout whenever that one holds
     # the directory, which keeps a gate's tally identical in both trees.
     DATA=$ROOT
