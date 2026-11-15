@@ -163,7 +163,7 @@ PIME_MSG|<client_id>|<JSON>
 ```json
 {
   "success": true,
-  "return": 1,
+  "returnValue": 1,
   "compositionString": "a",
   "candidateList": ["啊", "阿", "吖"],
   "showCandidates": true

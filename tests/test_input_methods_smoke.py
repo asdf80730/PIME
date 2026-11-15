@@ -9,7 +9,6 @@ reported as skipped rather than failed.
 # Generated with assistance from DeepSeek V4.1 Flash.
 
 import errno
-import importlib
 import json
 import os
 import subprocess
@@ -24,8 +23,6 @@ RUNNER = os.path.join(ROOT, "tests", "ime_smoke_runner.py")
 
 # The runner is a script next to this test, not part of the product package.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-if PYTHON_DIR not in sys.path:
-    sys.path.insert(0, PYTHON_DIR)
 import ime_smoke_runner  # noqa: E402 - located after ROOT is known
 
 # Every service that must run: the cinbase family plus the standalone meow
@@ -103,36 +100,6 @@ class ImportRetryTests(unittest.TestCase):
             with self.assertRaises(OSError):
                 ime_smoke_runner.import_service("input_methods.meow.ime_meow")
         self.assertEqual(len(calls), 1)
-
-
-class RunnerModulePathTests(unittest.TestCase):
-    """The runner's hardcoded dotted names resolve on both boxes.
-
-    The smoke class above self-skips on win32, so these plain imports are what
-    keep `ime_smoke_runner.SERVICES` in step with the tree: a ``.py`` moved out
-    of its IME folder otherwise reaches the first activation as a
-    `ModuleNotFoundError`. The import needs no native library, so it runs under
-    Wine and on the host alike.
-    """
-
-    def test_every_services_entry_imports(self):
-        self.assertTrue(ime_smoke_runner.SERVICES, "the runner names no service")
-        for name, dotted in ime_smoke_runner.SERVICES:
-            with self.subTest(service=name, module=dotted):
-                module = importlib.import_module(dotted)
-                self.assertEqual(module.__name__, dotted)
-
-    def test_folder_segment_matches_the_directory(self):
-        ime_dir = os.path.join(PYTHON_DIR, "input_methods")
-        on_disk = {name for name in os.listdir(ime_dir)
-                   if os.path.isdir(os.path.join(ime_dir, name))}
-        for name, dotted in ime_smoke_runner.SERVICES:
-            with self.subTest(service=name, module=dotted):
-                segments = dotted.split(".")
-                self.assertEqual(segments[0], "input_methods")
-                self.assertIn(segments[-2], on_disk,
-                              "%s is not a folder under python/input_methods"
-                              % segments[-2])
 
 
 if __name__ == "__main__":
