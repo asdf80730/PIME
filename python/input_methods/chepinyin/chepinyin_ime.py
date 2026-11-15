@@ -15,7 +15,8 @@
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["thpinyin.json", "pinyin.json", "roman.json"])
 
 
 class ChePinyinTextService(CinBaseTextService):
@@ -23,7 +24,7 @@ class ChePinyinTextService(CinBaseTextService):
 
     imeDirName = "chepinyin"
     maxCharLength = 7  # 輸入法最大編碼字元數量
-    cinFileList = ["thpinyin.json", "pinyin.json", "roman.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable

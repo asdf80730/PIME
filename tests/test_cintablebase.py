@@ -28,6 +28,17 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "python")))
 
 from cinbase import CinTableBase
+from cinbase.cintablebase import TableHolder, TableLoadError
+
+
+class _StubService:
+    """The two fields ensure() crosses: cfg.selCinType and the cin slot."""
+
+    class cfg:
+        selCinType = 0
+
+    def __init__(self):
+        self.cin = None
 
 
 class CinTableBaseTests(unittest.TestCase):
@@ -108,6 +119,133 @@ class CinTableBaseTests(unittest.TestCase):
             tbl.loading = True
         with self.assertRaises(AttributeError):
             tbl.cin = "custom"
+
+    # The shared TableHolder: one class for the three table kinds, one
+    # outcome per load, all crossed through ensure() only.
+
+    def test_ensure_spawned_starts_one_loader(self):
+        """ensure() spawns the one loader on a stale holder and reports
+        SPAWNED; a second ensure() landing in flight does not double-spawn."""
+        tbl = TableHolder("cin", ["table.json"])
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        service = _StubService()
+
+        def task():
+            time.sleep(0.05)
+            return "table"
+
+        class Loader:
+            """The #1004 loader shape: start() schedules, sets curCinType
+            and returns the Future, like LoadCinTable.start."""
+
+            def __init__(self, cbTS, holder):
+                self.cbTS = cbTS
+                self.holder = holder
+
+            def start(self):
+                future = executor.submit(task)
+                tbl.curCinType = service.cfg.selCinType
+                return future
+
+        self.assertEqual(TableHolder.SPAWNED, tbl.ensure(service, Loader))
+        self.assertTrue(tbl.loading)
+        self.assertEqual(TableHolder.LOADED, tbl.ensure(service, Loader))
+        self.assertEqual(1, tbl.load_count)
+        self.assertEqual("table", service.cin)
+        executor.shutdown(wait=False)
+
+    def test_ensure_loaded_adopts_the_present_table(self):
+        """A holder whose table is already there joins and reports LOADED."""
+        tbl = TableHolder("cin", ["table.json"])
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(lambda: "table")
+        future.result(timeout=1)
+        tbl.future = future
+        tbl.curCinType = 0
+        service = _StubService()
+
+        def no_spawn(cbTS, holder):
+            self.fail("ensure() spawned a loader the caller never asked for")
+
+        self.assertEqual(TableHolder.LOADED, tbl.ensure(service, no_spawn))
+        self.assertEqual("table", service.cin)
+        executor.shutdown(wait=False)
+
+    def test_ensure_failed_reports_no_table_without_raising(self):
+        """A load whose json path is missing reads FAILED, never raises."""
+        tbl = TableHolder("cin", ["missing.json"])
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+        def load_missing():
+            # the real missing-json shape: io.open raises inside the future
+            with open(os.path.join(os.path.dirname(__file__), "missing.json")):
+                pass
+
+        future = executor.submit(load_missing)
+        try:
+            future.result(timeout=1)
+        except FileNotFoundError:
+            pass
+        tbl.future = future
+        tbl.curCinType = 0
+        service = _StubService()
+
+        def no_spawn(cbTS, holder):
+            self.fail("ensure() spawned a loader the caller never asked for")
+
+        self.assertEqual(TableHolder.FAILED, tbl.ensure(service, no_spawn))
+        self.assertIsNone(tbl.cin)
+        self.assertIsNone(service.cin)
+        executor.shutdown(wait=False)
+
+    def test_wait_until_ready_raises_on_failed_holder(self):
+        """The asking seam raises TableLoadError naming the missing table."""
+        tbl = TableHolder("cin", ["missing.json"])
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+        def load_missing():
+            with open(os.path.join(os.path.dirname(__file__), "missing.json")):
+                pass
+
+        future = executor.submit(load_missing)
+        try:
+            future.result(timeout=1)
+        except FileNotFoundError:
+            pass
+        tbl.future = future
+        tbl.curCinType = 0
+
+        with self.assertRaises(TableLoadError) as ctx:
+            tbl.wait_until_ready(timeout=1)
+        self.assertIn("missing.json", str(ctx.exception))
+        executor.shutdown(wait=False)
+
+    def test_reset_is_the_test_seam(self):
+        """reset() clears a settled holder; an unwaited loader blocks it."""
+        tbl = TableHolder("cin", ["table.json"])
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(lambda: "table")
+        future.result(timeout=1)
+        tbl.future = future
+        tbl.curCinType = 0
+        tbl.load_count = 1
+
+        tbl.reset()
+        self.assertIsNone(tbl.future)
+        self.assertFalse(tbl.loading)
+        self.assertIsNone(tbl.cin)
+        self.assertIsNone(tbl.curCinType)
+        self.assertEqual(0, tbl.load_count)
+
+        pending = concurrent.futures.Future()
+        tbl.future = pending
+        tbl.load_count = 1
+        with self.assertRaises(TableLoadError):
+            tbl.reset(timeout=0.05)
+        self.assertIs(tbl.future, pending)
+        self.assertEqual(1, tbl.load_count)
+        pending.set_result("table")
+        executor.shutdown(wait=False)
 
 
 if __name__ == "__main__":

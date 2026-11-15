@@ -34,40 +34,23 @@ import os.path
 from textService import TextService
 from cinbase import CinBase
 from cinbase import LoadCinTable
-from cinbase import CinTableBase
+from cinbase import LoadRCinTable
+from cinbase.cintablebase import TableHolder
 from cinbase.config import CinBaseConfig
 
 
-class CinTableHolder(CinTableBase):
-    """主碼表 holder: fields the LoadCinTable pass writes."""
+def makeTableHolders(cinFileList):
+    """One fresh (CinTable, RCinTable, HCinTable) triple per binding module.
 
-    def __init__(self):
-        super().__init__()
-        self.curCinType = None
-        self.userExtendTable = None
-        self.priorityExtendTable = None
-        self.ignorePrivateUseArea = None
-
-
-class RCinTableHolder(CinTableBase):
-    """反查碼表 holder: fields the LoadRCinTable pass writes."""
-
-    def __init__(self):
-        super().__init__()
-        self.curCinType = None
-
-
-class HCinTableHolder(CinTableBase):
-    """同音字碼表 holder: fields the LoadHCinTable pass writes."""
-
-    def __init__(self):
-        super().__init__()
-        self.curCinType = None
-
-
-def makeTableHolders():
-    """One fresh (CinTable, RCinTable, HCinTable) triple per binding module."""
-    return CinTableHolder(), RCinTableHolder(), HCinTableHolder()
+    All three are the shared ``cinbase.cintablebase.TableHolder``: one class
+    for the holder concept, the table kind and the per-kind file list as
+    data. The rcin list is the one upstream's ``LoadRCinTable.__init__``
+    builds, read from there once so that list keeps a single authority; the
+    hcin list is ``CinBase``'s own.
+    """
+    return (TableHolder("cin", cinFileList),
+            TableHolder("rcin", LoadRCinTable(None, None).rcinFileList),
+            TableHolder("hcin", CinBase.hcinFileList))
 
 
 class CinBaseTextService(TextService):
@@ -138,13 +121,10 @@ class CinBaseTextService(TextService):
         pass
 
     def loadMainTable(self):
-        if not self.CinTable.curCinType == self.cfg.selCinType and not self.CinTable.loading:
-            loadCinFile = LoadCinTable(self, self.CinTable)
-            loadCinFile.start()
-        # Both paths need the table before the first key: the done callback
-        # fills self.cin only once the future resolves, so wait for it here.
-        self.CinTable.wait()
-        self.cin = self.CinTable.cin
+        # 載入輸入法碼表：載入策略（檢查、生成載入執行緒、有界加入、失敗回報）
+        # 在 TableHolder.ensure；spawn 分支不碰 self.cin，
+        # 碼表由載入執行緒自己寫回 cbTS.cin。
+        self.CinTable.ensure(self, LoadCinTable)
 
     def preKeyDown(self, keyEvent):
         pass

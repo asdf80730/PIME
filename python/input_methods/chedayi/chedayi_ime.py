@@ -17,7 +17,8 @@ from keycodes import *  # for VK_XXX constants
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["thdayi.json", "dayi4.json", "dayi3.json"])
 
 
 class CheDayiTextService(CinBaseTextService):
@@ -25,7 +26,7 @@ class CheDayiTextService(CinBaseTextService):
 
     imeDirName = "chedayi"
     maxCharLength = 4  # 輸入法最大編碼字元數量
-    cinFileList = ["thdayi.json", "dayi4.json", "dayi3.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable

@@ -15,7 +15,8 @@
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["tharray.json", "array30.json", "ar30-big.json", "array40.json"])
 
 
 class CheArrayTextService(CinBaseTextService):
@@ -23,7 +24,7 @@ class CheArrayTextService(CinBaseTextService):
 
     imeDirName = "chearray"
     maxCharLength = 4  # 輸入法最大編碼字元數量
-    cinFileList = ["tharray.json", "array30.json", "ar30-big.json", "array40.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable

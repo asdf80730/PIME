@@ -15,7 +15,8 @@
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["thphonetic.json", "CnsPhonetic.json", "bpmf.json"])
 
 
 class ChePhoneticTextService(CinBaseTextService):
@@ -28,7 +29,7 @@ class ChePhoneticTextService(CinBaseTextService):
 
     imeDirName = "chephonetic"
     maxCharLength = 4  # 輸入法最大編碼字元數量
-    cinFileList = ["thphonetic.json", "CnsPhonetic.json", "bpmf.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable

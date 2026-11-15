@@ -15,7 +15,8 @@
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["simplecj.json", "simplex.json", "simplex5.json"])
 
 
 class CheSimplexTextService(CinBaseTextService):
@@ -23,7 +24,7 @@ class CheSimplexTextService(CinBaseTextService):
 
     imeDirName = "chesimplex"
     maxCharLength = 2  # 輸入法最大編碼字元數量
-    cinFileList = ["simplecj.json", "simplex.json", "simplex5.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable

@@ -15,7 +15,7 @@
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(["liu.json"])
 
 
 class CheLiuTextService(CinBaseTextService):
@@ -23,7 +23,7 @@ class CheLiuTextService(CinBaseTextService):
 
     imeDirName = "cheliu"
     maxCharLength = 4  # 輸入法最大編碼字元數量
-    cinFileList = ["liu.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable

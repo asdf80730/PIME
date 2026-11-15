@@ -15,7 +15,9 @@
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["checj.json", "mscj3.json", "mscj3-ext.json", "cj-ext.json", "cnscj.json",
+     "thcj.json", "newcj3.json", "cj5.json", "newcj.json", "scj6.json", "cj-fast.json"])
 
 
 class CheCJTextService(CinBaseTextService):
@@ -23,7 +25,7 @@ class CheCJTextService(CinBaseTextService):
 
     imeDirName = "checj"
     maxCharLength = 5  # 輸入法最大編碼字元數量
-    cinFileList = ["checj.json", "mscj3.json", "mscj3-ext.json", "cj-ext.json", "cnscj.json", "thcj.json", "newcj3.json", "cj5.json", "newcj.json", "scj6.json", "cj-fast.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable

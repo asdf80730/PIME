@@ -15,7 +15,8 @@
 
 from cinbase.service import CinBaseTextService, makeTableHolders
 
-CinTable, RCinTable, HCinTable = makeTableHolders()
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["ez.json", "ezsmall.json", "ezmid.json", "ezbig.json"])
 
 
 class CheEZTextService(CinBaseTextService):
@@ -23,7 +24,7 @@ class CheEZTextService(CinBaseTextService):
 
     imeDirName = "cheez"
     maxCharLength = 4  # 輸入法最大編碼字元數量
-    cinFileList = ["ez.json", "ezsmall.json", "ezmid.json", "ezbig.json"]
+    cinFileList = CinTable.files
 
     CinTable = CinTable
     RCinTable = RCinTable
