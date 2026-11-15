@@ -53,8 +53,8 @@ Product commit `c3a53e26264564e279f78304beac122e44fa186b` (branch
 - `python/cinbase/config.py` 366 → 439 (the 54 hand-written `__init__` defaults
   become the 57-row `CONFIG_RECORDS` plus `shipped_defaults_for()` /
   `write_shipped_configs()`)
-- `python/cinbase/__init__.py` 3601 → 3607 (`checkConfigChange` diff is the
-  table-affecting-row loop)
+- `python/cinbase/__init__.py` 3601 → 3607 (3608 at close; `checkConfigChange`
+  diff is the table-affecting-row loop)
 - `python/cinbase/configtool.py` 286 → 290 (`/config` also serves `records`
   and `selKeys`)
 - `python/cinbase/config/js/config.js` 803 → 811 (no restated defaults:
@@ -69,7 +69,7 @@ Product commit `c3a53e26264564e279f78304beac122e44fa186b` (branch
 - the nine shipped `python/input_methods/*/config/config.json` are the exact
   bytes of `write_shipped_configs()` (4-space indent, record order, trailing
   newline); `docs/agents/cinbase-config.md` 60 ln
-- nine Services ship: the eight of the quartet plus `chebihua`, which joined
+- nine Services ship: the classic eight plus `chebihua`, which joined
   the same `CinBaseConfig` seam; the eight-file trap is now the writer's
   per-row `overrides` map.
 

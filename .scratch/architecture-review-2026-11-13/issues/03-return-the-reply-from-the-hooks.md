@@ -51,7 +51,7 @@ _mergePartial`). Of those, the 16 setter methods now return the dict partial
 they contribute, the 6 value hooks (`filterKeyDown`, `onKeyDown`,
 `filterKeyUp`, `onKeyUp`, `onPreservedKey`, `onMenu`) keep returning their
 exact pre-change value (bool / list / None — the `return` wire key is
-unchanged), and the no-op hooks stay `None`. `KeyEvent` is untouched (7
+unchanged), and the no-op hooks stay `None`. `KeyEvent` is untouched (6
 methods). `CinBaseTextService` now returns the merge table from its 7 void
 hooks (`checkConfigChange`, `onActivate`, `onDeactivate`, `onKeyUp`,
 `onCommand`, `onKeyboardStatusChanged`, `onCompositionTerminated`); the 14

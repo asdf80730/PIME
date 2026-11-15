@@ -96,7 +96,11 @@ Directory structure
     own input method, you should put your module in this directory.
 
   * python/cinbase, python/opencc, python/libchewing:
-    Shared helpers: .cin table parsing, OpenCC conversion, and libchewing bindings.
+    Shared helpers: .cin table parsing, OpenCC conversion, and libchewing
+    bindings. python/cinbase also carries the shared cinbase Service body
+    (service.py), the one cinbase setting record list (config.py,
+    CONFIG_RECORDS) and the shared table holder (cintablebase.py, TableHolder
+    with ensure/wait_until_ready/reset).
 
 * node:
   node.js backend of PIME, including a bundled 32-bit node.exe.
@@ -116,7 +120,10 @@ Directory structure
 * tests:
   Backend tests. test_backend_resilience.py is cross-platform and runs in CI via
   `python -m unittest discover -s tests -p "test_*.py"`. chewing_test.py drives the
-  Windows desktop through windll, so run it manually.
+  Windows desktop through windll, so run it manually. The four line-protocol
+  adapters iterate one committed fixture, tests/wire-fixtures.json; the check
+  scripts share one step-status implementation, tests/gate_lib.sh; the invariant
+  sentences the gates enforce live in docs/agents/invariants.md (INV-NN ids).
 
 * McBopomofoWeb, McFoximWeb, McTabimWeb (git submodules):
   Web-based input methods from OpenVanilla, packaged into the node backend.

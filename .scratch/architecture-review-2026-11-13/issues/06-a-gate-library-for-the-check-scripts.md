@@ -48,7 +48,8 @@ one library concentrates it.*
 Landed on `local/stroke-parked` as `01d8c93` (read off `git log --oneline -1`
 in this checkout): one source-only library `tests/gate_lib.sh` (149 ln)
 exposing `gate_root`, `gate_top`, `gate_sandbox`, `gate_run` /
-`gate_run_bounded` and `cpp_test`; 38 harness scripts now source it — 17
+`gate_run_bounded` and `cpp_test`; 39 harness scripts now source it (38 at the
+cutover + the ticket 07 self-test `check_gate_lib_test.sh`) — 17
 `check_*.sh`, 20 `check_*_test.sh`/driver self-tests and
 `tests/run_local_tests.sh` (its five `cpp_*_test()` bodies are one-liners
 over `cpp_test`, its `step()` maps 0/124/125/other through `gate_run`).

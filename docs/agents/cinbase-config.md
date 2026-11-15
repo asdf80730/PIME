@@ -1,18 +1,20 @@
 # cinbase per-IME configuration
 
 Reference when adding or changing a cinbase setting (the family tickets 12–20 of
-`.scratch/upstream-bug-backlog/` all do). Facts pinned against `master` 2026-10-30.
+`.scratch/upstream-bug-backlog/` all do). Facts pinned against `master`
+2026-11-13 (the record-list sections are from the 2026-11-13 architecture
+review).
 
 ## How a value resolves
 
-`CinBaseConfig` (`python/cinbase/config.py`, module-level singleton at `:290`)
-loads in two layers (`load()`, `:110-124`):
+`CinBaseConfig` (`python/cinbase/config.py`, module-level singleton at `:439`)
+loads in two layers (`load()`, `:211-242`):
 
 1. **Shipped defaults**: `python/input_methods/<ime>/config/config.json`, applied
-   over `__init__()` defaults on every load (`getDefaultConfigDir()`, `:183-184`).
+   over `__init__()` defaults on every load (`getDefaultConfigDir()`, `:331-332`).
    This is the layer that reaches users who already have a personal config.
 2. **User config**: `%APPDATA%\PIME\<ime>\config.json`
-   (`getConfigDir()`/`getConfigFile()`, `:97-103`), with a legacy `~/PIME/<ime>`
+   (`getConfigDir()`/`getConfigFile()`, `:190-196`), with a legacy `~/PIME/<ime>`
    fallback.
 
 Every table-affecting value is re-discovered by `checkConfigChange`
@@ -33,9 +35,10 @@ the whole declaration of a setting; every other copy is derived from it:
 1. `CinBaseConfig.__init__` seeds each attribute from its row's `default` —
    the attribute always exists;
 2. the shipped `python/input_methods/<ime>/config/config.json` of every
-   Service is the deterministic writer `write_shipped_configs()`: row value =
-   `overrides[ime]` or `default`, one key set for all Services, so the
-   former eight-file trap is just this writer's per-`overrides` map
+   Service is the deterministic writer `write_shipped_configs()`: a row with
+   no `overrides` ships everywhere as `default`, a row with `overrides` ships
+   only to the Services it names (value = `overrides[ime]`), so the former
+   eight-file trap is just this writer's per-`overrides` map
    (regenerate with `python/python3/python.exe` and the module's
    `write_shipped_configs()`; the committed files are its bytes);
 3. the shared config page (`python/cinbase/config/config.htm` scripted by

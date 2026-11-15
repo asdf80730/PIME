@@ -67,8 +67,9 @@ Individual commands, if you want to narrow the loop:
   and drives the Windows desktop. Run it on Windows by hand.
 
   `tests/test_input_methods_smoke.py` instantiates the real service subclasses
-  with Windows API shims, activates them, and sends key events. It covers the ten
-  cinbase services plus `meow`; `chewing`/`braille_chewing` are reported as
+  with Windows API shims, activates them, and sends key events. It covers the
+  eight cinbase services it can exercise plus `cheeng` and `meow`;
+  `chewing`/`braille_chewing` are reported as
   skipped when the system libchewing does not match the bundled binding, and
   `rime` when `librime.so` is absent. It needs `libopencc-dev` (the wrapper loads
   `libopencc.so`); without it the test skips. `libchewing3`/`librime1` are

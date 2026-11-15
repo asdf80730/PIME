@@ -54,7 +54,9 @@ nine bodies are one body. The shared module concentrates it.*
 ## Answer
 
 Landed on `local/stroke-parked` as `fd7180d` (read off `git log --oneline -1`
-in this checkout): one deep body in `python/cinbase/service.py` (226 ln), the
+in this checkout; counts below are at that commit — later tickets moved them:
+the nine bindings now sum 437 ln and `python/cinbase/service.py` is 213 ln):
+one deep body in `python/cinbase/service.py` (226 ln), the
 nine bindings reduced to their four data points plus the three table-holder
 singletons. Per-file lines before → after:
 `chearray` 178→46, `checj` 164→30, `chedayi` 200→72, `cheez` 165→33,

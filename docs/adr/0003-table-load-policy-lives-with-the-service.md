@@ -21,9 +21,10 @@ maintainers have not made.
   `CinTable.cin`/`curCinType` (`:3306-3307`) and ends in `except Exception:
   pass` (`:3321-3322`) with `finally: loading = False` (`:3324`), so a failed
   load is unobservable from outside without editing that file.
-- **Generalise to all nine Services now** — rejected: the eight cin Services then
-  carried the identical busy-spin (e.g. `python/cinbase/service.py:141-146`, the shared body
-  every thin binding now inherits), none
+- **Generalise to all nine Services now** — rejected at the time: the eight cin Services then
+  carried the identical busy-spin (`python/cinbase/service.py:124-127`, the shared body
+  every thin binding now inherits — since the 2026-11-13 note below it is the one
+  `TableHolder.ensure` call), none
   has a test that would notice a mistake, and one Service's test surface is not
   a reason to put eight shipped input methods at risk. Two adapters make a seam
   worth extracting; one does not.
@@ -33,7 +34,7 @@ maintainers have not made.
   the connector still accepts the handshake, and the user gets a session where
   every key answers `success: False` with the reason only in
   `%LOCALAPPDATA%\PIME\Logs\python_backend.log`. Today at least shows
-  「正在載入輸入法碼表，請稍候...」 (`python/cinbase/__init__.py:460-462`). So
+  「正在載入輸入法碼表，請稍候...」 (`python/cinbase/__init__.py:517-519`). So
   `ensure()` returns `SPAWNED`/`LOADED`/`FAILED` and never raises; the raising
   variant is `wait_until_ready()`, which tests and explicit queries call.
 - **Use a `threading.Event` instead of joining the remembered loader** — not
@@ -44,11 +45,12 @@ maintainers have not made.
 
 ## Consequences
 
-- Until #1004 lands or dies, 筆畫 is the only cinbase Service without a
-  busy-spin in its constructor, and the other eight keep spinning. A later
-  architecture review will see the duplication and propose sharing it again:
-  this ADR is the answer, and the generalisation becomes live only once #1004 is
-  resolved.
+- Superseded in part by ticket 05 of the 2026-11-13 architecture review: the
+  shared `TableHolder` now lives in `python/cinbase/cintablebase.py` and all
+  nine cinbase-family Services get the bounded-join `ensure()` — no
+  busy-spin remains in any constructor. The #1004 note still holds for the
+  loader trio in `python/cinbase/__init__.py`: it stays upstream-owned and
+  untouched until that PR lands or dies.
 - The old check-then-spawn could start a second loader in the window between
   `Thread.start()` and the child setting `loading`; that second loader's
   `self.cbTS.cin.__del__()` (`python/cinbase/__init__.py:3297`) can touch the

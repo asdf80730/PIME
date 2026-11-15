@@ -67,8 +67,9 @@ cinbase tables are `.cin` sources run through the converter into committed runti
 
 ### Cinbase configuration
 
-Adding a cinbase setting is one `CONFIG_RECORDS` row (`INV-02`) and hides an
-eight-file trap in the shipped defaults. `docs/agents/cinbase-config.md` names
+Adding a cinbase setting is one `CONFIG_RECORDS` row (`INV-02`) and hides the
+per-Service shipped-config trap (nine `config.json` today) in the shipped
+defaults. `docs/agents/cinbase-config.md` names
 the files and the working example PR.
 
 ### Chewing backend

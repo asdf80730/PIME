@@ -27,8 +27,9 @@ Drift is visible only when a check disagrees with itself.
 ## Solution
 
 One numbered invariant list at the top of the agent docs; the prose and the gate
-headers cite the id instead of restating the sentence, and each gate prints the
-id in its PASS line.
+headers cite the id instead of restating the sentence, and each Linux-gate step
+prints the id in its PASS line (the Windows gate keeps its own `PASS  %s (%ds)`
+form per ticket 06).
 
 ## Verification
 

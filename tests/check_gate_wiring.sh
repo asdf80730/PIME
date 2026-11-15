@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Every `tests/check_*.sh` gate and every `tests/check_*_test.sh` self-test has to
+# INV-06 companion: every `tests/check_*.sh` gate and every `tests/check_*_test.sh` self-test has to
 # be named by both local gates — `tests/run_local_tests.sh` (Linux) and
 # `tests/verify_windows.sh` (Windows). A check that exists but no gate runs is
 # decorative: the 2026-11 rounds twice found a new `check_*.sh` sitting next to its
