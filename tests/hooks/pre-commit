@@ -21,11 +21,6 @@ set -u
 # that tests/check_pr_scope.sh then fails.
 export PYTHONDONTWRITEBYTECODE=1
 
-# Discovery writes bytecode unless told not to; the product .gitignore does not
-# cover __pycache__, so a cache created here is one `git add -A` away from a commit
-# that tests/check_pr_scope.sh then fails.
-export PYTHONDONTWRITEBYTECODE=1
-
 root=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 git -C "$root" ls-files --error-unmatch tests/ime_smoke_runner.py >/dev/null 2>&1 || exit 0
 

@@ -42,19 +42,21 @@ work_go=$tmp/go
 branch_go2=selftest/scope-go2.$$
 work_go2=$tmp/go2
 
+# The trap runs after the summary line, so every command here is silenced: a
+# tail of the run then ends on `N failed, M skipped` instead of git bookkeeping.
 cleanup() {
-    git worktree remove --force "$work_bad" 2>/dev/null
-    git worktree remove --force "$work_detached" 2>/dev/null
-    git worktree remove --force "$work_ok" 2>/dev/null
-    git worktree remove --force "$work_pyc" 2>/dev/null
-    git worktree remove --force "$work_sym" 2>/dev/null
-    git worktree remove --force "$work_state" 2>/dev/null
-    git worktree remove --force "$work_pr" 2>/dev/null
-    git worktree remove --force "$work_go" 2>/dev/null
-    git worktree remove --force "$work_go2" 2>/dev/null
-    git worktree prune 2>/dev/null
+    git worktree remove --force "$work_bad" >/dev/null 2>&1
+    git worktree remove --force "$work_detached" >/dev/null 2>&1
+    git worktree remove --force "$work_ok" >/dev/null 2>&1
+    git worktree remove --force "$work_pyc" >/dev/null 2>&1
+    git worktree remove --force "$work_sym" >/dev/null 2>&1
+    git worktree remove --force "$work_state" >/dev/null 2>&1
+    git worktree remove --force "$work_pr" >/dev/null 2>&1
+    git worktree remove --force "$work_go" >/dev/null 2>&1
+    git worktree remove --force "$work_go2" >/dev/null 2>&1
+    git worktree prune >/dev/null 2>&1
     git branch -D "$branch_bad" "$branch_ok" "$branch_pyc" "$branch_sym" \
-        "$branch_state" "$branch_pr" "$branch_go" "$branch_go2" 2>/dev/null
+        "$branch_state" "$branch_pr" "$branch_go" "$branch_go2" >/dev/null 2>&1
     rm -rf "$tmp"
 }
 trap cleanup EXIT
