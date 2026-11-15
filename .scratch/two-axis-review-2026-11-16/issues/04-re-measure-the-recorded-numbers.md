@@ -31,8 +31,11 @@ every correction, each derived at that SHA and each naming the command:
   which supersedes the 39/40 tally pair.
 - The per-file tallies in the ticket 01 record are the `Ran 376 tests ... OK (skipped=3)`
   layer reading, quoted from the harness' own line rather than carried over.
-- `python/cinbase/__init__.py` loader trio re-cited by `grep -n 'class CinTableBase'`,
-  `class TableHolder`, `class TableLoadError` → 3448, 3527, 3578.
+- `python/cinbase/__init__.py` loader trio re-cited by `grep -n 'class LoadCinTable'`,
+  `class LoadRCinTable`, `class LoadHCinTable` → 3458, 3537, 3588 at `a58da95`; the
+  3448/3527/3578 pair was the same file at `45618cb`, ten lines earlier, before the six
+  one-problem commits landed. The 2026-11-13 ticket 05 and 06 records carry the `a58da95`
+  reading, which is the one a fresh checkout reproduces.
 - `bash tests/check_line_citations.sh` → `checked 281 citation(s)`, rc 0.
 
 ## Comments
