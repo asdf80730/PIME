@@ -13,50 +13,29 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-from keycodes import *  # for VK_XXX constants
-from textService import *
-import io
-import os.path
-import copy
+from cinbase.service import CinBaseTextService, makeTableHolders
 
-from cinbase import CinBase
-from cinbase import LoadCinTable
-from cinbase import LoadRCinTable
-from cinbase import LoadHCinTable
-from cinbase import CinTableBase
-from cinbase.config import CinBaseConfig
+CinTable, RCinTable, HCinTable = makeTableHolders(
+    ["thphonetic.json", "CnsPhonetic.json", "bpmf.json"])
 
 
-class ChePhoneticTextService(TextService):
+class ChePhoneticTextService(CinBaseTextService):
+    """注音輸入法 (PIME) — thin binding over the shared cinbase body.
 
-    compositionChar = ''
+    注音 carries genuinely per-Service keyboard state (the four 鍵盤
+    layouts, the 注音 key map and its end-key list), so it owns the
+    template-hook overrides below instead of the plain body.
+    """
 
-    def __init__(self, client):
-        TextService.__init__(self, client)
+    imeDirName = "chephonetic"
+    maxCharLength = 4  # 輸入法最大編碼字元數量
+    cinFileList = CinTable.files
 
-        # 輸入法模組自訂區域
-        self.imeDirName = "chephonetic"
-        self.maxCharLength = 4 # 輸入法最大編碼字元數量
-        self.cinFileList = ["thphonetic.json", "CnsPhonetic.json", "bpmf.json"]
+    CinTable = CinTable
+    RCinTable = RCinTable
+    HCinTable = HCinTable
 
-        self.cinbase = CinBase
-        self.curdir = os.path.abspath(os.path.dirname(__file__))
-
-        # 初始化輸入行為設定
-        self.cinbase.initTextService(self, TextService)
-
-        # 載入用戶設定值
-        CinBaseConfig.__init__()
-        self.configVersion = CinBaseConfig.getVersion()
-        self.cfg = copy.deepcopy(CinBaseConfig)
-        self.cfg.imeDirName = self.imeDirName
-        self.cfg.cinFileList = self.cinFileList
-        self.cfg.load()
-        self.jsondir = self.cfg.getJsonDir()
-        self.cindir = self.cfg.getCinDir()
-        self.ignorePrivateUseArea = self.cfg.ignorePrivateUseArea
-        self.cinbase.initCinBaseContext(self)
-
+    def initContextState(self):
         self.keyboardLayout = self.cfg.keyboardLayout
         self.kbtypelist = [
             "1qaz2wsxedcrfv5tgbyhnujm8ik,9ol.0p;/-7634",        # standard kb
@@ -72,14 +51,7 @@ class ChePhoneticTextService(TextService):
             "7634"                      # ˙ˊˇˋ
         ]
 
-        # 載入輸入法碼表
-        if not CinTable.curCinType == self.cfg.selCinType and not CinTable.loading:
-            loadCinFile = LoadCinTable(self, CinTable)
-            loadCinFile.start()
-        else:
-            CinTable.wait()
-            self.cin = CinTable.cin
-
+    def initTableState(self):
         self.useEndKey = True
         self.autoShowCandWhenMaxChar = True
 
@@ -89,11 +61,7 @@ class ChePhoneticTextService(TextService):
         for key in self.endKey:
             self.endKeyList.append(key)
 
-
-    # 檢查設定檔是否有被更改，是否需要套用新設定
-    def checkConfigChange(self):
-        self.cinbase.checkConfigChange(self, CinTable, RCinTable, HCinTable)
-
+    def checkConfigChangeState(self):
         if not self.keyboardLayout == self.cfg.keyboardLayout:
             self.keyboardLayout = self.cfg.keyboardLayout
 
@@ -101,78 +69,6 @@ class ChePhoneticTextService(TextService):
             self.endKey = self.kbtypelist[self.keyboardLayout][-4:]
             for key in self.endKey:
                 self.endKeyList.append(key)
-
-
-    # 輸入法被使用者啟用
-    def onActivate(self):
-        TextService.onActivate(self)
-        self.cinbase.onActivate(self)
-
-
-    # 使用者離開輸入法
-    def onDeactivate(self):
-        TextService.onDeactivate(self)
-        self.cinbase.onDeactivate(self)
-
-
-    # 使用者按下按鍵，在 app 收到前先過濾那些鍵是輸入法需要的。
-    # return True，系統會呼叫 onKeyDown() 進一步處理這個按鍵
-    # return False，表示我們不需要這個鍵，系統會原封不動把按鍵傳給應用程式
-    def filterKeyDown(self, keyEvent):
-        KeyState = self.cinbase.filterKeyDown(self, keyEvent, CinTable, RCinTable, HCinTable)
-        return KeyState
-
-
-    def onKeyDown(self, keyEvent):
-        KeyState = self.cinbase.onKeyDown(self, keyEvent, CinTable, RCinTable, HCinTable)
-        return KeyState
-
-
-    # 使用者放開按鍵，在 app 收到前先過濾那些鍵是輸入法需要的。
-    # return True，系統會呼叫 onKeyUp() 進一步處理這個按鍵
-    # return False，表示我們不需要這個鍵，系統會原封不動把按鍵傳給應用程式
-    def filterKeyUp(self, keyEvent):
-        KeyState = self.cinbase.filterKeyUp(self, keyEvent)
-        return KeyState
-
-
-    def onKeyUp(self, keyEvent):
-        self.cinbase.onKeyUp(self, keyEvent)
-
-
-    def onPreservedKey(self, guid):
-        KeyState = self.cinbase.onPreservedKey(self, guid)
-        return KeyState
-
-
-    def onCommand(self, commandId, commandType):
-        self.cinbase.onCommand(self, commandId, commandType)
-
-
-    # 開啟語言列按鈕選單
-    def onMenu(self, buttonId):
-        MenuItems = self.cinbase.onMenu(self, buttonId)
-        return MenuItems
-
-
-    # 鍵盤開啟/關閉時會被呼叫 (在 Windows 10 Ctrl+Space 時)
-    def onKeyboardStatusChanged(self, opened):
-        TextService.onKeyboardStatusChanged(self, opened)
-        self.cinbase.onKeyboardStatusChanged(self, opened)
-
-
-    # 當中文編輯結束時會被呼叫。若中文編輯不是正常結束，而是因為使用者
-    # 切換到其他應用程式或其他原因，導致我們的輸入法被強制關閉，此時
-    # forced 參數會是 True，在這種狀況下，要清除一些 buffer
-    def onCompositionTerminated(self, forced):
-        TextService.onCompositionTerminated(self, forced)
-        self.cinbase.onCompositionTerminated(self, forced)
-
-
-    # 設定候選字頁數
-    def setCandidatePage(self, page):
-        self.currentCandPage = page
-
 
     def updateCompositionChar(self, charStr):
         compositionChar = ['', '', '', '']
@@ -210,26 +106,3 @@ class ChePhoneticTextService(TextService):
         else:
             self.setCompositionString(keynames)
             self.setCompositionCursor(len(self.compositionString))
-
-
-class CinTable(CinTableBase):
-    def __init__(self):
-        super().__init__()
-        self.curCinType = None
-        self.userExtendTable = None
-        self.priorityExtendTable = None
-        self.ignorePrivateUseArea = None
-CinTable = CinTable()
-
-
-class RCinTable(CinTableBase):
-    def __init__(self):
-        super().__init__()
-        self.curCinType = None
-RCinTable = RCinTable()
-
-class HCinTable(CinTableBase):
-    def __init__(self):
-        super().__init__()
-        self.curCinType = None
-HCinTable = HCinTable()
