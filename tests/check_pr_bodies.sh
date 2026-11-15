@@ -24,7 +24,7 @@ set -u
 gate_root 'PR bodies' || exit $?
 
 files=()
-[ -d "$DATA/.scratch" ] && mapfile -t files < <(find "$DATA/.scratch" -maxdepth 1 -type f -name 'pr-*-body.md' -print)
+[ -d .scratch ] && mapfile -t files < <(find .scratch -maxdepth 1 -type f -name 'pr-*-body.md' -print)
 bad=0
 # Cache for the `Ran N tests` rule below: a module's whole history of case
 # counts is read once, whatever number of bodies cite it.

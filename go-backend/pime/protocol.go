@@ -141,9 +141,7 @@ type Response struct {
 	SeqNum            int                    `json:"seqNum"`
 	Success           bool                   `json:"success"`
 	ReturnValue       int                    `json:"returnValue,omitempty"`
-	// "return" is the wire key the C++ client reads; a method either fills
-	// ReturnData (the menu and list answers) or leaves the folded ReturnValue.
-	ReturnData        interface{}            `json:"return,omitempty"`
+	ReturnData        interface{}            `json:"-"`
 	CompositionString string                 `json:"compositionString"`
 	CommitString      string                 `json:"commitString,omitempty"`
 	CandidateList     []string               `json:"candidateList"`
@@ -171,59 +169,9 @@ func ParseRequest(data []byte) (*Request, error) {
 	return &req, nil
 }
 
-// WireMap is the reply shape the C++ client reads (PIMETextService/PIMEClient.cpp
-// reads "return" for the eaten/not-eaten answer, plus the composition and
-// candidate keys). One shape for both servers: the shipped backend builds its
-// line through it, and the pime-package server serializes it in ToJSON.
-// "return" carries ReturnData when the method filled one, otherwise the folded
-// ReturnValue, which is how the go backend answers the same key python and node
-// write as a boolean.
-func (r *Response) WireMap() map[string]interface{} {
-	candidateList := r.CandidateList
-	if candidateList == nil {
-		candidateList = []string{}
-	}
-	m := map[string]interface{}{
-		"success":           r.Success,
-		"seqNum":            r.SeqNum,
-		"cursorPos":         r.CursorPos,
-		"compositionCursor": r.CompositionCursor,
-		"candidateCursor":   r.CandidateCursor,
-		"showCandidates":    r.ShowCandidates,
-		"compositionString": r.CompositionString,
-		"candidateList":     candidateList,
-		"selStart":          r.SelStart,
-		"selEnd":            r.SelEnd,
-	}
-	if r.ReturnData != nil {
-		m["return"] = r.ReturnData
-	} else {
-		m["return"] = r.ReturnValue
-	}
-	if r.CommitString != "" {
-		m["commitString"] = r.CommitString
-	}
-	if r.SetSelKeys != "" {
-		m["setSelKeys"] = r.SetSelKeys
-	}
-	if len(r.CustomizeUI) > 0 {
-		m["customizeUI"] = r.CustomizeUI
-	}
-	if len(r.AddButton) > 0 {
-		m["addButton"] = r.AddButton
-	}
-	if len(r.RemoveButton) > 0 {
-		m["removeButton"] = r.RemoveButton
-	}
-	if len(r.ChangeButton) > 0 {
-		m["changeButton"] = r.ChangeButton
-	}
-	return m
-}
-
-// ToJSON 转换为 JSON 字节（與 WireMap 同一個線上形制）
+// ToJSON 转换为 JSON 字节
 func (r *Response) ToJSON() ([]byte, error) {
-	return json.Marshal(r.WireMap())
+	return json.Marshal(r)
 }
 
 // NewResponse 创建新响应

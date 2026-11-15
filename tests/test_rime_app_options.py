@@ -6,7 +6,7 @@ The rime profile may carry a per-application block, e.g.
       python.exe:
         ascii_mode: true
 
-``python/rimebase/librime.py`` reads it through the rime config API
+``python/input_methods/rime/librime.py`` reads it through the rime config API
 and pushes the honoured keys onto the freshly created session with
 ``RimeSetOption``, so the first key press is already in the declared mode.
 Anything else in the map is ignored; a profile without the key, a profile whose
@@ -43,7 +43,7 @@ if PYTHON_DIR not in sys.path:
     sys.path.insert(0, PYTHON_DIR)
 
 try:
-    from rimebase import librime
+    from input_methods.rime import librime
     librime.rime  # touched by the import; fails when the library is missing
 except Exception as import_error:  # pragma: no cover - Linux without librime.so
     librime = None

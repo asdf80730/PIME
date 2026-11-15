@@ -290,13 +290,71 @@ func (s *Server) sendResponse(clientID string, resp map[string]interface{}) erro
 
 // convertResponse 转换响应格式
 func (s *Server) convertResponse(resp *pime.Response) map[string]interface{} {
-	// One shape for both servers; see pime.Response.WireMap.
-	return resp.WireMap()
+	candidateList := resp.CandidateList
+	if candidateList == nil {
+		candidateList = []string{}
+	}
+	m := map[string]interface{}{
+		"success":           resp.Success,
+		"seqNum":            resp.SeqNum,
+		"cursorPos":         resp.CursorPos,
+		"compositionCursor": resp.CompositionCursor,
+		"candidateCursor":   resp.CandidateCursor,
+		"showCandidates":    resp.ShowCandidates,
+		"compositionString": resp.CompositionString,
+		"candidateList":     candidateList,
+		"selStart":          resp.SelStart,
+		"selEnd":            resp.SelEnd,
+	}
+	if resp.ReturnData != nil {
+		m["return"] = resp.ReturnData
+	} else {
+		m["return"] = resp.ReturnValue
+	}
+
+	if resp.CommitString != "" {
+		m["commitString"] = resp.CommitString
+	}
+	if resp.SetSelKeys != "" {
+		m["setSelKeys"] = resp.SetSelKeys
+	}
+	if len(resp.CustomizeUI) > 0 {
+		m["customizeUI"] = resp.CustomizeUI
+	}
+	if len(resp.AddButton) > 0 {
+		m["addButton"] = resp.AddButton
+	}
+	if len(resp.RemoveButton) > 0 {
+		m["removeButton"] = resp.RemoveButton
+	}
+	if len(resp.ChangeButton) > 0 {
+		m["changeButton"] = resp.ChangeButton
+	}
+	return m
 }
 
 // loadInputMethods 加载所有输入法
-// 每個 input_methods 目錄就是一個 Windows 輸入語言檔：一份 ime.json、一個
-// profile GUID，所以這裡只需註冊該目錄自己的 guid。
+// additionalProfileGuids 回傳 ime.json 的 additionalProfiles 中每個語言檔的
+// GUID（轉小寫，與 RegisterService 的鍵一致）。缺 guid 或格式不對的條目略過，
+// 與 flat 的 guid 鍵相同。
+func additionalProfileGuids(imeConfig map[string]interface{}) []string {
+	guids := []string{}
+	profiles, ok := imeConfig["additionalProfiles"].([]interface{})
+	if !ok {
+		return guids
+	}
+	for _, item := range profiles {
+		profile, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if profileGuid, ok := profile["guid"].(string); ok && profileGuid != "" {
+			guids = append(guids, strings.ToLower(profileGuid))
+		}
+	}
+	return guids
+}
+
 func loadInputMethods(server *Server) {
 	// 获取当前目录
 	exePath, err := os.Executable()
@@ -340,8 +398,9 @@ func loadInputMethods(server *Server) {
 			continue
 		}
 
-		// 一個目錄一個語言檔：註冊自己的 guid 即可。
-		guids := []string{guid}
+		// 同一個 service 也可由額外語言檔（additionalProfiles，另一個 Windows
+		// 輸入語言）的 GUID 啟動，所以每個 profile GUID 都註冊同一個實作。
+		guids := append([]string{guid}, additionalProfileGuids(imeConfig)...)
 
 		log.Printf("加载输入法: %s (%s)", name, guid)
 
@@ -354,9 +413,8 @@ func loadInputMethods(server *Server) {
 					return meow.New(client)
 				})
 			}
-		case "rime", "rime-cn":
-			// RIME 输入法：兩個語言檔（zh-Hant-TW 與 zh-CN）共用同一個實作，
-			// 各自的 ime.json 只帶自己的 profile GUID。
+		case "rime":
+			// RIME 输入法
 			for _, id := range guids {
 				server.RegisterService(id, func(client *pime.Client, g string) pime.TextService {
 					return rime.New(client)

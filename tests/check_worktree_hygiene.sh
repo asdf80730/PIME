@@ -31,11 +31,7 @@ report_fix() {
     printf '      (or delete it: git -C "%s" worktree remove --force "%s")\n' "$main" "$1"
 }
 
-# Registered linked worktrees must sit under .worktrees/. Prune first: a
-# self-test that runs earlier in the same gate removes its own sandbox dirs, and
-# `worktree list` prints those stale registrations before it drops them, so an
-# unread pair would redden this layer and its self-test on a tree nobody edited.
-git -C "$main" worktree prune >/dev/null 2>&1
+# Registered linked worktrees must sit under .worktrees/.
 registered=$(git -C "$main" worktree list --porcelain | sed -n 's/^worktree //p')
 while IFS= read -r path; do
     [ -n "$path" ] || continue

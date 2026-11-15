@@ -5,14 +5,13 @@
 #include <iostream>
 #include <string>
 
-// The literals are the product's registration data, the two python rime
-// manifests (python/input_methods/rime/ime.json and
-// python/input_methods/rime-cn/ime.json): one Windows input language per
-// folder, so each manifest names one profile GUID and these are exactly the
-// ids DllRegisterServer hands to AddLanguageProfile.
-static const char* const kRimeTwGuid = "{9C2D6C68-9EA6-4CFB-A769-7E619DB7F267}";
-static const char* const kRimeTwGuidLower = "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}";
-static const char* const kRimeCnGuid = "{53C15256-7A5F-4B54-86E8-0636E0745C3E}";
+// The literals are the product's registration data, the python rime manifest
+// (python/input_methods/rime/ime.json): one primary GUID plus one
+// additionalProfiles GUID, so the cases below are the ones DllRegisterServer
+// actually hands to AddLanguageProfile.
+static const char* const kRimeGuid = "{9C2D6C68-9EA6-4CFB-A769-7E619DB7F267}";
+static const char* const kRimeGuidLower = "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}";
+static const char* const kRimeExtraGuid = "{53C15256-7A5F-4B54-86E8-0636E0745C3E}";
 
 int main() {
 	const auto expect = [](const char* name, const nlohmann::json& content,
@@ -26,40 +25,28 @@ int main() {
 		return true;
 	};
 
-	const auto tw = nlohmann::json::parse(R"({
+	const auto manifest = nlohmann::json::parse(R"({
 		"guid": "{9C2D6C68-9EA6-4CFB-A769-7E619DB7F267}",
-		"locale": "zh-Hant-TW",
-		"fallbackLocale": "zh-TW"
+		"additionalProfiles": [
+			{"guid": "{53C15256-7A5F-4B54-86E8-0636E0745C3E}", "locale": "zh-CN"},
+			{"locale": "ja"},
+			null,
+			{"guid": ""}
+		]
 	})");
-	const auto cn = nlohmann::json::parse(R"({
-		"guid": "{53C15256-7A5F-4B54-86E8-0636E0745C3E}",
-		"locale": "zh-CN",
-		"fallbackLocale": "zh-CN"
-	})");
-	const auto noGuid = nlohmann::json::parse(R"({"locale": "zh-Hant-TW"})");
-	const auto emptyGuid = nlohmann::json::parse(R"({"guid": ""})");
-	const auto scalarGuid = nlohmann::json::parse(R"({"guid": 7})");
-	const auto nullJson = nlohmann::json::parse("null");
+	const auto noProfiles = nlohmann::json::parse(R"({"guid": "{9C2D6C68-9EA6-4CFB-A769-7E619DB7F267}"})");
 
-	if (!expect("traditional folder hits its own guid", tw, kRimeTwGuid, true) ||
-		!expect("simplified folder hits its own guid", cn, kRimeCnGuid, true) ||
-		!expect("the folders do not answer for each other", tw, kRimeCnGuid, false) ||
-		!expect("case-insensitive hit, lower-case id against upper-case manifest", tw, kRimeTwGuidLower, true) ||
+	if (!expect("primary guid hit", manifest, kRimeGuid, true) ||
+		!expect("additionalProfiles entry hit", manifest, kRimeExtraGuid, true) ||
+		!expect("case-insensitive hit, lower-case id against upper-case manifest", manifest, kRimeGuidLower, true) ||
 		!expect("case-insensitive hit, upper-case id against lower-case manifest",
-			nlohmann::json::parse(R"({"guid": "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}"})"), kRimeTwGuid, true) ||
-		!expect("miss against a populated manifest", tw, "{00000000-0000-0000-0000-000000000000}", false) ||
-		!expect("a manifest without a guid key matches nothing", noGuid, kRimeTwGuid, false) ||
-		!expect("an empty guid matches nothing, not even an empty id", emptyGuid, "", false) ||
-		!expect("a non-string guid is skipped without throwing", scalarGuid, "7", false) ||
-		!expect("a null document is skipped without throwing", nullJson, kRimeTwGuid, false)) {
-		return 1;
-	}
-
-	// The ASCII helper is what makes the match case-insensitive for both sides.
-	if (!PIME::imeProfileGuidEqual("{Ab-1}", "{aB-1}") ||
-		PIME::imeProfileGuidEqual("{Ab-1}", "{Ab-12}") ||
-		PIME::imeProfileGuidEqual("", "x")) {
-		std::cerr << "imeProfileGuidEqual: case-insensitive equality broken\n";
+			nlohmann::json::parse(R"({"guid": "{9c2d6c68-9ea6-4cfb-a769-7e619db7f267}"})"), kRimeGuid, true) ||
+		!expect("miss against a populated manifest", manifest, "{00000000-0000-0000-0000-000000000000}", false) ||
+		!expect("entry without a guid key is skipped", manifest, "ja", false) ||
+		!expect("empty guid entry is skipped", manifest, "", false) ||
+		!expect("null array entry is skipped without throwing", manifest, "null", false) ||
+		!expect("absent additionalProfiles still hits the primary guid", noProfiles, kRimeGuid, true) ||
+		!expect("absent additionalProfiles misses the secondary guid", noProfiles, kRimeExtraGuid, false)) {
 		return 1;
 	}
 	return 0;

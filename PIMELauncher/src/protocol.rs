@@ -119,10 +119,7 @@ mod tests {
                 // Request direction: one frame per line, split at the first '|'.
                 let frame = match step.get("raw") {
                     Some(raw) => raw.as_str().expect("raw line").to_string(),
-                    None => format_backend_input(
-                        client_id,
-                        &resolve(&step["request"], &root).to_string(),
-                    ),
+                    None => format_backend_input(client_id, &step["request"].to_string()),
                 };
                 match parse_backend_input(&frame) {
                     None => {
@@ -158,8 +155,8 @@ mod tests {
                 let (reply_id, reply_payload) =
                     parse_backend_output(&line).unwrap_or_else(|| panic!("{name}: {line}"));
                 assert_eq!(reply_id, client_id, "{name}: reply client id");
-                let decoded: Value =
-                    serde_json::from_str(&reply_payload).unwrap_or_else(|e| panic!("{name}: {e}"));
+                let decoded: Value = serde_json::from_str(&reply_payload)
+                    .unwrap_or_else(|e| panic!("{name}: {e}"));
                 assert_eq!(&decoded, reply, "{name}: reply payload");
                 match reply.get("seqNum") {
                     Some(seq_num) => assert_eq!(

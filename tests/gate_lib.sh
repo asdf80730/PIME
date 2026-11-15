@@ -20,16 +20,7 @@ gate_root() {
         printf 'SKIP  %s (not inside a git checkout)\n' "$1"
         return 125
     }
-    # The `.scratch` tree is git-excluded, so a linked worktree carries only the
-    # subset of it: the data root is the main checkout whenever that one holds
-    # the directory, which keeps a gate's tally identical in both trees.
-    DATA=$ROOT
-    local common
-    common=$(cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd) || common=
-    if [ -n "$common" ] && [ -d "${common%/.git}/.scratch" ]; then
-        DATA=${common%/.git}
-    fi
-    export ROOT DATA
+    export ROOT
     cd "$ROOT" || return 1
 }
 

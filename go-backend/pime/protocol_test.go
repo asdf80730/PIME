@@ -51,36 +51,6 @@ func wireSubset(t *testing.T, name string, expected map[string]interface{}, deco
 	}
 }
 
-// resolveWireValue replaces the fixture's '$guid' and '$unknownGuid'
-// placeholders with this adapter's own values, the same substitution the
-// python and node suites apply, so a request frame is sent with the ids the
-// dispatcher actually registers.
-func resolveWireValue(value interface{}, guid, unknown string) interface{} {
-	switch typed := value.(type) {
-	case string:
-		switch typed {
-		case "$guid":
-			return guid
-		case "$unknownGuid":
-			return unknown
-		}
-		return typed
-	case map[string]interface{}:
-		out := make(map[string]interface{}, len(typed))
-		for key, item := range typed {
-			out[key] = resolveWireValue(item, guid, unknown)
-		}
-		return out
-	case []interface{}:
-		out := make([]interface{}, 0, len(typed))
-		for _, item := range typed {
-			out = append(out, resolveWireValue(item, guid, unknown))
-		}
-		return out
-	}
-	return value
-}
-
 // TestWireFixturePinsFramingAndReplyKeys drives the shared fixture through the
 // two functions this package owns: ParseRequest for the request keys and
 // Response.ToJSON for the reply key names.
@@ -137,8 +107,7 @@ func TestWireFixturePinsFramingAndReplyKeys(t *testing.T) {
 				if _, err := ParseRequest([]byte(parts[1])); err == nil {
 					t.Fatalf("%s: %q must not parse as a request", name, parts[1])
 				}
-			} else if raw, hasRequest := step["request"].(map[string]interface{}); hasRequest {
-				request, _ := resolveWireValue(raw, guid, unknown).(map[string]interface{})
+			} else if request, hasRequest := step["request"].(map[string]interface{}); hasRequest {
 				data, err := json.Marshal(request)
 				if err != nil {
 					t.Fatalf("%s: marshal request: %v", name, err)
@@ -157,7 +126,7 @@ func TestWireFixturePinsFramingAndReplyKeys(t *testing.T) {
 				switch method {
 				case "init":
 					want := guid
-					if id, _ := request["id"].(string); id == unknown {
+					if id, _ := request["id"].(string); id == "$unknownGuid" {
 						want = unknown
 					}
 					if got := req.ID.StringValue(); got != want {

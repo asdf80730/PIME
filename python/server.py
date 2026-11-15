@@ -23,7 +23,7 @@ size-bounded rotating handler, so the log folder holds at most
 4000000 bytes in total; the numbered backups ``python_backend.log.1`` ..
 ``python_backend.log.3`` are rewritten from the oldest on every rollover. The
 rime user directory has its own bounded retention pass, documented in
-``rimebase/librime.py``.
+``input_methods/rime/librime.py``.
 """
 
 import json

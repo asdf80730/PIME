@@ -234,7 +234,7 @@ class ServerResilienceTests(unittest.TestCase):
 
     def load_rime_bindings(self):
         try:
-            return importlib.import_module("rimebase.librime")
+            return importlib.import_module("input_methods.rime.librime")
         except Exception:
             return None
 
