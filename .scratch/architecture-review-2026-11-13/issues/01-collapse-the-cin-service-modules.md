@@ -71,4 +71,12 @@ state ride the template hooks. Evidence: the nine-file suites plus
 the change (measured with
 `python/python3/python.exe -m unittest discover -s tests -p "test_*.py"`).
 
+**Correction (2026-11-16, re-measured at the close SHA):** at `45618cb`,
+`wc -l python/cinbase/service.py` → `211 python/cinbase/service.py` — the
+shared body reads 211 ln there (the 226/213 above are per-commit readings at
+`fd7180d`). The nine bindings read `chearray` 47, `checj` 32, `chedayi` 73,
+`cheez` 34, `cheliu` 30, `chephonetic` 108, `chepinyin` 39, `chesimplex` 31,
+`chebihua` 43 — sum 437, settled by `wc -l` over the nine binding files named
+in Files above. Numbers checkable as of 45618cb.
+
 *(Comment generated with AI assistance from omp (Qwen3.8-Flash-Next))*

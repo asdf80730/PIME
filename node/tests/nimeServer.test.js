@@ -16,46 +16,15 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const { resolve, fold } = require('../wireHelpers.js');
 
 const NODE_DIR = path.join(__dirname, '..');
 const FIXTURE = JSON.parse(
   fs.readFileSync(path.join(NODE_DIR, '..', 'tests', 'wire-fixtures.json'), 'utf8'));
 const CLIENT_ID = FIXTURE.clientId;
-const GUID = FIXTURE.guid.node;
 const DECLARED_KEYS = new Set(FIXTURE.replyKeys.concat(FIXTURE.extraKeys));
 
-// Fills the fixture's guid sentinels with this adapter's own values, at every
-// depth: a request is an object, so the walk has to descend into it.
-function resolve(value) {
-  if (value === '$guid') {
-    return GUID;
-  }
-  if (value === '$unknownGuid') {
-    return FIXTURE.unknownGuid;
-  }
-  if (Array.isArray(value)) {
-    return value.map(resolve);
-  }
-  if (value && typeof value === 'object') {
-    const out = {};
-    for (const [key, item] of Object.entries(value)) {
-      out[key] = resolve(item);
-    }
-    return out;
-  }
-  return value;
-}
-
-// The `return` key is a JSON boolean here and 1/0 in the go backend.
-function fold(value) {
-  if (value === true) {
-    return 1;
-  }
-  if (value === false) {
-    return 0;
-  }
-  return value;
-}
+// The shared resolve()/fold() pair lives in node/wireHelpers.js.
 
 // Starts server.js the way PIMELauncher does and returns a helper that sends
 // one raw line and resolves with the parsed JSON of the next PIME_MSG reply.
