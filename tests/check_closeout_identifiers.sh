@@ -41,7 +41,7 @@ set -u
 
 gate_root 'close-out identifiers' || exit $?
 
-scratch=${1:-.scratch}
+scratch=${1:-$DATA/.scratch}
 shift 2>/dev/null || true
 if [ ! -d "$scratch" ]; then
     printf 'SKIP  close-out identifiers (no %s in this checkout)\n' "$scratch"

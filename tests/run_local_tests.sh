@@ -41,6 +41,9 @@ trap 'exit 130' INT TERM
 
 failures=0
 skipped=0
+# Names of the reddened layers, so the final tally is enough to re-run just
+# those: the per-step FAIL lines scroll away under a 70k-byte sweep.
+failed_names=()
 
 # The run is long: a file edited while it goes leaves every PASS above
 # predating that edit, invisibly. Snapshot the tree the run speaks for so the
@@ -68,7 +71,7 @@ step() {
     case "$status" in
         0) ;;
         125) skipped=$((skipped + 1)) ;;
-        *) failures=$((failures + 1)) ;;
+        *) failures=$((failures + 1)); failed_names+=("$name") ;;
     esac
 }
 
@@ -500,5 +503,9 @@ if [ "$STATUS_NOW" != "$STATUS_BEFORE" ]; then
 fi
 printf '\n%d failed, %d skipped\n' "$failures" "$skipped"
 if [ "$failures" -ne 0 ]; then
+    printf 'failed layers:\n'
+    for name in "${failed_names[@]}"; do
+        printf '  %s\n' "$name"
+    done
     exit 1
 fi

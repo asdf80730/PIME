@@ -38,7 +38,14 @@ FILTER="${1:-}"
 export PYTHONDONTWRITEBYTECODE=1
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-TOOLS="$ROOT/.tools"
+# `.tools/` is git-excluded, so it exists only in the main checkout: a linked
+# worktree borrows it through the git common dir, the way tests/run_windows_tool.sh
+# does, instead of reddening its whole preflight.
+common=$(cd "$(git -C "$ROOT" rev-parse --git-common-dir)" && pwd) || common=
+main=${common%/.git}
+TOOLS="${PIME_TOOLS:-${main:-$ROOT}/.tools}"
+[ -d "$TOOLS" ] || TOOLS="$ROOT/.tools"
+TOOLS_WIN=$(cygpath -w "$TOOLS")
 # The nested run from tests/check_gate_filter_test.sh passes its own dir: step
 # files are numbered from 1, so a shared folder would let the inner run overwrite
 # the pair the outer is about to read.
@@ -401,7 +408,7 @@ run_native_verbose 'Python backend tests (bundled python.exe)' \
 # stay deferred until this set holds, so the run reddens on unused imports,
 # undefined names and duplicate keys, not on formatting.
 run_native 'Python lint (ruff)' \
-	'.tools\\ruff\\ruff.exe check --config ruff.toml python tests'
+	"$TOOLS_WIN\\ruff\\ruff.exe check --config ruff.toml python tests"
 
 # --- Node -----------------------------------------------------------------
 run_native 'Node backend tests (bundled node.exe)' \
@@ -437,15 +444,15 @@ run_native 'Rust cargo clippy' \
 # --- C++ pure helpers -----------------------------------------------------
 gtest='libIME2/lib/googletest-release-1.10.0/googletest'
 run_native 'C++ JsonUtils tests (gtest, mingw g++)' \
-	"g++.exe -std=c++17 -O1 -pthread -I PIMETextService -I json/single_include -I $gtest/include -I $gtest tests\\json_utils_test.cpp $gtest/src/gtest-all.cc $gtest/src/gtest_main.cc -o .tools\\json_utils_test.exe && .tools\\json_utils_test.exe"
+	"g++.exe -std=c++17 -O1 -pthread -I PIMETextService -I json/single_include -I $gtest/include -I $gtest tests\\json_utils_test.cpp $gtest/src/gtest-all.cc $gtest/src/gtest_main.cc -o $TOOLS_WIN\\json_utils_test.exe && $TOOLS_WIN\\json_utils_test.exe"
 run_native 'C++ CompositionCursor test (mingw g++)' \
-	'g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\composition_cursor_test.cpp -o .tools\\composition_cursor_test.exe && .tools\\composition_cursor_test.exe'
+	"g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\composition_cursor_test.cpp -o $TOOLS_WIN\\composition_cursor_test.exe && $TOOLS_WIN\\composition_cursor_test.exe"
 run_native 'C++ IME profile GUID helper test (mingw g++)' \
-	'g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ime_profile_guids_test.cpp -o .tools\\ime_profile_guids_test.exe && .tools\\ime_profile_guids_test.exe'
+	"g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ime_profile_guids_test.cpp -o $TOOLS_WIN\\ime_profile_guids_test.exe && $TOOLS_WIN\\ime_profile_guids_test.exe"
 run_native 'C++ per-monitor DPI helper test (mingw g++)' \
-	'g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\dpi_helper_test.cpp -o .tools\\dpi_helper_test.exe -luser32 -lgdi32 && .tools\\dpi_helper_test.exe'
+	"g++.exe -std=c++17 -O1 -static -I PIMETextService tests\\dpi_helper_test.cpp -o $TOOLS_WIN\\dpi_helper_test.exe -luser32 -lgdi32 && $TOOLS_WIN\\dpi_helper_test.exe"
 run_native 'C++ UI color mapping test (mingw g++)' \
-	'g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ui_colors_test.cpp -o .tools\\ui_colors_test.exe && .tools\\ui_colors_test.exe'
+	"g++.exe -std=c++17 -O1 -static -I PIMETextService -I json/single_include tests\\ui_colors_test.cpp -o $TOOLS_WIN\\ui_colors_test.exe && $TOOLS_WIN\\ui_colors_test.exe"
 
 # Trust anchor: if HEAD or the worktree moved while the layers ran, the PASS
 # lines speak for the old tree — say so instead of letting a green tally hide

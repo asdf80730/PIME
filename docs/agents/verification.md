@@ -274,7 +274,9 @@ The run prints its own tally — quote that line rather than a counted number:
 the AI-declaration check, the PR-body declaration check, the PR scope-gate,
 AI-declaration, PR-body and scratch-ref self-tests, and the local
 issue-tracker layout check (`.scratch/` is gitignored, so no CI job can ever
-run these — the Windows box holds the tickets and writes the PR bodies), the
+run these — the Windows box holds the tickets and writes the PR bodies; `gate_root`
+also exports `DATA`, the main checkout holding that directory, so a linked worktree
+judges the same ticket set instead of redning on its tracked subset), the
 GitHub/AppVeyor YAML parse (Bun), the Python backend suite on the shipped
 `python/python3/python.exe`, the Python lint layer (`ruff check --config ruff.toml python
 tests`: the settled `F` + `E9` error-class rules, `F403`/`F405` off per the measurement in

@@ -9,6 +9,10 @@
 # finished feature with no spec.md at all. `.scratch/` is gitignored, so this
 # step skips in CI and guards a working checkout.
 #
+# The per-file reads go through one awk pass over the whole file list: with 80
+# tickets the per-file `head | grep` shape cost ~70 s on the Windows box, all of
+# it process spawns, and the gate is meant to be a cheap pre-commit step.
+#
 # Exit codes: 0 the tracker follows the convention, 1 it does not, 125 not
 # applicable (no git checkout or no .scratch).
 set -u
@@ -17,18 +21,23 @@ set -u
 
 gate_root 'tracker layout' || exit $?
 
-if [ ! -d .scratch ]; then
+if [ ! -d "$DATA/.scratch" ]; then
     printf 'SKIP  tracker layout (no .scratch in this checkout)\n'
     exit 125
 fi
 
 shopt -s nullglob
 
+# One ordered list of every file the gate judges, tagged by kind, so the awk
+# rows map back by position: `plan` is a spec.md or map.md, `issue` a ticket.
+files=()
+kinds=()
+# The per-feature counters and the missing-file findings are collected in the
+# first pass, before awk, so a missing spec still reddens the run.
 bad=0
 features=0
-tickets=0
-edges=0
-for dir in .scratch/*/; do
+
+for dir in "$DATA"/.scratch/*/; do
     feature=${dir%/}
     if [ -f "$feature/ARCHIVE.md" ]; then
         continue
@@ -42,38 +51,80 @@ for dir in .scratch/*/; do
     # that never moved past its opening role reads as open work forever.
     plan="$feature/spec.md"
     [ -f "$plan" ] || plan="$feature/map.md"
-    if [ -f "$plan" ] && ! head -n 20 "$plan" | grep -Eq '^Status:[[:space:]]*[a-z]+'; then
-        printf 'missing Status: line within the first 20 lines of %s\n' "$plan"
-        bad=1
+    if [ -f "$plan" ]; then
+        files+=("$plan")
+        kinds+=("plan")
     fi
     for issue in "$feature"/issues/*.md; do
-        name=$(basename "$issue")
-        if ! printf '%s' "$name" | grep -Eq '^[0-9]{2}-[a-z0-9][a-z0-9-]*\.md$'; then
-            printf 'issue name must be NN-slug.md: %s\n' "$issue"
-            bad=1
-        fi
-        if ! head -n 20 "$issue" | grep -Eq '^Status:[[:space:]]*[a-z]+'; then
-            printf 'missing Status: line within the first 20 lines of %s\n' "$issue"
-            bad=1
-        fi
-        # Each appended comment block ends with its AI-declaration footer; a file
-        # whose `## Comments` region carries no footer at all is an unattributed
-        # record, which is the omission `check_pr_commit_declarations.sh` guards
-        # for commits. `.scratch/` is gitignored, so no CI job ever sees it.
-        if grep -q '^## Comments' "$issue" &&
-            ! grep -Eq '^\*\(Comment generated with AI assistance from' "$issue"; then
-            printf 'missing AI-declaration footer under ## Comments of %s\n' "$issue"
-            bad=1
-        fi
-        tickets=$((tickets + 1))
-        # The blocking edge is written two ways: plain `Blocked by: NN` (the
-        # wayfinder child form) and bold `**Blocked by:** NN` (the form the
-        # triage records use). A frontier scan that reads only one of them
-        # sees no edges at all, so both count here.
-        if head -n 20 "$issue" | grep -Eq '^(\*\*)?Blocked by:(\*\*)?[[:space:]]*[0-9]'; then
-            edges=$((edges + 1))
-        fi
+        files+=("$issue")
+        kinds+=("issue")
     done
+done
+
+# One pass: for each file, whether a Status: line sits within the first 20
+# lines, whether a `## Comments` region exists and carries its AI-declaration
+# footer, and whether a blocking edge is written either way — plain
+# `Blocked by: NN` (the wayfinder child form) or bold `**Blocked by:** NN` (the
+# form the triage records use). A frontier scan that reads only one of them sees
+# no edges at all, so both count here.
+rows=()
+if [ "${#files[@]}" -gt 0 ]; then
+    out=$(awk '
+        FNR == 1 {
+            order[++n] = FILENAME
+            st[FILENAME] = 0
+            cm[FILENAME] = 0
+            fo[FILENAME] = 0
+            bl[FILENAME] = 0
+        }
+        FNR <= 20 {
+            if ($0 ~ /^Status:[[:space:]]*[a-z]+/) st[FILENAME] = 1
+            if ($0 ~ /^(\*\*)?Blocked by:(\*\*)?[[:space:]]*[0-9]/) bl[FILENAME] = 1
+        }
+        $0 ~ /^## Comments/ { cm[FILENAME] = 1 }
+        /^\*\(Comment generated with AI assistance from/ { fo[FILENAME] = 1 }
+        END {
+            for (i = 1; i <= n; i++) {
+                f = order[i]
+                printf "%d %d %d %d\n", st[f], cm[f], fo[f], bl[f]
+            }
+        }
+    ' "${files[@]}")
+    mapfile -t rows <<<"$out"
+fi
+
+tickets=0
+edges=0
+for i in "${!files[@]}"; do
+    file=${files[$i]}
+    row=${rows[$i]:-0 0 0 0}
+    has_status=0
+    has_comments=0
+    has_footer=0
+    has_edge=0
+    read -r has_status has_comments has_footer has_edge <<<"$row"
+    if [ "$has_status" -eq 0 ]; then
+        printf 'missing Status: line within the first 20 lines of %s\n' "$file"
+        bad=1
+    fi
+    if [ "${kinds[$i]}" = "plan" ]; then
+        continue
+    fi
+    name=${file##*/}
+    if ! [[ $name =~ ^[0-9]{2}-[a-z0-9][a-z0-9-]*\.md$ ]]; then
+        printf 'issue name must be NN-slug.md: %s\n' "$file"
+        bad=1
+    fi
+    # Each appended comment block ends with its AI-declaration footer; a file
+    # whose `## Comments` region carries no footer at all is an unattributed
+    # record, which is the omission `check_pr_commit_declarations.sh` guards
+    # for commits. `.scratch/` is gitignored, so no CI job ever sees it.
+    if [ "$has_comments" -eq 1 ] && [ "$has_footer" -eq 0 ]; then
+        printf 'missing AI-declaration footer under ## Comments of %s\n' "$file"
+        bad=1
+    fi
+    tickets=$((tickets + 1))
+    [ "$has_edge" -eq 1 ] && edges=$((edges + 1))
 done
 
 printf 'checked %d feature director%s, %d ticket(s), %d blocking edge(s)\n' \
