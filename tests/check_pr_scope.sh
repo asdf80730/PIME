@@ -137,10 +137,22 @@ for c in $picks; do
         | awk -F'\t' -v s="$s" -v self="$c" '$2 == s && $1 != self { print $1; exit }')
     [ -n "$twin" ] || continue
     a=$(git show --name-only --format= "$c" | grep -vE \
-        '^(tests/|docs/|GLOSSARY\.md|AGENTS\.md|CLAUDE\.md|\.scratch/)' | sort)
+        '^(tests/|docs/|GLOSSARY\.md|AGENTS\.md|CLAUDE\.md|\.scratch/|go-backend/.+_test\.go|node/.+\.test\.js)' | sort)
     b=$(git show --name-only --format= "$twin" | grep -vE \
-        '^(tests/|docs/|GLOSSARY\.md|AGENTS\.md|CLAUDE\.md|\.scratch/)' | sort)
+        '^(tests/|docs/|GLOSSARY\.md|AGENTS\.md|CLAUDE\.md|\.scratch/|go-backend/.+_test\.go|node/.+\.test\.js)' | sort)
     gap=$(comm -3 <(printf '%s\n' "$a") <(printf '%s\n' "$b"))
+    # A twin written against an integration-only state cannot be mirrored
+    # one-for-one on the product base: when the twin's own parent already
+    # differs from that base at a path, the twin's hunk belongs to the other
+    # tree and its absence here is not a dropped pick. A path the pick really
+    # lost keeps both sides equal at the parent, so it still bites.
+    kept=
+    for p in $gap; do
+        if git diff --quiet "$twin^" "$base_ref" -- "$p" 2>/dev/null; then
+            kept="$kept$p"$'\n'
+        fi
+    done
+    gap=${kept%$'\n'}
     [ -n "$gap" ] || continue
     printf 'FAIL  PR scope: %s does not carry the same paths as the commit it was picked from (%s):\n' \
         "$c" "$twin"

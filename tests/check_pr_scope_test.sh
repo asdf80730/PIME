@@ -33,6 +33,14 @@ work_ok=$tmp/ok
 work_pyc=$tmp/pyc
 branch_sym=selftest/scope-sym.$$
 work_sym=$tmp/sym
+branch_state=selftest/scope-state.$$
+work_state=$tmp/state
+branch_pr=selftest/scope-pr.$$
+work_pr=$tmp/pr
+branch_go=selftest/scope-go.$$
+work_go=$tmp/go
+branch_go2=selftest/scope-go2.$$
+work_go2=$tmp/go2
 
 cleanup() {
     git worktree remove --force "$work_bad" 2>/dev/null
@@ -40,8 +48,13 @@ cleanup() {
     git worktree remove --force "$work_ok" 2>/dev/null
     git worktree remove --force "$work_pyc" 2>/dev/null
     git worktree remove --force "$work_sym" 2>/dev/null
+    git worktree remove --force "$work_state" 2>/dev/null
+    git worktree remove --force "$work_pr" 2>/dev/null
+    git worktree remove --force "$work_go" 2>/dev/null
+    git worktree remove --force "$work_go2" 2>/dev/null
     git worktree prune 2>/dev/null
-    git branch -D "$branch_bad" "$branch_ok" "$branch_pyc" "$branch_sym" 2>/dev/null
+    git branch -D "$branch_bad" "$branch_ok" "$branch_pyc" "$branch_sym" \
+        "$branch_state" "$branch_pr" "$branch_go" "$branch_go2" 2>/dev/null
     rm -rf "$tmp"
 }
 trap cleanup EXIT
@@ -177,6 +190,63 @@ if [ -n "$base_ref" ] && git rev-parse --verify --quiet "$base_ref" >/dev/null; 
         expect 1 'picked commit that dropped a path fails' "$work_sym" "$branch_sym"
     else
         printf 'SKIP  pick symmetry (worktree at %s unavailable)\n' "$base_ref"
+        skipped=$((skipped + 1))
+    fi
+fi
+
+# 8. A twin written against an integration-only state is not a dropped pick:
+#    the twin branch first carries a file the product base never had, so the
+#    twin's own parent already differs there. The same-subject PR commit that
+#    mirrors only the two base-side paths therefore passes, while the case-7
+#    pair above still fails — the two together pin the per-path filter.
+if [ -n "$base_ref" ] && git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+    git worktree add -B "$branch_state" "$work_state" "$base_ref" >/dev/null 2>&1
+    git worktree add -B "$branch_pr" "$work_pr" "$base_ref" >/dev/null 2>&1
+    if [ -d "$work_state" ] && [ -d "$work_pr" ]; then
+        printf 'i\n' >"$work_state/selftest-sym-int.txt"
+        git -C "$work_state" add selftest-sym-int.txt >/dev/null 2>&1
+        git -C "$work_state" commit -qm 'selftest: integration-only state' >/dev/null 2>&1
+        printf 'a3\n' >"$work_state/selftest-sym-a.txt"
+        printf 'b3\n' >"$work_state/selftest-sym-b.txt"
+        printf 'i3\n' >"$work_state/selftest-sym-int.txt"
+        git -C "$work_state" add selftest-sym-a.txt selftest-sym-b.txt \
+            selftest-sym-int.txt >/dev/null 2>&1
+        git -C "$work_state" commit -qm 'selftest: symmetry twin carries two paths' >/dev/null 2>&1
+
+        printf 'a3\n' >"$work_pr/selftest-sym-a.txt"
+        printf 'b3\n' >"$work_pr/selftest-sym-b.txt"
+        git -C "$work_pr" add selftest-sym-a.txt selftest-sym-b.txt >/dev/null 2>&1
+        git -C "$work_pr" commit -qm 'selftest: symmetry twin carries two paths' >/dev/null 2>&1
+        expect 0 'twin written on a later state does not bite' "$work_pr" "$branch_pr"
+    else
+        printf 'SKIP  later-state twin (worktree at %s unavailable)\n' "$base_ref"
+        skipped=$((skipped + 1))
+    fi
+fi
+
+# 9. The runner-local test files are not part of the product comparison: the
+#    Go and Node suites live on the integration ref, so a twin that adds them
+#    beside one product path still matches a branch that carries only that
+#    path. Without the two extra prefixes the gap is the pair of test files and
+#    this assertion goes red.
+if [ -n "$base_ref" ] && git rev-parse --verify --quiet "$base_ref" >/dev/null; then
+    git worktree add -B "$branch_go" "$work_go" "$base_ref" >/dev/null 2>&1
+    git worktree add -B "$branch_go2" "$work_go2" "$base_ref" >/dev/null 2>&1
+    if [ -d "$work_go" ] && [ -d "$work_go2" ]; then
+        printf 'a\n' >"$work_go/selftest-sym2-a.txt"
+        printf 'package main\n' >"$work_go/go-backend/server_test.go"
+        mkdir -p "$work_go/node"
+        printf '// test\n' >"$work_go/node/x.test.js"
+        git -C "$work_go" add selftest-sym2-a.txt go-backend/server_test.go \
+            node/x.test.js >/dev/null 2>&1
+        git -C "$work_go" commit -qm 'selftest: twin adds the runner-local suites' >/dev/null 2>&1
+
+        printf 'a\n' >"$work_go2/selftest-sym2-a.txt"
+        git -C "$work_go2" add selftest-sym2-a.txt >/dev/null 2>&1
+        git -C "$work_go2" commit -qm 'selftest: twin adds the runner-local suites' >/dev/null 2>&1
+        expect 0 'runner-local test files stay out of the comparison' "$work_go2" "$branch_go2"
+    else
+        printf 'SKIP  runner-local suites (worktree at %s unavailable)\n' "$base_ref"
         skipped=$((skipped + 1))
     fi
 fi
