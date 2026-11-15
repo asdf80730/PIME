@@ -281,8 +281,15 @@ fi
 if command -v makensis >/dev/null 2>&1; then
     step 'NSIS installer script assembles' nsis_smoke
 else
-    skip 'NSIS installer script assembles' 'makensis missing; apt-get install nsis'
+    skip 'NSIS installer script assembles' 'makensis missing; apt-get install makensis'
 fi
+
+# The `/nonfatal` rewrite above silences the zero-match class, so the strict
+# form runs beside it: every File directive of installer/installer.nsi has to
+# reach at least one path, which is what makensis aborts on eight minutes into
+# the build-and-sign job.
+step 'Installer File globs resolve' "$ROOT/tests/check_nsi_file_globs.sh"
+step 'Installer File glob self-test' "$ROOT/tests/check_nsi_file_globs_test.sh"
 
 step 'PR branch starts at origin/master' "$ROOT/tests/check_pr_scope.sh"
 step 'PR scope gate self-test' "$ROOT/tests/check_pr_scope_test.sh"
