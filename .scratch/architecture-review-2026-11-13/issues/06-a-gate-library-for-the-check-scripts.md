@@ -90,4 +90,12 @@ full-gate pass printed a single `FAIL  undeclared PR_BODY fails: want 1 got
 0` for the pr_bodies self-test that did not reproduce: three standalone
 repeats of that self-test and the second full-gate run are all `0 failed`.
 
+**Correction (2026-11-16, re-measured at the close SHA):**
+`wc -l tests/gate_lib.sh` → `175 tests/gate_lib.sh` (149 at the `01d8c93`
+cutover, 166 after ticket 07's additions). The sourced-script tally:
+`grep -l "gate_lib.sh" tests/*.sh` → 43 matching scripts at `45618cb`, where
+the two earlier readings were 39 and 40. The loader trio is cited by line:
+`python/cinbase/__init__.py:3458`, `:3537`, `:3588`. Numbers checkable as of
+45618cb.
+
 *(Comment generated with AI assistance from omp (Qwen3.8-Flash-Next))*

@@ -114,7 +114,21 @@ All checks passed!
 
 $ bash tests/run_local_tests.sh
 …
-0 failed, 13 skipped
+0 failed, 13 skipped`
 ```
+
+**Correction (2026-11-16, re-measured at the close SHA):**
+`grep -n "_mergePartial" python/textService.py` →
+`88:    def _mergePartial(reply, result):`, and `handleRequest` at
+`python/textService.py:99` drains the merge table at `:153`
+(`reply.update(self.currentReply)`) and resets it at `:154`. The seven
+`CinBaseTextService` delegations named above do print `return
+self.currentReply` — `python/cinbase/service.py:144`, `:150`, `:156`, `:180`,
+`:188`, `:199`, `:207`; the five value hooks carry their own value instead
+(`filterKeyDown`, `onKeyDown`, `filterKeyUp`, `onPreservedKey` return the key
+state, `onMenu` the menu items); every other base hook stays `None` (`pass`
+bodies) and the sixteen setters keep writing `currentReply` directly. The
+config path itself is `CinBase.applyConfig` at `python/cinbase/__init__.py:3172`,
+the applier behind `checkConfigChange`. Numbers checkable as of 45618cb.
 
 *(Comment generated with AI assistance from omp (Qwen3.8-Flash-Next))*

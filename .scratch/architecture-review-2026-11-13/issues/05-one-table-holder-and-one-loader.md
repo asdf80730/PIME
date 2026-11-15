@@ -132,4 +132,15 @@ gate helpers (`check_gate_wiring`, `check_sh_exec_bits`, `check_line_citations`,
 `check_tracker_layout`, `check_closeout_identifiers`, `check_scratch_refs`)
 all exit 0.
 
+**Correction (2026-11-16, re-measured at the close SHA):**
+`python/python3/python.exe tests/run_worktree_tests.py tests/test_cintablebase.py <worktree>` →
+`Ran 10 tests ... OK` — the file's own tally is ten: the five prior
+`CinTableBase` assertions plus the five `ensure()` outcome cases (the
+Solution's three are the `spawned`/`loaded`/`failed` constants, not the test
+count). Module counts at the close SHA: `python/cinbase/cintablebase.py`
+304 ln, `python/cinbase/service.py` 211 ln,
+`python/input_methods/chebihua/table_loaders.py` 37 ln. The loader trio is
+cited by line: `python/cinbase/__init__.py:3458`, `:3537`, `:3588`. Numbers
+checkable as of 45618cb.
+
 *(Comment generated with AI assistance from omp (Qwen3.8-Flash-Next))*
