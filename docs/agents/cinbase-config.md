@@ -20,24 +20,35 @@ Every table-affecting value is re-discovered by `checkConfigChange`
 attributes — see ticket 05's Comments in `.scratch/upstream-bug-backlog/issues/`
 for the loader-side surface and its pending fixes.
 
-## Adding a key is a quartet
+## Adding a key is one row
 
-A new setting touches four places, or it is silently half-dead:
+Since ticket 02 of the 2026-11-13 architecture review, `CinBaseConfig` owns
+ONE record list, `CONFIG_RECORDS` in `python/cinbase/config.py`. Each row is
+`(key, default, control, table_affecting, mirror, effect, overrides)` and is
+the whole declaration of a setting; every other copy is derived from it:
 
-1. key + default in `CinBaseConfig.__init__` (`python/cinbase/config.py`) —
-   otherwise the attribute only exists when a JSON happens to define it;
-2. the default in **all eight** `python/input_methods/*/config/config.json`
-   (chearray, checj, chedayi, cheez, cheliu, chephonetic, chepinyin, chesimplex) —
-   a key missing there never lands in the object for existing users, because
-   layer 1's `__dict__.update` is the only place it gets applied; this is the
-   eight-file trap;
-3. a control in the shared config page `python/cinbase/config/config.htm`
-   (scripted by `js/config.js` in the same directory);
-4. for table-affecting values only: a `CinTable` mirror attribute + its
-   `checkConfigChange` diff so the change triggers a reload.
+1. `CinBaseConfig.__init__` seeds each attribute from its row's `default` —
+   the attribute always exists;
+2. the shipped `python/input_methods/<ime>/config/config.json` of every
+   Service is the deterministic writer `write_shipped_configs()`: row value =
+   `overrides[ime]` or `default`, one key set for all Services, so the
+   former eight-file trap is just this writer's per-`overrides` map
+   (regenerate with `python/python3/python.exe` and the module's
+   `write_shipped_configs()`; the committed files are its bytes);
+3. the shared config page (`python/cinbase/config/config.htm` scripted by
+   `js/config.js`) reads the list from the `records` and `selKeys` fields of
+   the `/config` response (`python/cinbase/configtool.py`), so the script
+   carries no restated defaults — a `control` of `"none"` means the key has
+   no page control and none is expected;
+4. for table-affecting rows only, `mirror` names the `CinTable` attribute
+   `checkConfigChange` compares and `effect` its reload consequence, so the
+   diff loop iterates the flagged rows instead of a hand-written sequence.
 
-`enableShiftSpace` in merged PR #1017 is the working example — its diff is exactly
-`python/cinbase/config.py` + `python/cinbase/config/config.htm` + the eight shipped JSONs.
+`tests/test_cinbase_config_keys.py` pins these derivations and stays green as
+the single cross-file check. `keyboardLayout`, `colorCandWnd` and
+`directCommitString` are the worked example: each was an orphan present only
+in the shipped JSONs, and one row each brought it to the class, the JSONs,
+the page, and the diff table.
 
 ## Singleton caveat
 

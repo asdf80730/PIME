@@ -39,70 +39,143 @@ selKeys=(
     "0123456789"
 )
 
+# The one declaration of every cinbase setting (ticket 02 of the
+# 2026-11-13 architecture review). Each row of CONFIG_RECORDS is the whole
+# life of a setting:
+#   (key, default, control, table_affecting, mirror, effect, overrides)
+# - key: the attribute name on CinBaseConfig and the JSON/page name;
+# - default: the value __init__() seeds, identical across Services;
+# - control: the settings-page control kind, one of "checkbox", "text",
+#   "select", "radio", or "none" for a key with no page control;
+# - table_affecting: True when checkConfigChange() must diff the key against
+#   its CinTable mirror to decide a table reload;
+# - mirror: the CinTable attribute to compare (only for table-affecting rows);
+# - effect: the reload consequence for table-affecting rows, one of
+#   "reload" (flag the table reload), "flag" (truthy cfg flag, clears itself
+#   and refreshes the extend table), "extend" (reload plus extend-table
+#   refresh), "priority" (reload when the user extend table is on), or
+#   "selkeys" (re-declare the selection-key row);
+# - overrides: {imeDirName: value} per-Service shipped values applied on top
+#   of default in the shipped config.json of that Service.
+# The shipped python/input_methods/<ime>/config/config.json files, the
+# settings page surface, and the checkConfigChange() diff are all derived
+# from this list; a setting is written exactly once.
+CONFIG_RECORDS = [
+    ("candPerRow", 3, "text", False, None, None, {"chedayi": 1}),
+    ("defaultEnglish", False, "checkbox", False, None, None, {}),
+    ("defaultFullSpace", False, "checkbox", False, None, None, {}),
+    ("disableOnStartup", False, "checkbox", False, None, None, {}),
+    ("switchLangWithShift", True, "checkbox", False, None, None, {}),
+    ("switchLangWithWhichShift", SWITCH_LANG_WITH_BOTH_SHIFT, "select", False, None, None, {}),
+    ("outputSmallLetterWithShift", False, "checkbox", False, None, None, {}),
+    ("shiftLetterSwitchToEnglish", False, "checkbox", False, None, None, {}),
+    ("enableShiftSpace", True, "checkbox", False, None, None, {}),
+    ("switchPageWithSpace", False, "checkbox", False, None, None, {}),
+    ("outputSimpChinese", False, "checkbox", False, None, None, {}),
+    ("enableSwitchTCSC", True, "checkbox", False, None, None, {}),
+    ("messageDurationTime", 3, "select", False, None, None, {}),
+    ("hidePromptMessages", True, "checkbox", False, None, None, {}),
+    ("autoClearCompositionChar", False, "checkbox", False, None, None, {}),
+    ("playSoundWhenNonCand", False, "checkbox", False, None, None, {"checj": True}),
+    ("directShowCand", False, "checkbox", False, None, None,
+     {"chearray": True, "checj": True, "chedayi": True,
+      "cheliu": True, "chesimplex": True, "chebihua": True}),
+    ("directCommitSymbol", False, "checkbox", False, None, None,
+     {"chearray": True, "checj": True, "chedayi": True, "cheez": True,
+      "cheliu": True, "chephonetic": True, "chepinyin": True,
+      "chesimplex": True, "chebihua": True}),
+    ("fontSize", DEF_FONT_SIZE, "text", False, None, None, {}),
+    ("candFontName", DEF_FONT_NAME, "text", False, None, None, {}),
+    ("candFontWeight", DEF_FONT_WEIGHT, "text", False, None, None, {}),
+    ("candTextColor", 0, "text", False, None, None, {}),
+    ("windowBackgroundColor", 0, "text", False, None, None, {}),
+    ("selKeyColor", 0, "text", False, None, None, {}),
+    ("leadInKey", DEF_LEAD_IN_KEY, "text", False, None, None, {}),
+    ("enableCtrlSymbols", True, "checkbox", False, None, None, {}),
+    ("selCinType", 0, "select", True, "curCinType", "reload", {}),
+    ("ignorePrivateUseArea", True, "checkbox", True, "ignorePrivateUseArea", "reload", {}),
+    ("selKeyType", 0, "select", True, "selKeys", "selkeys", {}),
+    ("candPerPage", 9, "text", False, None, None, {"chedayi": 6}),
+    ("cursorCandList", True, "none", False, None, None, {}),
+    ("fullShapeSymbols", False, "checkbox", False, None, None, {}),
+    ("directOutFSymbols", False, "checkbox", False, None, None, {}),
+    ("directOutMSymbols", True, "checkbox", False, None, None, {}),
+    ("easySymbolsWithShift", False, "checkbox", False, None, None, {}),
+    ("showPhrase", False, "checkbox", False, None, None, {}),
+    ("sortByPhrase", True, "checkbox", False, None, None,
+     {"checj": False, "chebihua": False}),
+    ("supportWildcard", True, "checkbox", False, None, None, {"chephonetic": False}),
+    ("compositionBufferMode", False, "checkbox", False, None, None, {}),
+    ("autoMoveCursorInBrackets", False, "checkbox", False, None, None, {}),
+    ("selWildcardType", 0, "select", False, None, None,
+     {"chearray": 1, "checj": 1, "chedayi": 1, "cheez": 1, "cheliu": 1,
+      "chephonetic": 1, "chepinyin": 1, "chebihua": 1}),
+    ("imeReverseLookup", False, "checkbox", False, None, None, {}),
+    ("homophoneQuery", False, "checkbox", False, None, None, {}),
+    ("selHCinType", 0, "select", False, None, None, {}),
+    ("userExtendTable", False, "checkbox", True, "userExtendTable", "extend", {}),
+    ("reLoadTable", False, "checkbox", True, None, "flag", {}),
+    ("priorityExtendTable", False, "checkbox", True, "priorityExtendTable", "priority", {}),
+    ("selRCinType", 0, "select", False, None, None, {}),
+    ("candMaxItems", 100, "text", False, None, None, {"chebihua": 10000}),
+    ("keyboardType", 0, "none", False, None, None, {}),
+    ("selDayiSymbolCharType", 0, "select", False, None, None, {}),
+    ("intelligentSelect", True, "checkbox", False, None, None,
+     {"chedayi": True, "chebihua": True}),
+    ("intelligentSelectRecent", True, "checkbox", False, None, None,
+     {"chedayi": True, "chebihua": True}),
+    ("intelligentSelectContext", True, "checkbox", False, None, None,
+     {"chedayi": True, "chebihua": True}),
+    ("keyboardLayout", 0, "radio", False, None, None, {}),
+    ("colorCandWnd", True, "none", False, None, None, {}),
+    ("directCommitString", False, "none", False, None, None, {}),
+]
+
+# The Services that ship a derived config.json: the eight of the original
+# quartet plus chebihua, which joined on the same CinBaseConfig seam.
+IME_DIRS = ("chearray", "checj", "chedayi", "cheez",
+            "cheliu", "chephonetic", "chepinyin", "chesimplex", "chebihua")
+
+
+def shipped_defaults_for(ime_dir_name):
+    """Layer-1 dict of one Service, derived from the record list: a row with
+    no overrides ships the shared default to every Service; a row with
+    overrides ships only to the Services it names (every other Service keeps
+    the identical value through the layer-0 ``__init__`` seed, which the
+    same list feeds)."""
+    shipped = {}
+    for key, default, _control, _affecting, _mirror, _effect, overrides in CONFIG_RECORDS:
+        if overrides:
+            if ime_dir_name in overrides:
+                shipped[key] = overrides[ime_dir_name]
+        else:
+            shipped[key] = default
+    return shipped
+
+
+def write_shipped_configs(root=None):
+    """Deterministically regenerate the shipped config.json of every Service
+    from CONFIG_RECORDS. Same output every run; the committed files are this
+    writer's bytes (the repo already pairs generated JSON with sources, like
+    the cin tables)."""
+    if root is None:
+        root = os.path.join(os.path.dirname(__file__), os.path.pardir)
+    for ime_dir_name in IME_DIRS:
+        path = os.path.join(root, "input_methods", ime_dir_name, "config", "config.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(shipped_defaults_for(ime_dir_name), indent=4) + "\n")
+
+
 class CinBaseConfig:
 
     def __init__(self):
-        self.candPerRow = 3
-        self.defaultEnglish = False
-        self.defaultFullSpace = False
-        self.disableOnStartup = False
-        self.switchLangWithShift = True
-        self.switchLangWithWhichShift = SWITCH_LANG_WITH_BOTH_SHIFT
-        self.outputSmallLetterWithShift = False
-        self.shiftLetterSwitchToEnglish = False
-        # Shift+空白鍵切換全形/半形 (issue #844)，與新酷音同名設定
-        self.enableShiftSpace = True
-        self.switchPageWithSpace = False
-        self.outputSimpChinese = False
-        self.enableSwitchTCSC = True
-        self.messageDurationTime = 3
-        self.hidePromptMessages = True
-        self.autoClearCompositionChar = False
-        self.playSoundWhenNonCand = False
-        self.directShowCand = False
-        self.directCommitSymbol = False
-        self.fontSize = DEF_FONT_SIZE
-        # 選字及訊息視窗的字型 (issue #582)
-        self.candFontName = DEF_FONT_NAME
-        # 選字及訊息視窗的字型粗細 (issue #854)：LOGFONT 重量 1-900
-        self.candFontWeight = DEF_FONT_WEIGHT
-        # 組字/選字視窗顏色 (issue #902)：0 表示跟隨系統調色盤
-        self.candTextColor = 0
-        self.windowBackgroundColor = 0
-        self.selKeyColor = 0
-        # 多功能前導字元 (issue #525)
-        self.leadInKey = DEF_LEAD_IN_KEY
-        # 按住 Ctrl + 符號鍵輸入特殊符號 (issue #826)
-        self.enableCtrlSymbols = True
-        self.selCinType = 0
-        self.ignorePrivateUseArea = True
-        self.selKeyType = 0
-        self.candPerPage = 9
-        self.cursorCandList = True
-        self.fullShapeSymbols = False
-        self.directOutFSymbols = False
-        self.directOutMSymbols = True
-        self.easySymbolsWithShift = False
-        self.showPhrase = False
-        self.sortByPhrase = True
-        self.supportWildcard = True
-        self.compositionBufferMode = False
-        self.autoMoveCursorInBrackets = False
-        self.selWildcardType = 0
-        self.imeReverseLookup = False
-        self.homophoneQuery = False
-        self.selHCinType = 0
-        self.userExtendTable = False
-        self.reLoadTable = False
-        self.priorityExtendTable = False
-        self.selRCinType = 0
-        self.candMaxItems = 100
-        self.messageDurationTime = 3
-        self.keyboardType = 0
-        self.selDayiSymbolCharType = 0
-        self.intelligentSelect = True
-        self.intelligentSelectRecent = True
-        self.intelligentSelectContext = True
+        # Every per-key default comes from the one record list above, so a
+        # setting is written exactly once (ticket 02 of the 2026-11-13
+        # architecture review). Only scalars live in CONFIG_RECORDS, so the
+        # shared default values carry no mutable-state aliasing.
+        for record in CONFIG_RECORDS:
+            setattr(self, record[0], record[1])
 
         self.ignoreSaveList = ["ignoreSaveList", "curdir", "cinFileList", "selCinFile", "imeDirName", "_version", "_lastUpdateTime"]
         self.curdir = os.path.abspath(os.path.dirname(__file__))

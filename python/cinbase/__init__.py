@@ -41,6 +41,7 @@ from .extendtable import extendtable
 import concurrent.futures
 from .config import SWITCH_LANG_WITH_BOTH_SHIFT, SWITCH_LANG_WITH_LEFT_SHIFT, SWITCH_LANG_WITH_RIGHT_SHIFT
 from .config import DEF_FONT_NAME, DEF_LEAD_IN_KEY
+from .config import CONFIG_RECORDS
 from .cintablebase import CinTableBase
 
 from .debug import Debug
@@ -3327,34 +3328,39 @@ class CinBase:
                 cbTS.cin.saveCountFile()
 
         # 如果有更換輸入法碼表，就重新載入碼表資料
+        # The table-affecting rows of the one record list (cinbase.config.
+        # CONFIG_RECORDS) drive the reload diff: each row names the CinTable
+        # mirror to compare and the effect its change has.
         if not CinTable.loading:
-            if not CinTable.curCinType == cfg.selCinType:
-                reLoadCinTable = True
-
-            if not CinTable.ignorePrivateUseArea == cfg.ignorePrivateUseArea:
-                reLoadCinTable = True
-
-            if cfg.reLoadTable:
-                updateExtendTable = True
-                reLoadCinTable = True
-                cfg.reLoadTable = False
-                cfg.save()
-
-            if not CinTable.userExtendTable == cfg.userExtendTable:
-                updateExtendTable = True
-                reLoadCinTable = True
-
-            if not CinTable.priorityExtendTable == cfg.priorityExtendTable:
-                if cfg.userExtendTable:
-                    reLoadCinTable = True
-
-            # 選字鍵列的鏡像屬性：改變時重新向 TextService 宣告這組選字鍵
-            # (issue #463/#539，選字、換頁與重新掛上候選視窗都跟隨它)
-            if not getattr(CinTable, 'selKeys', None) == cfg.getSelKeys():
-                CinTable.selKeys = cfg.getSelKeys()
-                cbTS.selKeys = CinTable.selKeys
-                cbTS.TextService.setSelKeys(cbTS, CinTable.selKeys)
-                cbTS.isSelKeysChanged = True
+            for record in CONFIG_RECORDS:
+                if not record[3]:
+                    continue
+                key, _default, _control, _affecting, mirror, effect, _overrides = record
+                if effect == "reload":
+                    if not getattr(CinTable, mirror) == getattr(cfg, key):
+                        reLoadCinTable = True
+                elif effect == "flag":
+                    if getattr(cfg, key):
+                        updateExtendTable = True
+                        reLoadCinTable = True
+                        setattr(cfg, key, False)
+                        cfg.save()
+                elif effect == "extend":
+                    if not getattr(CinTable, mirror) == getattr(cfg, key):
+                        updateExtendTable = True
+                        reLoadCinTable = True
+                elif effect == "priority":
+                    if not getattr(CinTable, mirror) == getattr(cfg, key):
+                        if cfg.userExtendTable:
+                            reLoadCinTable = True
+                elif effect == "selkeys":
+                    # 選字鍵列的鏡像屬性：改變時重新向 TextService 宣告這組選字鍵
+                    # (issue #463/#539，選字、換頁與重新掛上候選視窗都跟隨它)
+                    if not getattr(CinTable, 'selKeys', None) == cfg.getSelKeys():
+                        CinTable.selKeys = cfg.getSelKeys()
+                        cbTS.selKeys = CinTable.selKeys
+                        cbTS.TextService.setSelKeys(cbTS, CinTable.selKeys)
+                        cbTS.isSelKeysChanged = True
 
         if cfg.imeReverseLookup or cbTS.imeReverseLookup:
             # 載入反查輸入法碼表

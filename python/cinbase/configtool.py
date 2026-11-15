@@ -24,9 +24,9 @@ import random
 import json
 
 try:
-    from cinbase.config import CinBaseConfig
+    from cinbase.config import CinBaseConfig, CONFIG_RECORDS, selKeys
 except ModuleNotFoundError:
-    from config import CinBaseConfig
+    from config import CinBaseConfig, CONFIG_RECORDS, selKeys
 
 cfg = CinBaseConfig
 cfg.imeDirName = sys.argv[2]
@@ -87,6 +87,10 @@ class ConfigHandler(BaseHandler):
         data = {
             "imename": cfg.imeDirName,
             "config": self.load_config(),
+            # the one record list, so the page derives its controls and
+            # defaults from it instead of restating them (ticket 02)
+            "records": [list(record) for record in CONFIG_RECORDS],
+            "selKeys": list(selKeys),
             "cincount": self.load_cindata(),
             "symbols": self.load_data("symbols.dat"),
             "swkb": self.load_data("swkb.dat"),

@@ -63,6 +63,11 @@ var selHCins = [
 
 var debugMode = false;
 var checjConfig = {};
+// the one record list served by /config (python/cinbase/config.py
+// CONFIG_RECORDS); the page derives its defaults and option rows from it
+var pythonRecords = [];
+var pythonDefaults = {};
+var selKeysData = [];
 var cinCount = {};
 var CONFIG_URL = '/config';
 var VERSION_URL = '/version.txt';
@@ -129,14 +134,20 @@ if (!Date.now) {
 function loadConfig() {
     $.get(CONFIG_URL, function(data, status) {
         checjConfig = data.config;
+        pythonRecords = data.records || [];
+        pythonDefaults = {};
+        for (var ri = 0; ri < pythonRecords.length; ++ri) {
+            pythonDefaults[pythonRecords[ri][0]] = pythonRecords[ri][1];
+        }
+        selKeysData = data.selKeys || [];
         if (imeFolderName == "chedayi" && typeof checjConfig.intelligentSelect === "undefined") {
-            checjConfig.intelligentSelect = true;
+            checjConfig.intelligentSelect = pythonDefaults["intelligentSelect"];
         }
         if (imeFolderName == "chedayi" && typeof checjConfig.intelligentSelectRecent === "undefined") {
-            checjConfig.intelligentSelectRecent = true;
+            checjConfig.intelligentSelectRecent = pythonDefaults["intelligentSelectRecent"];
         }
         if (imeFolderName == "chedayi" && typeof checjConfig.intelligentSelectContext === "undefined") {
-            checjConfig.intelligentSelectContext = true;
+            checjConfig.intelligentSelectContext = pythonDefaults["intelligentSelectContext"];
         }
         cinCount = data.cincount;
         symbolsData = data.symbols;
@@ -285,16 +296,16 @@ function updateConfig() {
                     inputValue = parseInt(inputValue, 10);
                 }
             } else if (inputItem.name === "candPerPage") {
-                inputValue = 9;
+                inputValue = pythonDefaults["candPerPage"];
             } else if (inputItem.name === "candPerRow") {
-                inputValue = 1;
+                inputValue = pythonDefaults["candPerRow"];
             } else if (inputItem.name === "candFontWeight") {
-                // 400 = FW_NORMAL, the weight the candidate font already carries
-                inputValue = 400;
+                // the record default, i.e. the weight the candidate font already carries
+                inputValue = pythonDefaults["candFontWeight"];
             }
             if (inputItem.name === "candFontWeight" && !inputValue) {
                 // 0 is FW_DONTCARE; collapse onto the same default
-                inputValue = 400;
+                inputValue = pythonDefaults["candFontWeight"];
             }
             checjConfig[inputItem.name] = inputValue;
             break;
@@ -554,15 +565,12 @@ function pageReady() {
     }
     selWildcardType.children().eq(checjConfig.selWildcardType).prop("selected", true);
 
-    // 選字鍵順序 (issue #463/#539)：選項與 python/cinbase/config.py 的 selKeys 一致
-    var selSelKeys = [
-        "1234567890",
-        "0123456789"
-    ];
+    // 選字鍵順序 (issue #463/#539)：選項與索引 fallback 皆取自 /config 帶回的
+    // 同一份宣告（python/cinbase/config.py 的 selKeys 與 CONFIG_RECORDS）
     var selKeyType = $("#selKeyType");
-    var selKeyTypeIndex = (typeof checjConfig.selKeyType === "undefined") ? 0 : checjConfig.selKeyType;
-    for(var i = 0; i < selSelKeys.length; ++i) {
-        var selSelKey = selSelKeys[i];
+    var selKeyTypeIndex = (typeof checjConfig.selKeyType === "undefined") ? pythonDefaults["selKeyType"] : checjConfig.selKeyType;
+    for(var i = 0; i < selKeysData.length; ++i) {
+        var selSelKey = selKeysData[i];
         var item = '<option value="' + i + '">' + selSelKey + '</option>';
         selKeyType.append(item);
     }

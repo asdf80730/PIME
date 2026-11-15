@@ -21,8 +21,21 @@ import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir))
 NODE = os.path.join(ROOT, "node", "node.exe")
+_PYTHON_DIR = os.path.join(ROOT, "python")
+if _PYTHON_DIR not in os.sys.path:
+    os.sys.path.insert(0, _PYTHON_DIR)
 
 TIMEOUT_SECONDS = 60
+
+
+def _records():
+    from cinbase.config import CONFIG_RECORDS
+    return CONFIG_RECORDS
+
+
+def _sel_keys():
+    from cinbase.config import selKeys
+    return selKeys
 
 
 def settings_prelude(script_path, inputs=None, selects=None):
@@ -67,6 +80,11 @@ def settings_prelude(script_path, inputs=None, selects=None):
         "}",
         "$.isNumeric = isNumeric;",
         "eval(src);",
+        # the page reads the one record list off /config; the load stub is
+        # silent, so seed the same values from python/cinbase/config.py
+        "pythonDefaults = %s;" % json.dumps(
+            {record[0]: record[1] for record in _records()}),
+        "selKeysData = %s;" % json.dumps(list(_sel_keys())),
     ]
 
 
