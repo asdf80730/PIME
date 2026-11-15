@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-# Ticket: `.scratch/two-axis-review-2026-11-16/issues/05-name-the-two-orphan-test-files.md`
-# — this gate catches a `File` directive of `installer/installer.nsi` reaching
-# no path, where the values after `/x` and an `/oname=` word are not paths,
-# `*.*` means every entry of the directory, and a `.gitignore`d path is
-# `build.bat` output.
-#
 # Every `File` directive of `installer/installer.nsi` names at least one path.
 #
 # makensis aborts on a `File` line whose glob matches nothing (`no files found`,
