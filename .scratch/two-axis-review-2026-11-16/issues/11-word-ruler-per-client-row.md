@@ -64,4 +64,12 @@ bilingual retest comment is
 [issues/883#issuecomment-6906934433](https://github.com/EasyIME/PIME/issues/883#issuecomment-6906934433),
 posted 2026-11-16.
 
+Product branch `pr/tsf-parked-connect` on the fork, tip `959623a0`, one commit on
+`upstream/master` (`27f11674`), one file (`PIMETextService/PIMEClient.cpp`). Gates:
+`PASS PR scope (pr/tsf-parked-connect is on upstream/master, 1 file(s) beyond it,
+1 picked commit(s) matched)`, `check_pr_bodies.sh` → `checked 41 PR bodies` with no red
+line, `check_fork_ci_noise.sh` → `NOTE` (product workflows unchanged), the declaration gate
+→ `0 failed`. Body: `.scratch/pr-13-body.md`. Compare URL:
+`https://github.com/EasyIME/PIME/compare/master...asdf80730:pr/tsf-parked-connect?expand=1`.
+
 *(Comment generated with AI assistance from omp (tensorfold/Qwen3.8-Flash-Next))*
