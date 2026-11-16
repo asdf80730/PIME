@@ -11,12 +11,16 @@ Blocked by: None
       `version.txt` = `2.0.0-beta4`, `cmd.exe /c ver` = `Microsoft Windows [版本 10.0.26300.9974]`
       (both read on 2026-11-16 from this box)
 - [ ] In Word with PIME Bopomofo, type the bopomofo for the test syllable, press Space,
-      record the committed string
-- [ ] Drag the ruler first-line indent handle, record PASS or FAIL
-- [ ] On FAIL, record which recovery fires: per-window reopen, or PIME Launcher restart
-- [ ] Record whether the paragraph dialog still works
-- [ ] Record whether the first drag fails, or only after several
-- [ ] Record the Office build (2019 Standard or 365) and whether Outlook shows it too
+      record the committed string — still open (the human pass named the ruler items only)
+- [x] Drag the ruler first-line indent handle, record PASS or FAIL — **FAIL**, reported
+      2026-11-16 by the human on this desktop: with 新酷音 (McBopomofo), while the
+      composition is still unselected, moving the ruler stops the input
+- [x] On FAIL, record which recovery fires: per-window reopen, or PIME Launcher restart —
+      **per-window reopen**: closing and reopening the Word document restores typing; the
+      `PIMELauncher` is not restarted
+- [ ] Record whether the paragraph dialog still works — still open
+- [ ] Record whether the first drag fails, or only after several — still open
+- [ ] Record the Office build (2019 Standard or 365) and whether Outlook shows it too — still open
 - [x] Same session, #859: Win+Shift+S, then Ctrl+V, then type Chinese once more —
       the two shipped instruments answer this layer without a typed command, 2026-11-16:
       `powershell -NoProfile -ExecutionPolicy Bypass -File .scratch/desktop-859.ps1` →
