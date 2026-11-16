@@ -131,7 +131,8 @@ $(grep -c '^[[:space:]]*def test_' "$path")"
             fi
         done < <(awk '{ t = tolower($0); gsub(/[*_` ]/, "", t)
                         if (t == "validation:") v = 1 } v' "$f" \
-                    | grep -oE '`[^` ]+/[^`]*`' | grep -v '://' | tr -d '`' | sort -u)
+                    | grep -oE '`[^` ]+/[^`]*`' | grep -v '://' | tr -d '`' \
+                    | awk '{ print $1 }' | sort -u)
     fi
 done
 printf 'checked %d PR bodies\n' "${#files[@]}"

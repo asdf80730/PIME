@@ -145,6 +145,10 @@ if [ -n "$base_ref" ] && git rev-parse --verify --quiet "$base_ref" >/dev/null; 
     git worktree add -B "$branch_ok" "$work_ok" "$base_ref" >/dev/null 2>&1
     if [ -d "$work_ok" ]; then
         expect 0 'clean branch on product master passes' "$work_ok" "$branch_ok"
+        # The tracked-path check reads the named ref, so the integration checkout
+        # itself — the tree that carries the gate — answers the same way as the
+        # branch worktree does. This is the form the delivering box uses.
+        expect 0 'clean branch passes from the integration checkout too' "$ROOT" "$branch_ok"
     else
         printf 'SKIP  clean-branch PASS (worktree at %s unavailable)\n' "$base_ref"
         skipped=$((skipped + 1))

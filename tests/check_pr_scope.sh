@@ -66,11 +66,14 @@ case "${GITHUB_BASE_REF:-}" in
         ;;
 esac
 
-# Tracked-path check: integration-only files must never ride a PR branch,
-# whatever remote layout this checkout uses.
-leaked=$(git ls-files -- docs/agents GLOSSARY.md .scratch | head -n 3)
+# Tracked-path check: integration-only files must never ride the PR branch,
+# whatever remote layout this checkout uses. The judged tree is the named ref, so
+# the answer is the same from the integration checkout and from the branch's own
+# worktree: `git ls-files` would read whatever HEAD happens to be, which is the
+# integration tree on the box that writes the bodies.
+leaked=$(git ls-tree -r --name-only "$target" -- docs/agents GLOSSARY.md .scratch 2>/dev/null | head -n 3)
 if [ -n "$leaked" ]; then
-    printf 'FAIL  PR scope (HEAD tracks integration-only files upstream lacks):\n'
+    printf 'FAIL  PR scope (%s tracks integration-only files upstream lacks):\n' "$target"
     printf '%s\n' "$leaked" | sed 's/^/  /'
     exit 1
 fi
