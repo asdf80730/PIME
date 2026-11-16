@@ -67,14 +67,16 @@ step "Configuring and building x64"
 "$CMAKE" -S "$TOOLS/src-mirror" -B "$TOOLS/build-x64" -G Ninja \
   -DCMAKE_MAKE_PROGRAM="$NINJA" \
   -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAINS/x64.cmake" \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release > /dev/null
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release \
+  > /dev/null
 "$CMAKE" --build "$TOOLS/build-x64" --config Release --target PIMETextService
 
 step "Configuring and building ARM64"
 "$CMAKE" -S "$TOOLS/src-mirror" -B "$TOOLS/build-arm64" -G Ninja \
   -DCMAKE_MAKE_PROGRAM="$NINJA" \
   -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAINS/arm64.cmake" \
-  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release > /dev/null
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release \
+  > /dev/null
 "$CMAKE" --build "$TOOLS/build-arm64" --config Release --target PIMETextService
 
 step "Building the ARM64X forwarder"

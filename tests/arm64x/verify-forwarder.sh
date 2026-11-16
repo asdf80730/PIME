@@ -40,7 +40,7 @@ for arch in arm64 x64; do
     arm64) target=aarch64-pc-windows-msvc ;;
     x64)   target=x86_64-pc-windows-msvc ;;
   esac
-  "$CC" --target="$target" -c $INC \
+  "$CC" --target="$target" -c -w $INC \
     "-Fo$(cygpath -w "$WORK")\\loadone-$arch.obj" "$(cygpath -w "$HERE/loadone.c")"
   "$LL" -nologo "-out:$(cygpath -w "$WORK")\\loadone-$arch.exe" \
     "$(cygpath -w "$WORK")\\loadone-$arch.obj" \
