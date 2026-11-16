@@ -81,12 +81,49 @@ TextService::~TextService(void) {
 		::DeleteObject(font_);
 }
 
+// The profile that is active for this thread's current language: the same GUID
+// that ITfActiveLanguageProfileNotifySink::OnActivated hands to
+// onLangProfileActivated(). Returns GUID_NULL when nothing is answerable.
+static GUID activeProfileOf(Ime::ImeModule* module) {
+	if (module == nullptr) {
+		return GUID_NULL;
+	}
+	Ime::ComPtr<ITfInputProcessorProfiles> profiles;
+	if (::CoCreateInstance(CLSID_TF_InputProcessorProfiles, nullptr, CLSCTX_INPROC_SERVER,
+	                       IID_ITfInputProcessorProfiles, (void**)&profiles) != S_OK ||
+		profiles == nullptr) {
+		return GUID_NULL;
+	}
+	LANGID langid = 0;
+	GUID guid = GUID_NULL;
+	if (FAILED(profiles->GetActiveLanguageProfile(module->textServiceClsid(), &langid, &guid))) {
+		return GUID_NULL;
+	}
+	return guid;
+}
+
 // virtual
 void TextService::onActivate() {
-	// Since we support multiple language profiles in this text service,
-	// we do nothing when the whole text service is activated.
-	// Instead, we do the actual initilization for each language profile when it is activated.
-	// In PIME, we create different client connections for different language profiles.
+	// Multiple language profiles live in this one text service, so the normal
+	// per-profile init happens in onLangProfileActivated(), reached from the
+	// ITfActiveLanguageProfileNotifySink::OnActivated callback: in PIME we
+	// create one client connection per active language profile.
+	// A host can, however, activate the text service without that notification
+	// ever arriving (the Windows 11 taskbar XAML island does). Then client_
+	// stays null, every key handler returns false at its `if (!client_)`
+	// guard, and the host only ever sees the unprocessed Latin keys.
+	// Creating the connection here covers that order as well; when
+	// onLangProfileActivated() does fire it replaces this client.
+	if (client_ == nullptr) {
+		GUID lang = IsEqualGUID(currentLangProfile_, GUID_NULL)
+			? activeProfileOf(imeModule())
+			: currentLangProfile_;
+		if (!IsEqualGUID(lang, GUID_NULL)) {
+			currentLangProfile_ = lang;
+			client_ = std::make_unique<Client>(this, lang);
+			client_->onActivate();
+		}
+	}
 }
 
 // virtual
@@ -224,6 +261,7 @@ void TextService::onLangProfileActivated(REFIID lang) {
 		closeClient();
 
 	// create a new client connection to the input method server for the language profile
+	currentLangProfile_ = lang;
 	client_ = std::make_unique<Client>(this, lang);
 	client_->onActivate();
 }
@@ -446,6 +484,8 @@ void TextService::closeClient() {
 		// disconnect from the server
 		client_->onDeactivate();
 		client_ = nullptr;
+		// the cached profile belongs to the closed connection
+		currentLangProfile_ = GUID_NULL;
 		// detroy UI resources
 		hideMessage();
 		hideCandidates();

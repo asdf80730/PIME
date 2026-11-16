@@ -312,6 +312,21 @@ python backend and prints the raw `compositionString` answers). Run the first wi
 `powershell -NoProfile -ExecutionPolicy Bypass -File .scratch/desktop-859.ps1`; it
 leaves one live `PIMELauncher` and no notepad behind.
 
+The taskbar shapes are answered by `.scratch/taskbar-flyout-probe4.ps1` (restarts
+explorer, opens the search pill through its UIA Toggle pattern, types `ji5` into the
+focused `RichEditBox` and reports `PASS` / `PARTIAL` / `FAIL` from its value) read
+beside the `.scratch/one-host.ps1 -host_ notepad` control. Enter the island by HWND:
+`Shell_TrayWnd` carries the UIA tree only in the first seconds after a restart and later
+only `WPETrayWindow` remains, and `AutomationElement::FromHandle` throws
+`ElementNotAvailableException` for some top-level windows, so each call needs its own
+`try`. Each rebuild lands in a fresh `%USERPROFILE%\pime-root\vN` directory, because the
+live ARM64X forwarder keeps the previous `_arm64.dll` mapped while its host process
+lives; `.scratch/install-new-dll.ps1` does that copy plus the `HKCU` write. TSF
+interface questions are answered by the vendored header
+`.tools/msvc/sdk/include/um/msctf.h`: `ITfInputProcessorProfiles::GetActiveLanguageProfile`
+takes the text-service CLSID, `ITfInputProcessorProfileMgr::GetActiveProfile` takes a
+`LANGID` and fills `TF_INPUTPROCESSORPROFILE`.
+
 **The agent docs have their own check, and it is not a layer.**
 `tests/test_agent_docs.py` resolves every backticked or linked token ending in md, sh,
 py, yaml, yml, nsi or ns inside `AGENTS.md` and `docs/agents/*.md` against the doc's
