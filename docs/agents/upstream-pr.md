@@ -89,16 +89,16 @@ and hand the compare URL plus body to the human.
   `tests/` or `AGENTS.md`, so read those and run the checks on the integration
   branch before branching, then switch back after pushing. A fresh worktree likewise lacks the harness under `tests/`
   (`ime_smoke_runner.py`, `run_local_tests.sh`): run the worktree's `python/` from the integration checkout with `python/python3/python.exe tests/run_worktree_tests.py tests/test_<issue>.py <worktree>` — it aborts unless `cinbase` binds from the worktree, so a run cannot silently test the wrong tree. The worktree also predates every unmerged local feature, so only the *new* issue's test file can pass against it; regression suites for features still awaiting their upstream PR (#890-style) go red on that base by design — run those on the integration checkout, where their product code lives.
-- Before pushing a `pr/*` branch, run the check from the PR worktree by absolute
-  path (`<integration-checkout>/tests/check_pr_scope.sh <branch>`): the script
-  exists only on the integration branch, and `tests/run_local_tests.sh` checks its
-  own checkout, so it skips there. It resolves the product master by remote URL —
-  never by the fork — and fails when the branch does not sit on it, when the diff
-  carries `docs/`, `tests/`, `AGENTS.md` or `GLOSSARY.md`, or — first, before any
-  remote is consulted — when the worktree you stand in tracks integration-only
-  paths (`docs/agents/`, `GLOSSARY.md`, `.scratch/`). Push only after it
-  prints `PASS`; recover with `git rebase --onto <product-base> <base>` or a fresh
-  worktree plus cherry-picks.
+- Before pushing a `pr/*` branch, run `tests/check_pr_scope.sh <branch>`; it judges the
+  **named ref**, so any checkout answers identically — the integration checkout carries the
+  script, a fresh `pr/*` worktree does not. It resolves the product master by remote URL —
+  never by the fork — and fails when the branch does not sit on it, when the diff carries
+  `docs/`, `tests/`, `AGENTS.md` or `GLOSSARY.md`, or — first, before any remote is
+  consulted — when the named ref carries integration-only paths (`docs/agents/`,
+  `GLOSSARY.md`, `.scratch/`). Push only after it prints `PASS`; recover with
+  `git rebase --onto <product-base> <base>` or a fresh worktree plus cherry-picks. A branch
+  claimed by a worktree cannot be `git checkout`-ed in the main checkout (git says it is
+  already used): remove the worktree first, or judge it by name with the command above.
 - Cut the branch and lift the product commits in one motion:
   `git worktree add -q -b pr/<topic> .worktrees/<topic> <product>/master` (`-q` keeps the
   800-line checkout progress out of the transcript), then `git cherry-pick -n <sha>` per
@@ -205,10 +205,9 @@ and hand the compare URL plus body to the human.
   a path no tree or ref carries — the artefacts of a hand-edited draft and of a claim
   written before its run. `PR_BODY_SKIP_PATHS=1` waives the path rule for a path this
   branch deletes. A body kept outside `.scratch` is judged without moving it:
-  `PR_BODY=<path> bash tests/check_pr_bodies.sh`. The path rule extracts the whole
-  backtick span whose first token contains a slash, so cite a pure path inside the
-  backticks (`python/python3/python.exe`) and leave the command arguments outside
-  the span — the shape every accepted body uses.
+  `PR_BODY=<path> bash tests/check_pr_bodies.sh`. The path rule judges the **first token**
+  of each backtick span holding a slash, so one pair around a whole command and one pair
+  around the path alone both settle on the program path.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
 

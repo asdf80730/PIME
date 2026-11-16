@@ -145,6 +145,13 @@ bash tests/build_windows_artifacts.sh    # text service (x86/x64/ARM64) + launch
 bash tests/build_windows_installer.sh     # the NSIS installer
 ```
 
+What invalidates what: `PIMETextService/*.cpp|*.h` or `PIMELauncher/src/**` → both
+scripts; `python/**`, `node/**`, `installer/installer.nsi` or a committed table → the
+installer alone, because the two payload trees join the staging tree as junctions and
+`makensis` reads the current files; `docs/`, `tests/`, `.scratch/` → neither. The staged
+exe is `.tools/stage/installer/PIME-<version>-setup.exe`; compare its mtime against the
+tip commit date to tell a stale artifact from a fresh one.
+
 `build_windows_artifacts.sh` configures the upstream CMake project three times
 with the toolchain files in `tests/toolchains/`. They use `clang-cl` and
 `lld-link` from `.tools/mingw64` against the SDK and CRT that `xwin` splatted
