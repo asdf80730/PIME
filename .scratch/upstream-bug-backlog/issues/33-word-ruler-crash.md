@@ -76,3 +76,21 @@ exit 0, plus both owner sites read from source (`PIMETextService/PIMEClient.cpp:
 turns the second checkbox green and moves Status to `ready-for-agent`.
 
 *(Comment generated with AI assistance from omp (tensorfold/Qwen3.8-Flash-Next))*
+
+**2026-11-16, omp (Qwen3.8-Flash-Next), automated pass on the tree's own build:**
+`.scratch/ruler-loop.ps1` drives the four steps end to end (Word document, key burst,
+ruler-band drag through `mouse_event`, second key burst, then the launcher flush row)
+and answers identically 6/6: `CHECK_TIP/CHECK_FRAME/CHECK_COMMIT/CHECK_DRAG=PASS`,
+`音` committed before the drag, `問` after it, `GROWTH=1`, `VERDICT=PASS`, one row
+`filterKeyDown true=31 false=1 onKeyDown=23 seqNum sent=82 received=82 replies=82
+mismatches=0 isKeyboardOpen=true compositionLen=3 connects=1`. The first drag already
+answers, and the two committed strings are now on the record. `desktop-859.ps1` keeps
+printing `CHECK_HEALTHY=FAIL (0)` because its healthy rule (`onKeyDown == true-count`)
+cannot hold for a real row — `libIME2/src/TextService.cpp:729-756` calls `onKeyDown`
+only for the keys the filter claimed — so the growth across the drag is the
+load-bearing assertion. The shipped `C:\Program Files (x86)\PIME` payload is still the
+Nov-15 `2.0.0-beta4` build; the tree's artifacts go in through the per-user CLSID
+override in `.scratch/install-user-payload.ps1`, since that Program Files tree is `RX`
+for `BUILTIN\Users`.
+
+*(Comment generated with AI assistance from omp (tensorfold/Qwen3.8-Flash-Next))*

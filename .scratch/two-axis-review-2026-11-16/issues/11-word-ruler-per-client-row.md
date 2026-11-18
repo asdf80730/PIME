@@ -58,6 +58,29 @@ again, which is exactly the recovery the human saw. `OnLayoutChange` is not impl
 
 ## Comments
 
+Instrument for the four steps, 2026-11-16:
+`powershell -NoProfile -ExecutionPolicy Bypass -File .scratch/ruler-loop.ps1`
+(one Word document, one key burst, one ruler-band drag, one key burst, then the
+per-client row from the launcher flush). Six consecutive runs on the tree's own
+build answered identically: `CHECK_TIP/CHECK_FRAME/CHECK_COMMIT/CHECK_DRAG=PASS`,
+`TEXT_BEFORE=[音]`, `TEXT_AFTER=[音問 ]`, `GROWTH=1`, `VERDICT=PASS`, and one
+launcher row `filterKeyDown true=31 false=1 onKeyDown=23 seqNum sent=82
+received=82 replies=82 mismatches=0 isKeyboardOpen=true compositionLen=3
+connects=1`. Two facts come out of it: the committed strings the human pass
+could not type (`u p` + space → `音`, `j 4` + space → `問`), and the first drag
+already answers, so the failure is not "only after several drags".
+
+Two harness notes that changed the verdict, so a re-run does not rediscover them:
+`desktop-859.ps1`'s healthy rule is `onKeyDown == true-count`, and the real
+healthy row is `true=31 onKeyDown=23` (each claimed key yields one `onKeyDown`,
+each declined key none — `libIME2/src/TextService.cpp:729-756` dispatches
+`onKeyDown` only when the filter claimed the key), so the equality can never
+hold and its `CHECK_HEALTHY=FAIL` is a heuristic artifact, not a product red.
+The sharp assertion is the document growth across the drag. And a stale Word
+instance from a previous run makes every key miss the tip (only `init` +
+`onActivate` on the pipe): stop `WINWORD` before the burst, then resolve the
+frame from the visible `OpusApp` top-level window.
+
 Upstream issue #883; the retest lives in `.scratch/upstream-bug-backlog/issues/33-word-ruler-crash.md`
 and both now carry the same minimal repro. Found by ticket 09's human lab session. The
 bilingual retest comment is
@@ -65,7 +88,11 @@ bilingual retest comment is
 posted 2026-11-16.
 
 Product branch `pr/tsf-parked-connect` on the fork, tip `959623a0`, one commit on
-`upstream/master` (`27f11674`), one file (`PIMETextService/PIMEClient.cpp`). Gates:
+`upstream/master` (`27f11674`), one file (`PIMETextService/PIMEClient.cpp`). **Opened as
+[PR #1042](https://github.com/EasyIME/PIME/pull/1042)** on 2026-11-17, base `master`,
+title `fix(tsf): re-drive a parked connect from ensureConnected (#883)`; the first
+Actions pair ran from the push (`release completed`, `ci / build-and-sign in_progress`
+at the time of writing). Gates:
 `PASS PR scope (pr/tsf-parked-connect is on upstream/master, 1 file(s) beyond it,
 1 picked commit(s) matched)`, `check_pr_bodies.sh` → `checked 41 PR bodies` with no red
 line, `check_fork_ci_noise.sh` → `NOTE` (product workflows unchanged), the declaration gate
