@@ -198,7 +198,10 @@ Individual commands, if you want to narrow the loop:
   a new form against SchemaStore's `github-issue-forms.json` before pushing.
 - **C++ text service** — cannot build or run here: the root `CMakeLists.txt` uses
   MSVC flags (`/MT`, `/D_UNICODE`), TSF needs a Windows host, and running `cmake`
-  on Linux proves nothing. The NSIS installer is not in that group: Debian's
+  on Linux proves nothing. `PIMEClient` has no headless seam either: a `Client`
+  needs a `TextService`, the `libIME2_static` link and a live `PIMELauncher` pipe,
+  so the `.scratch` desktop instruments below are its regression seam, not a gtest
+  beside the pure helpers. The NSIS installer is not in that group: Debian's
   `makensis` is 3.08, the same version `build-and-sign.yaml` pins, and it
   preprocesses and assembles `installer/installer.nsi` in full, vendored
   plugins included. The only failures are `File` directives whose Windows
@@ -302,15 +305,29 @@ delivery, so on an integration or local ref they answer
 `SKIP … (… is an integration or local branch)` with **125**, and 125 is the
 satisfied answer there — only exit 1 is a red.
 
-The two desktop instruments for the issue-859 shape live in the scratch dir and are
-the fastest way to re-answer the per-window questions on a Windows box:
+The three desktop instruments for the issue-859 and issue-883 shapes live in the scratch
+dir and are the fastest way to re-answer the per-window questions on a Windows box:
 `.scratch/desktop-859.ps1` (pins the TIP list, types into one notepad window at a
 time, flushes the launcher and judges the per-client table: `CHECK_TIP`,
-`CHECK_PROBE`, `CHECK_PIME`, `CHECK_HEALTHY`, `CLIENT_ROWS`, `VERDICT`) and
+`CHECK_PROBE`, `CHECK_PIME`, `CHECK_HEALTHY`, `CLIENT_ROWS`, `VERDICT`),
+`.scratch/ruler-loop.ps1` (the #883 sequence in Word: one document, a key burst, a
+`mouse_event` pass over the ruler band, a second burst, then the launcher flush row —
+the load-bearing assertion is the document text growing across the drag, and the
+`finally` restarts the launcher pair so the box is left usable), and
 `.scratch/pipe-client-859.py` (drives `filterKeyDown`/`onKeyDown` against the live
-python backend and prints the raw `compositionString` answers). Run the first with
-`powershell -NoProfile -ExecutionPolicy Bypass -File .scratch/desktop-859.ps1`; it
-leaves one live `PIMELauncher` and no notepad behind.
+python backend and prints the raw `compositionString` answers). Run each with
+`powershell -NoProfile -ExecutionPolicy Bypass -File <path>`; both PowerShell ones end
+by flushing and restarting `PIMELauncher`, and a run that starts while an older Word or
+notepad instance is still alive loses the keystrokes, so stop those first. Under this
+adapter `Word.Application.Hwnd` answers `0`, so take the frame from the visible
+`OpusApp` top-level window (`EnumWindows` plus `GetClassName`).
+`CHECK_HEALTHY` counts a row whose `true>0` also shows `onKeyDown>0` with
+`mismatches=0`; `true>0` with `onKeyDown=0` is the parked row, the #883 shape.
+The shipped payload under `C:\Program Files (x86)\PIME` is `RX` for `BUILTIN\Users`, so
+a non-elevated copy into it fails; `.scratch/install-user-payload.ps1` stages the
+`.tools/stage` artifacts into `%USERPROFILE%\pime-root` and points the TIP's
+`InprocServer32` there through `HKCU:\Software\Classes\CLSID`, which the merged `HKCR`
+prefers over the `HKLM` entry.
 
 The taskbar shapes are answered by `.scratch/taskbar-flyout-probe4.ps1` (restarts
 explorer, opens the search pill through its UIA Toggle pattern, types `ji5` into the
