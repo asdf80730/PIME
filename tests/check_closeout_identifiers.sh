@@ -103,8 +103,17 @@ if [ "$((${#is_sha[@]} + ${#is_num[@]}))" -gt 0 ]; then
             tok=${sha_list[i]}
             line=${answers[i]:-}
             type=${line##* }
-            [ -n "$line" ] && [ "$type" != "missing" ] && [ "$type" != "ambiguous" ] && \
-                held["$tok"]=1
+            if [ -z "$line" ] || [ "$type" = "missing" ] || [ "$type" = "ambiguous" ]; then
+                continue
+            fi
+            # A 40-char token has to match the object name itself. `--batch-check`
+            # prefix-resolves, so a doubled abbreviation (`abc1234abc1234`) would
+            # otherwise read as a hit as soon as any object dir holds an object with
+            # that prefix, and the verdict would move with the object count.
+            if [ "${#tok}" -eq 40 ] && [ "${line%% *}" != "$tok" ]; then
+                continue
+            fi
+            held["$tok"]=1
         done
     done
 fi

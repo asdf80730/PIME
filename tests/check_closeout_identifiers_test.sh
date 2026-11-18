@@ -82,11 +82,17 @@ expect 0 'identifiers that resolve in the given object dir are green' \
 expect_says 'the ambiguous bare digit strings are only counted' 'unchecked' \
     "$sandbox"
 
-# A mistyped SHA reddens and names the token.
-sed -E "s/\`$short_sha\`/\`$short_sha$short_sha\`/" "$ticket" > "$ticket.n" && \
+# A mistyped SHA reddens and names the token. The 40-char form is the one the
+# close-out comments quote, and a 40-char token only matches by its full name, so the
+# verdict does not move when another object dir gains objects (a 14-char doubled
+# abbreviation is prefix-resolved and so is not a stable expectation).
+flip=${head_sha: -1}
+if [ "$flip" = "0" ]; then flip=1; else flip=0; fi
+mistyped="${head_sha%?}$flip"
+sed -E "s/\`$short_sha\`/\`$mistyped\`/" "$ticket" > "$ticket.n" && \
     mv "$ticket.n" "$ticket"
 expect 1 'a mistyped SHA reddens' "$sandbox"
-expect_says 'the mistyped token is named' "$short_sha$short_sha" "$sandbox"
+expect_says 'the mistyped token is named' "$mistyped" "$sandbox"
 
 # The third state: no fetched object dir beside the superproject leaves the same
 # pin unchecked instead of red.
