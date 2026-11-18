@@ -114,6 +114,25 @@ void TextService::onActivate() {
 	// guard, and the host only ever sees the unprocessed Latin keys.
 	// Creating the connection here covers that order as well; when
 	// onLangProfileActivated() does fire it replaces this client.
+	if (!threadMgr())
+		return;
+	// Give this client the focus document of the manager: the keystroke manager
+	// dispatches only to the sink owning the focused document, and a host can
+	// activate the text service without ever calling SetFocus (the Windows 11
+	// taskbar XAML island does), which leaves the association empty.
+	ITfDocumentMgr* focus = nullptr;
+	threadMgr()->GetFocus(&focus);
+	ITfDocumentMgr* mine = nullptr;
+	if (focus == nullptr && SUCCEEDED(threadMgr()->CreateDocumentMgr(&mine)) && mine != nullptr)
+		focus = mine;
+	if (focus != nullptr) {
+		threadMgr()->SetFocus(focus);
+		ITfDocumentMgr* prev = nullptr;
+		threadMgr()->AssociateFocus(::GetFocus(), focus, &prev);
+		if (prev)
+			prev->Release();
+		focus->Release();
+	}
 	if (client_ == nullptr) {
 		GUID lang = IsEqualGUID(currentLangProfile_, GUID_NULL)
 			? activeProfileOf(imeModule())
