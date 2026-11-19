@@ -208,6 +208,11 @@ and hand the compare URL plus body to the human.
   `PR_BODY=<path> bash tests/check_pr_bodies.sh`. The path rule judges the **first token**
   of each backtick span holding a slash, so one pair around a whole command and one pair
   around the path alone both settle on the program path.
+- Read the whole open queue in one pass with `bash tests/check_pr_queue.sh`: one row per
+  open PR with its head SHA, `mergeable`, and every check conclusion, plus two head
+  assertions — one head per open PR, and the head equal to the tip of its own local
+  branch. Those are the two ways a maintainer's `ready to merge` goes stale under a
+  rewrite, so the gate is what settles a queue snapshot rather than a per-PR `gh` loop.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
 
