@@ -73,11 +73,31 @@ check "UNKNOWN settled by the re-read" 0 "$(run_gate)"
 printf '898 UNKNOWN\n' >"$SANDBOX/view"
 check "UNKNOWN after the re-read" 1 "$(run_gate)"
 
-# 5. No `gh` on this box: not applicable.
+# 5. Two open PRs on one head: the shared-head shape that cost #1014 its
+#    `ready to merge` state (one force-push moves both evidence trails).
+printf '1013|abcdef12|MERGEABLE|SUCCESS\n1014|abcdef12|MERGEABLE|SUCCESS\n' \
+    >"$SANDBOX/list"
+check "two PRs sharing one head" 1 "$(run_gate)"
+
+# 6. A row whose head is not the tip of its own local branch, then a row that
+#    matches it: the posted CI evidence belongs to the head, so a tip that has
+#    moved on is a stale trail rather than a green light.
+tip=$( cd "$ROOT" && git rev-parse local/stroke-parked 2>/dev/null )
+if [ -n "$tip" ]; then
+    printf '77|0000000000000000000000000000000000000000|MERGEABLE||local/stroke-parked\n' \
+        >"$SANDBOX/list"
+    check "row head behind the branch tip" 1 "$(run_gate)"
+    printf '77|%s|MERGEABLE||local/stroke-parked\n' "$tip" >"$SANDBOX/list"
+    check "row head at the branch tip" 0 "$(run_gate)"
+else
+    echo "skip    head-vs-tip cases (no local/stroke-parked in this checkout)"
+fi
+
+# 7. No `gh` on this box: not applicable.
 ( cd "$ROOT" && GH_BIN=pime-no-such-gh bash "$GATE" EasyIME/PIME ) >/dev/null 2>&1
 check "no gh on PATH" 125 "$?"
 
-# 6. The repo answers nothing at all: not applicable, not red.
+# 8. The repo answers nothing at all: not applicable, not red.
 : >"$SANDBOX/list"
 check "empty queue" 125 "$(run_gate)"
 
