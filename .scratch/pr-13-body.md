@@ -8,7 +8,8 @@ Fixes #883 — the Word ruler drag leaves one window dead until it is reopened.
 Validation:
 
 - `bash tests/build_windows_artifacts.sh` links all three architectures: I386 491008, AMD64 593920, ARM64 535552 bytes, plus the `PIMETextService_arm64.dll` forwarder.
-- `bash tests/build_windows_installer.sh` re-emits `.tools/stage/installer/PIME-2.0.0-beta4-setup.exe` (49745890 bytes) from that tree.
+- `bash tests/build_windows_installer.sh` re-emits the staged setup artifact
+  `PIME-2.0.0-beta4-setup.exe` (49745890 bytes) from that tree.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File .scratch/ruler-loop.ps1` (Word, one document, key burst, ruler-band drag, second burst, then the launcher flush row): `CHECK_TIP`, `CHECK_FRAME`, `CHECK_COMMIT`, `CHECK_DRAG` all `PASS`, the document holds `音` before the drag and `音問 ` after it (`GROWTH=1`), `VERDICT=PASS`, flush row `filterKeyDown true=31 false=1 onKeyDown=23 seqNum sent=81 received=81 replies=81 mismatches=0 isKeyboardOpen=true compositionLen=3 connects=1`. Before the fix that same sequence left the dragged window at `true=1 onKeyDown=0` with no further text.
 - `powershell -NoProfile -ExecutionPolicy Bypass -File .scratch/desktop-859.ps1`: the per-client table answers with `mismatches=0`, `workerRestarts=0`, `backendRestarts=0`.
 - `python/python3/python.exe .scratch/pipe-client-859.py`: `init` → `{"success": true}`, `onActivate` → the `customizeUI` block, six `filterKeyDown` calls answered, space commits `{"compositionString": "一", "return": true}`.
