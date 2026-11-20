@@ -68,7 +68,8 @@ function main() {
   const baseDir = makeFixture();
   try {
     const services = loadServices(baseDir);
-    assert.strictEqual(services.length, 3, 'only directories with ime.json are services');
+    assert.strictEqual(services.length, 2,
+      'only directories with a guided ime.json are services');
     // Keyed by the manifest name so the readdir order does not matter: each
     // folder is keyed by its own guid, and a guid-less manifest has none.
     const byName = {};
@@ -79,8 +80,8 @@ function main() {
     assert.strictEqual(byName['Demo IME'].textService.marker, 'demo-service');
     assert.strictEqual(byName['Demo IME CN'].guid, CN_GUID);
     assert.strictEqual(byName['Demo IME CN'].textService.marker, 'demo-cn-service');
-    assert.strictEqual(byName['Demo without a guid'].guid, undefined,
-      'a manifest without a guid registers no key');
+    assert.strictEqual(byName['Demo without a guid'], undefined,
+      'a manifest without a guid is skipped, so no module is loaded for it');
 
     const byId = loadServiceById(GUID.toLowerCase(), baseDir);
     assert.strictEqual(byId.marker, 'demo-service', 'GUID lookup is case-insensitive');

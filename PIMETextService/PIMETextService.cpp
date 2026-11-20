@@ -17,9 +17,6 @@
 //	Boston, MA  02110-1301, USA.
 //
 
-// DpiUtils.h first: its _WIN32_WINNT/NTDDI_VERSION defines must precede the
-// first <windows.h> in this TU (which PIMETextService.h pulls in).
-#include "DpiUtils.h"
 #include "PIMETextService.h"
 #include <assert.h>
 #include <string>
@@ -53,13 +50,6 @@ TextService::TextService(ImeModule* module):
 	popupMenu_(nullptr),
 	currentLangProfile_(GUID_NULL) {
 
-	// font for candidate and mesasge windows
-	font_ = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-	LOGFONT lf;
-	GetObject(font_, sizeof(lf), &lf);
-	lf.lfHeight = candFontHeight(nullptr); // FIXME: make this configurable
-	lf.lfWeight = FW_NORMAL;
-	font_ = CreateFontIndirect(&lf);
 }
 
 TextService::~TextService(void) {
@@ -76,9 +66,6 @@ TextService::~TextService(void) {
 
 	if(messageWindow_)
 		hideMessage();
-
-	if(font_)
-		::DeleteObject(font_);
 }
 
 // The profile that is active for this thread's current language: the same GUID
@@ -294,7 +281,7 @@ void TextService::createCandidateWindow(Ime::EditSession* session) {
 		candidateWindow_ = new Ime::CandidateWindow(this, session); // assigning to smart ptr also inrease ref count
 		candidateWindow_->Release();  // decrease ref count caused by new
 
-		candidateWindow_->setFont(font_);
+		candidateWindow_->setFont(createFont(), /*ownFont=*/true);
 		auto elementMgr = Ime::ComPtr<ITfUIElementMgr>::queryFrom(threadMgr());
 		if (elementMgr) {
 			BOOL pbShow = false;
@@ -312,31 +299,10 @@ void TextService::updateCandidates(Ime::EditSession* session) {
 
 	// FIXME: is this the right place to do it?
 	if (updateFont_) {
-		// font for candidate and mesasge windows
-		LOGFONT lf;
-		GetObject(font_, sizeof(lf), &lf);
-		::DeleteObject(font_); // delete old font
-		HWND targetHwnd = nullptr;
-		if (session != nullptr && session->context()) {
-			// the DPI of the monitor the host window lives on (upstream #960):
-			// this SDK header gives ITfContext no GetWnd, the active view has it
-			ITfContextView* view = nullptr;
-			if (SUCCEEDED(session->context()->GetActiveView(&view)) && view != nullptr) {
-				view->GetWnd(&targetHwnd);
-				view->Release();
-			}
-		}
-		lf.lfHeight = candFontHeight(targetHwnd); // apply the new size
-		lf.lfWeight = candFontWeight_; // apply the configured weight (upstream #854)
-		if (!candFontName_.empty()) { // apply new font name
-			wcsncpy(lf.lfFaceName, candFontName_.c_str(), LF_FACESIZE - 1);
-			lf.lfFaceName[LF_FACESIZE - 1] = L'\0';
-		}
-		font_ = CreateFontIndirect(&lf); // create new font
-		// if (messageWindow_)
-		//	messageWindow_->setFont(font_);
+		if (messageWindow_)
+			messageWindow_->setFont(createFont(), /*ownFont=*/true);
 		if (candidateWindow_)
-			candidateWindow_->setFont(font_);
+			candidateWindow_->setFont(createFont(), /*ownFont=*/true);
 		updateFont_ = false;
 	}
 
@@ -430,7 +396,7 @@ void TextService::showMessage(Ime::EditSession* session, std::wstring message, i
 	hideMessage();
 	// FIXME: reuse the window whenever possible
 	messageWindow_ = make_unique<Ime::MessageWindow>(this, session);
-	messageWindow_->setFont(font_);
+	messageWindow_->setFont(createFont(), /*ownFont=*/true);
 	// the same configured colors the candidate window gets (upstream #902)
 	messageWindow_->setTextColor(candTextColor_);
 	messageWindow_->setBackgroundColor(windowBackgroundColor_);
@@ -490,11 +456,27 @@ void CALLBACK TextService::onMessageTimeout(HWND hwnd, UINT msg, UINT_PTR id, DW
 void TextService::updateLangButtons() {
 }
 
-int TextService::candFontHeight(HWND hwnd) {
-	// per-monitor DPI of the host window (upstream #960); the no-window
-	// fallback keeps the old primary-monitor measurement for the
-	// pre-session font.
-	return PIME::candFontHeightFor(candFontSize_, PIME::dpiForWindow(hwnd));
+int TextService::candFontHeight() {
+	int candFontHeight_ = candFontSize_;
+	HDC hdc = GetDC(NULL);
+	if (hdc)
+	{
+		candFontHeight_ = -MulDiv(candFontSize_, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+		ReleaseDC(NULL, hdc);
+	}
+	return candFontHeight_;
+}
+
+HFONT TextService::createFont() {
+	LOGFONT lf;
+	::GetObject(::GetStockObject(DEFAULT_GUI_FONT), sizeof(lf), &lf);
+	lf.lfHeight = candFontHeight();
+	lf.lfWeight = candFontWeight_;
+	if (!candFontName_.empty()) {
+		wcsncpy(lf.lfFaceName, candFontName_.c_str(), LF_FACESIZE - 1);
+		lf.lfFaceName[LF_FACESIZE - 1] = L'\0';
+	}
+	return ::CreateFontIndirect(&lf);
 }
 
 void TextService::closeClient() {

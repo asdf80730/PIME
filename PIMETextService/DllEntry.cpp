@@ -83,7 +83,7 @@ STDAPI DllUnregisterServer(void) {
 // (PIMETextService/DllEntry.cpp → libIME2/ImeModule.cpp:registerLangProfiles).
 // An IME that serves two buckets ships one folder per bucket, so
 // langProfileFromJson returns the single profile the manifest declares.
-static inline std::vector<Ime::LangProfileInfo> langProfileFromJson(const std::wstring& file, int iconIndex) {
+static inline std::vector<Ime::LangProfileInfo> langProfileFromJson(const std::wstring& file, bool useWin8Icon) {
 	std::vector<Ime::LangProfileInfo> profiles;
 	// load the json file to get the info of input method
 	std::ifstream fp(file, std::ifstream::binary);
@@ -110,7 +110,14 @@ static inline std::vector<Ime::LangProfileInfo> langProfileFromJson(const std::w
 	// convert locale name to lanid
 	auto locale = utf8ToUtf16(jsonValueOr<std::string>(j, "locale", "").c_str());
 	auto fallbackLocale = utf8ToUtf16(jsonValueOr<std::string>(j, "fallbackLocale", "").c_str());
-	auto iconFile = utf8ToUtf16(jsonValueOr<std::string>(j, "icon", "").c_str());
+	std::string iconPath;
+	if (useWin8Icon) {
+		iconPath = jsonValueOr<std::string>(j, "win8_icon", "");
+	}
+	if (iconPath.empty()) {
+		iconPath = jsonValueOr<std::string>(j, "icon", "");
+	}
+	auto iconFile = utf8ToUtf16(iconPath.c_str());
 	if (!iconFile.empty() && PathIsRelative(iconFile.c_str())) {
 		size_t p = file.rfind(L'\\');
 		if (p != file.npos) {
@@ -120,19 +127,16 @@ static inline std::vector<Ime::LangProfileInfo> langProfileFromJson(const std::w
 	profiles.push_back(Ime::LangProfileInfo{
 		name,
 		clsidGuid,
-		locale,
-		fallbackLocale,
+		std::move(locale),
+		std::move(fallbackLocale),
 		iconFile,
-		iconIndex
+		0 // .ico files only contain a single icon resource at index 0
 	});
 	return profiles;
 }
 
 STDAPI DllRegisterServer(void) {
-	int iconIndex = 0; // use classic icon
-	if(::IsWindows8OrGreater()) {
-		iconIndex = 1; // use Windows 8 style IME icon
-	}
+	bool useWin8Icon = ::IsWindows8OrGreater();
 	std::vector<Ime::LangProfileInfo> langProfiles;
 	auto module = getImeModule();
 	if (!module) {
@@ -160,7 +164,7 @@ STDAPI DllRegisterServer(void) {
 						DWORD fileAttrib = GetFileAttributesW(imejson.c_str());
 						if (fileAttrib != INVALID_FILE_ATTRIBUTES) {
 							// load the json file to get the info of input method
-							for (auto& profile : langProfileFromJson(imejson, iconIndex)) {
+							for (auto& profile : langProfileFromJson(imejson, useWin8Icon)) {
 								langProfiles.push_back(std::move(profile));
 							}
 						}

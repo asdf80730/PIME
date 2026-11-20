@@ -34,6 +34,17 @@ function parseImeConfig(dir, baseDir) {
   }
 }
 
+// The module a manifest names lives next to that manifest. A fixture tree
+// carries its own copies; the shipped tree resolves against this file, which
+// is what the plain `node --test` run gets.
+function requireService(imeDir, dir, moduleName) {
+  let local = path.join(imeDir, dir, moduleName);
+  if (fs.existsSync(`${local}.js`)) {
+    return require(local);
+  }
+  return require(`./input_methods/${dir}/${moduleName}`);
+}
+
 function loadServices(baseDir) {
   let imeDir = getImeBaseDir(baseDir);
   if (!fs.existsSync(imeDir)) {
@@ -51,12 +62,14 @@ function loadServices(baseDir) {
   let services = [];
   entries.forEach((dir) => {
     let config = parseImeConfig(dir, baseDir);
-    if (!config || !config.moduleName) {
+    // A request id is matched against guid, so a config without one can never
+    // be selected; skip it instead of loading a module nothing can reach.
+    if (!config || !config.guid || !config.moduleName) {
       return;
     }
 
     try {
-      let textService = require(path.join(imeDir, dir, config.moduleName));
+      let textService = requireService(imeDir, dir, config.moduleName);
       config['textService'] = textService;
       services.push(config);
     } catch (e) {
@@ -86,7 +99,7 @@ function loadServiceById(id, baseDir) {
   }
 
   let service = null;
-  let targetId = id.toLowerCase();
+  let targetId = String(id).toLowerCase();
 
   for (let dir of entries) {
     let config = parseImeConfig(dir, baseDir);
@@ -99,7 +112,7 @@ function loadServiceById(id, baseDir) {
     // AddLanguageProfile，所以這裡只需比對該目錄自己的 guid。
     if (matches) {
       try {
-        service = require(path.join(imeDir, dir, config.moduleName));
+        service = requireService(imeDir, dir, config.moduleName);
         break;
       } catch (e) {
         console.warn(`[Node PIME] Failed to require service for ${dir}:`, e.message);
