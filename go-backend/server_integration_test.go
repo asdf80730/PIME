@@ -390,6 +390,32 @@ func TestServerHandleMessageUninitializedClientReturnsProtocolError(t *testing.T
 	}
 }
 
+func TestServerHandleMessageCloseSucceeds(t *testing.T) {
+	server := newTestServerWithMeow()
+
+	sendProtocolMessage(t, server, "client-close", map[string]interface{}{
+		"method":          "init",
+		"seqNum":          1,
+		"id":              testMeowGUID,
+		"isWindows8Above": true,
+		"isMetroApp":      false,
+		"isUiLess":        false,
+		"isConsole":       false,
+	})
+
+	_, response := sendProtocolMessage(t, server, "client-close", map[string]interface{}{
+		"method": "close",
+		"seqNum": 2,
+	})
+
+	if response["success"] != true {
+		t.Fatalf("expected close success, got %#v", response)
+	}
+	if _, ok := server.clients["client-close"]; ok {
+		t.Fatal("expected client to be removed after close")
+	}
+}
+
 func TestServerHandleMessageRimeRequestResponseFlow(t *testing.T) {
 	server := newTestServerWithRime()
 

@@ -6,6 +6,6 @@ Same engine as `input_methods/rime`, reached through its own profile GUID so a
 user with only the `zh-CN` input language also finds 中州韻輸入法; the class is
 re-exported from `python/rimebase`, so one `rime.dll` serves both profiles.
 """
-from rimebase.rime_service import RimeTextService
+from rimebase.rime_service import RimeTextService, needs_rime_deploy
 
-__all__ = ["RimeTextService"]
+__all__ = ["RimeTextService", "needs_rime_deploy"]

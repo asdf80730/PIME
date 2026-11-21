@@ -10,6 +10,6 @@ own `ime.json` declares as its `moduleName`, so all four dispatchers
 `RimeTextService` serve both profiles; see
 `docs/adr/0004-per-backend-profile-guids.md`.
 """
-from rimebase.rime_service import RimeTextService
+from rimebase.rime_service import RimeTextService, needs_rime_deploy
 
-__all__ = ["RimeTextService"]
+__all__ = ["RimeTextService", "needs_rime_deploy"]

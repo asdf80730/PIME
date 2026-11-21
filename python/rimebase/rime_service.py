@@ -33,13 +33,26 @@ APP = "PIME"
 APP_VERSION = "0.01"
 CONFIG_FILE = APP + ".yaml"
 
+def needs_rime_deploy(user_dir):
+    """Return True if the Rime user_dir is missing or holds no compiled .bin files.
+
+    librime skips the dictionary compilation when the directory itself exists,
+    so a directory without ``*.bin`` (a fresh checkout, a move of the compiled
+    files into ``trash/``/``build/``, or a manual cleanup) has to be deployed
+    with ``fullcheck`` to produce any candidate at all.
+    """
+    try:
+        return not any(name.endswith(".bin") for name in os.listdir(user_dir))
+    except OSError:
+        return True
+
+
 user_dir = os.path.join(appdata(), APP, RIME)
-first_run = not os.path.isdir(user_dir)
-if first_run:
-    os.makedirs(user_dir, exist_ok=True)
+fullcheck = needs_rime_deploy(user_dir)
+os.makedirs(user_dir, exist_ok=True)
 curdir = os.path.abspath(os.path.dirname(__file__))
 shared_dir = os.path.join(curdir, "data")
-rimeInit(datadir=shared_dir, userdir=user_dir, appname=APP, appver=APP_VERSION, fullcheck=first_run)
+rimeInit(datadir=shared_dir, userdir=user_dir, appname=APP, appver=APP_VERSION, fullcheck=fullcheck)
 rime.deploy_config_file(CONFIG_FILE.encode("UTF-8"), b'config_version')
 
 def rimeCallback(context_object, session_id, message_type, message_value):

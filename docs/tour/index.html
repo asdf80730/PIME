@@ -186,8 +186,8 @@
   <p class="lede">一個 Windows 文字服務 DLL，只負責把按鍵轉發給常駐的啟動器，再由啟動器交給 Python、Node 或 Go 寫的後端。改輸入法不必碰 C++，也不必重新註冊 DLL。</p>
   <div class="meta">
     <span>整理自 <code>README.md</code>、<code>HACKING.txt</code>、<code>GLOSSARY.md</code>、<code>docs/research/</code></span>
-    <span>上游 <code>EasyIME/PIME@3697f88</code>，已合併進本地 <code>master</code></span>
-    <span>2026-10-28</span>
+    <span>上游 <code>EasyIME/PIME@1911328a</code>（<code>v2.0.0-beta6</code>），已合併進本地 <code>master</code></span>
+    <span>2026-11-21</span>
   </div>
 </header>
 
@@ -424,7 +424,7 @@
 
 <section id="status">
   <h2><span class="num">07</span>目前狀態</h2>
-  <p class="sub">2026-10-28，對照上游 <code>3697f88</code>。近兩週合併了一整輪 Node、C++ 與 launcher 修復；還開著的主要是需要實機的 DPI（#960）與 pipe 阻塞（#942）。</p>
+  <p class="sub">2026-11-21，對照上游 <code>1911328a</code>（<code>v2.0.0-beta6</code>，2026-11-21 釋；上一版 <code>v2.0.0-beta5</code> 為 2026-11-14）。近一週合併的是設定工具權杖驗證（#1043）、cinbase Shift 切換（#1049）、Rime 詞庫自動部署（#1051）與 Go 後端建置（#1009／#1050）；還開著的主要是需要實機的 DPI（#960）與 pipe 阻塞（#942）。</p>
 
   <div class="table-wrap">
     <table>
@@ -443,14 +443,25 @@
         <tr><td>#960</td><td>候選窗不隨 Per-Monitor DPI 縮放</td><td><span class="chip open">open</span></td><td>#962</td></tr>
         <tr><td>#961</td><td>C++ 端未保護的 JSON 例外</td><td><span class="chip ok">已修正</span></td><td>#964</td></tr>
         <tr><td>#966</td><td>installer 移除過時的 VCRedist 檢查</td><td><span class="chip ok">已修正</span></td><td>#976</td></tr>
-        <tr><td>#973</td><td>elevated launcher 建出管理員屬性的 <code>%APPDATA%\PIME</code>，Chewing 靜默失能</td><td><span class="chip open">部分</span></td><td>#988（0o700 與 NULL raise）、#1016（elevated 警告，open）</td></tr>
+        <tr><td>#973</td><td>elevated launcher 建出管理員屬性的 <code>%APPDATA%\PIME</code>，Chewing 靜默失能</td><td><span class="chip ok">已修正</span></td><td>#988（0o700 與 NULL raise）、#1016（elevated 警告）</td></tr>
+        <tr><td>#1027</td><td>設定工具逾時關閉後背景行程殘留</td><td><span class="chip ok">已修正</span></td><td>#1028</td></tr>
+        <tr><td>#1037</td><td>語言選單的輸入法圖示缺失（<code>.ico</code> 索引／<code>win8_icon</code>）</td><td><span class="chip ok">已修正</span></td><td>#1038</td></tr>
+        <tr><td>#1044</td><td>cinbase 單按 Shift 切中英文不可靠（<code>GetAsyncKeyState</code> 跨 IPC 競態）</td><td><span class="chip ok">已修正</span></td><td>#1049</td></tr>
+        <tr><td>—</td><td>設定工具缺 token 驗證（DNS rebinding／CSRF）</td><td><span class="chip ok">已修正</span></td><td>#1043</td></tr>
+        <tr><td>—</td><td><code>%APPDATA%\PIME\Rime</code> 缺 <code>.bin</code> 時不出字</td><td><span class="chip ok">已修正</span></td><td>#1051</td></tr>
+        <tr><td>—</td><td>Go 後端的死-imports 與建置驗證</td><td><span class="chip ok">已修正</span></td><td>#1009、#1050</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="note">
-    <span class="label">上游動態（10/20–10/28）</span>
-    <p>合併了 #935（#856 大易符號卡住）、Node 三連 #945／#946／#952 加直接 patch vendored <code>nime</code> 的 #971（收掉 #936／#937／#951）、C++ 初始化與註冊三件 #992／#993／#994、launcher 的 #997（close 通知轉發）與 #998（client ID 寬度驗證）、#976（#966 installer VCRedist 檢查移除）、#1000（Python <code>GetAsyncKeyState</code> 位元遮罩）與 #999（emojime 候選越界）。新開的社群 PR：#1013（#890 cinbase Shift）、#1016（#973 launcher elevated 警告）。</p>
+    <span class="label">上游動態（11/13–11/21）</span>
+    <p>先切出 <code>v2.0.0-beta5</code>（11/14，<code>7fc3bbf</code>）：launcher 的 #1002／#997／#998、#994、#992／#993、cinbase 的 #1004（非同步載表）與 #933／#934／#935、大易三碼 #1018、倉頡系列 #1020／#1023、新酷音使用者詞庫 #1022、Go 語系 #1024、installer 的 #976／#989／#1005、Rime 共用引擎 #1003、Node 容錯 #945／#946／#952／#971，以及 #1016／#1028／#1019／#1008／#981／#991／#996。其後 <code>v2.0.0-beta6</code>（11/21，<code>1911328a</code>）再補 #1038（#1037 圖示）、#1041、#1043、#1049（#1044）、#1009、#1050、#1051、#1052。兩版之間沒有新的 <code>feat(...)</code> 合併，符合 11/13 的「先 v2.0、之後才開新功能」裁決。</p>
+  </div>
+
+  <div class="note">
+    <span class="label">還開著的 PR</span>
+    <p>等 v2.0 標籤之後的三項新功能：#1013（#890 Shift+英文）、#1029（筆畫）、#1032（三個 UI 顏色）；穩定化的 #1021、#1026、#1031、#1033、#1034、#1035、#1036；以及 PCMan 自己的 #1045（<code>ime_profiles</code> 子目錄）與 #1046（Rime zh-TW profile）。#1010 與 #1014 已關閉未合併 —— 後端維持 x86 32-bit 是 11/13 的裁決。</p>
   </div>
 
   <h3>這個 checkout 額外帶的東西</h3>
@@ -533,7 +544,7 @@
     <li><code>docs/research/input-request-lifecycle.md</code> — 請求方向與 launcher 的行程管理</li>
     <li><code>docs/research/launcher-reply-validation.md</code> — 回覆方向、seqNum、close、readBuffer</li>
   </ul>
-  <p>Issue/PR 狀態取自 GitHub API（2026-10-28），上游比對點 <code>EasyIME/PIME@3697f88</code>。</p>
+  <p>Issue/PR 狀態取自 GitHub API（2026-11-21），上游比對點 <code>EasyIME/PIME@1911328a</code>（<code>v2.0.0-beta6</code>）。</p>
 </footer>
 
 </main>
