@@ -53,7 +53,11 @@ compute_manifest() {
       [[ -f "$ROOT/$rel" ]] || continue
       find "$ROOT/$rel" -type f -printf '%p\t%s\t%T@\n' 2>/dev/null
     done
-  } | sed "s|^$ROOT/||" | LC_ALL=C sort
+  } | while IFS=$'\t' read -r p s m; do
+        # Parameter expansion, not sed: a Windows-form ROOT carries backslashes
+        # that sed's regex engine decodes as escapes (C:\Users\... -> C:Users...).
+        printf '%s\t%s\t%s\n' "${p#"$ROOT"/}" "$s" "$m"
+      done | LC_ALL=C sort
 }
 
 # The manifest must cover exactly what copy_tree copies, or the two disagree
