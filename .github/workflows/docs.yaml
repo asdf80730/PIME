@@ -34,10 +34,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      # The agent-docs check resolves paths that live in a submodule, so that
-      # one submodule must be present; the others stay uninitialized.
-      - name: Initialize the brise submodule
-        run: git submodule update --init python/input_methods/rime/brise
+      # The agent-docs check resolves paths that live in a submodule, so those
+      # must be present: brise for the rime share, McBopomofoWeb for the page
+      # scripts `docs/agents/verification.md` cites. The others stay uninitialized.
+      - name: Initialize the submodules the docs cite
+        run: |
+          git submodule update --init python/input_methods/rime/brise
+          git submodule update --init McBopomofoWeb
       - name: Check local links and ARIA references
         run: python3 -m unittest discover -s tests -p 'test_docs_pages.py' -v
       - name: Check README build steps
