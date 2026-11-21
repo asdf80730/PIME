@@ -60,3 +60,11 @@ optional Shift+Space hotkey, a `feat` under the same freeze), the chewing set
 #1011 #1012 #926 #927 #928 from @DaveTseng2019, #982 (the bug-report form),
 #962 (Per-Monitor High DPI, needs a device), and #898 (the WiX installer).
 
+Two queue findings the first live run settled. #898 carries head `75f4f633`
+while the local `feature-msi-installer` tip is `1e1eb9cb`, same subject, neither
+an ancestor of the other: two rewrites of one branch, so the CI evidence posted
+under either head belongs to the other one. The two `PIMELauncher` integration
+cases stay red for the reason recorded in `.scratch/launcher-pipe-access-denied.md`;
+`git diff --stat HEAD~1 HEAD -- PIMELauncher` over the beta6 merge is empty, so
+the sync did not touch them.
+

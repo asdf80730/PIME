@@ -71,6 +71,12 @@ if [ -z "$rows" ]; then
                 printf 'SKIP  PR queue (REST limit reached on #%s: %s)\n' "$number" "$checks"
                 exit 125 ;;
         esac
+        # The limit body can also sit in the one field the listing filled.
+        case "$mergeable" in
+            '{"message":"API rate limit'*)
+                printf 'SKIP  PR queue (REST limit reached on #%s: %s)\n' "$number" "$mergeable"
+                exit 125 ;;
+        esac
         rows+="${number}|${sha}|${mergeable}|${checks:-none}|${branch}"$'\n'
     done <<< "$base"
     rows=${rows%$'\n'}

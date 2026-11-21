@@ -149,6 +149,12 @@ printf '{"message":"API rate limit exceeded for 10.0.0.1.","documentation_url":"
     >"$SANDBOX/api_pulls"
 check "REST limit body reads as not applicable" 125 "$(run_gate)"
 
+# 13. The limit body landing in one row's field rather than the whole listing:
+#     the array came through, the per-item `mergeable` did not.
+printf '1029|2cfae129abcd|{"message":"API rate limit exceeded for 10.0.0.1.","documentation_url":"https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting"}\n' \
+    >"$SANDBOX/api_pulls"
+check "limit body in one row field reads as not applicable" 125 "$(run_gate)"
+
 if [ "$failures" -ne 0 ]; then
     printf 'Self-test failed (%d case(s))\n' "$failures" >&2
     exit 1
