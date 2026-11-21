@@ -37,3 +37,26 @@ are the `tests/check_pr_*.sh` gates.
 - `bash tests/check_pr_bodies.sh` exits 0 over the body files in `.scratch/`.
 - Each ticket names the command that settles it; a ticket closes only on that
   command's own output.
+
+## Sync state, 2026-11-21
+
+`upstream/master` = `1911328a`, tagged `v2.0.0-beta6` (released 2026-11-21
+11:23Z); the previous tag is `v2.0.0-beta5` = `7fc3bbf` (2026-11-14). Both are
+merged into `local/stroke-parked`. `version.txt` reads `2.0.0-beta6`, so it
+matches the cut tag (issue `08-version-txt-tag-sync.md`). No `v2.0.0` tag yet,
+so the freeze on new features still holds.
+
+Merged in the beta6 window, all fixes or build wiring: #1038 (#1037 icon index
+and `win8_icon`), #1041, #1043 (config-tool token check), #1049 (#1044 Shift
+switch), #1009, #1050, #1051, #1052. `feat(...)` PRs stayed open as adjudicated:
+#1013, #1029, #1032, plus #881. The stabilizing set still open: #1021 #1026
+#1031 #1033 #1034 #1035 #1036. Closed without merge: #1010 and #1014 — the
+backends stay x86 32-bit per the 2026-11-13 note on #1010.
+
+The open queue holds 22 PRs; the numbers outside those two lists are #1045 and
+#1046 (the maintainer's own `feat` work, both force-pushed on 2026-11-18: the
+`ime_profiles` subdirectory and the `zhtw` Rime profile), #1017 (#844 the
+optional Shift+Space hotkey, a `feat` under the same freeze), the chewing set
+#1011 #1012 #926 #927 #928 from @DaveTseng2019, #982 (the bug-report form),
+#962 (Per-Monitor High DPI, needs a device), and #898 (the WiX installer).
+

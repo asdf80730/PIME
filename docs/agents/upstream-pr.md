@@ -213,6 +213,13 @@ and hand the compare URL plus body to the human.
   assertions — one head per open PR, and the head equal to the tip of its own local
   branch. Those are the two ways a maintainer's `ready to merge` goes stale under a
   rewrite, so the gate is what settles a queue snapshot rather than a per-PR `gh` loop.
+  Two `gh` families behave differently here: the GraphQL verbs (`gh pr list`, `gh pr
+  view`) need a token and answer `HTTP 401: Requires authentication` without one, while
+  `gh api <rest-path>` works tokenless — 60 calls per hour per IP, and the gate reads
+  the snapshot from REST (`pulls?state=open` plus one `check-runs` per head), so its
+  125 names the exhausted window. `read` on
+  `https://github.com/EasyIME/PIME/pulls?q=is:pr+is:open` is the one-call alternative
+  for a numbers-and-states list.
 - Done means: branch pushed, body file written, compare URL printed:
   `https://github.com/EasyIME/PIME/compare/master...asdf80730:<branch>?expand=1`.
 

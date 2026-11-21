@@ -32,15 +32,13 @@ index of agent docs.
 - **Every added file declares its AI authorship** (`INV-03`) in its header;
   `tests/hooks/pre-commit` fails the commit on a missing one, and the category
   forms live in the standing rules of `docs/agents/code-review.md`.
-- **Maintainer's plan, every session** (settled by @PCMan on 2026-11-13, recorded
-  per PR in `.scratch/maintainer-plan-2026-11-13/`): **v2.0 first, features after**.
-  The framework is brought to a stable and robust state and tagged; new features are
-  withheld until that tag exists, then added on top of it. So a `feat(...)` PR
-  (#1013 `shiftLetterSwitchToEnglish`, #1029 筆畫, #1032 the three UI colors) waits,
-  while the stabilizing set (#1004 #1014 #1022 #1026 #1031 #1033 #1034 #1035 #1036
-  and the libIME2/libchewing pins) is what moves toward the tag. Every PR still
-  carries exactly one problem: fixes and features never share a PR, and a rename or
-  move is its own commit.
+- **Maintainer's plan, every session**: **v2.0 first, features after** — the framework
+  is stabilised and tagged, and only then do new features start, so a `feat(...)` PR
+  waits while the stabilizing set moves toward the tag. @PCMan settled it on 2026-11-13.
+  The dated per-PR state (which numbers merged, which wait, which closed unmerged) lives
+  in `.scratch/maintainer-plan-2026-11-13/spec.md`; read the numbers there rather than
+  from memory. Every PR still carries exactly one problem: fixes and features never
+  share a PR, and a rename or move is its own commit.
 - **Reply language**: what the human reads is **zh-Hant** — answers, questions,
   and progress reports. What the machines and the upstream author read stays
   **English**: GitHub issue/PR comments, commit messages and PR bodies, and the
@@ -52,14 +50,12 @@ index of agent docs.
 
 ### Answers render as one page
 
-`answer-me-with-html always-on` is on: every reply that carries a conclusion,
-summary, plan, comparison or explanation also gets a small page (2–4 panels, one
-callout with the conclusion plus one table or diagram, rendered with `--no-open`,
-page link on the last line). Plain text covers small talk, a one-line answer, raw
-command output, and any reply the user asked to keep as text. The skill lives at
-`~/.agents/skills/answer-me-with-html`; run its CLI through `./.tools/node/node.exe`
-on `scripts/am.mjs`, and open each panel with a `##` heading (a `#` heading is the
-page title, so an all-`#` draft renders `0 panels`).
+`answer-me-with-html always-on` is on; the panel rules live in the skill at
+`~/.agents/skills/answer-me-with-html`. Two box-specific facts: run its CLI as
+`./.tools/node/node.exe ~/.agents/skills/answer-me-with-html/scripts/am.mjs`, and open
+every panel with a `##` heading (a `#` is the page title, so an all-`#` draft renders
+`0 panels`). Small talk, a one-line answer, raw command output and anything the user
+asked to keep as text stay plain.
 
 ### Issue tracker
 
@@ -70,16 +66,12 @@ a work tracker. See `docs/agents/issue-tracker.md`.
 ### Domain docs
 
 Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-Every decision record, and the one fact each settles:
-`docs/adr/0001-windows-support-floor.md` (the Windows 10 floor, `INV-01`),
-`docs/adr/0002-stroke-table-from-cns11643-with-prefix-expansion.md` (the Five-stroke
-table comes from the CNS11643 stroke-sequence data with every prefix emitted,
-`INV-08`),
-`docs/adr/0003-table-load-policy-lives-with-the-service.md` (the cinbase load policy
-belongs to the Service, not the loader, `INV-09`), and
-`docs/adr/0004-per-backend-profile-guids.md` (one `ime.json` per backend per IME:
-profile GUIDs distinct within one file and never compared across twins, the
-`locale`/`fallbackLocale` pair the only cross-twin invariant, `INV-07`).
+One decision record per settled question; the file name is the fact, the `INV-NN`
+id is what prose cites:
+`docs/adr/0001-windows-support-floor.md` (`INV-01`),
+`docs/adr/0002-stroke-table-from-cns11643-with-prefix-expansion.md` (`INV-08`),
+`docs/adr/0003-table-load-policy-lives-with-the-service.md` (`INV-09`),
+`docs/adr/0004-per-backend-profile-guids.md` (`INV-07`).
 
 ### Input method tables
 
