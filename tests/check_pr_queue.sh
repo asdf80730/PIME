@@ -36,10 +36,45 @@ command -v "$gh_bin" >/dev/null 2>&1 || {
 # The `join("|")` form is what the built-in jq parser here accepts for a mixed
 # row: an interpolated string with a nested `//` chain dies on its own parser,
 # and a tab-separated row collapses its empty fields under `read`.
+rest=0
 rows=$("$gh_bin" pr list --repo "$REPO" --state open \
     --json number,headRefOid,mergeable,statusCheckRollup,headRefName \
     --jq '.[] | [(.number|tostring), .headRefOid, .mergeable, ([.statusCheckRollup[]? | .conclusion // .state // "?"] | join(",")), .headRefName] | join("|")' \
     2>/dev/null)
+if [ -z "$rows" ]; then
+    # `gh pr list` and `gh pr view` answer through GraphQL, which a tokenless gh
+    # cannot use (`HTTP 401: Requires authentication`); the REST endpoints answer
+    # without a token. Take the same five fields from them rather than letting a
+    # missing token read as "the repo has no open PRs". `mergeable` is a bare
+    # JSON null there, so it is spelled UNKNOWN to match the enum's unsettled
+    # value; the rollup has no REST twin, so each head's checks come from the
+    # check-runs endpoint.
+    rest=1
+    base=$("$gh_bin" api "repos/$REPO/pulls?state=open&per_page=100" \
+        --jq '.[] | [(.number|tostring), .head.sha, (if .mergeable == null then "UNKNOWN" else (.mergeable|tostring) end), .head.ref] | join("|")' \
+        2>/dev/null)
+    # A tokenless box gets 60 REST calls per hour per IP, and one exhausted
+    # window answers the limit body instead of the array. That is not a red row:
+    # the snapshot is simply unavailable, so it reads as 125 like a missing gh.
+    case "$base" in
+        '{"message":"API rate limit'*)
+            printf 'SKIP  PR queue (REST limit reached: %s)\n' "$base"
+            exit 125 ;;
+    esac
+    rows=""
+    while IFS='|' read -r number sha mergeable branch; do
+        [ -n "$number" ] || continue
+        checks=$("$gh_bin" api "repos/$REPO/commits/$sha/check-runs" \
+            --jq '[.check_runs[]? | .conclusion // .status // "?"] | join(",")' 2>/dev/null)
+        case "$checks" in
+            '{"message":"API rate limit'*)
+                printf 'SKIP  PR queue (REST limit reached on #%s: %s)\n' "$number" "$checks"
+                exit 125 ;;
+        esac
+        rows+="${number}|${sha}|${mergeable}|${checks:-none}|${branch}"$'\n'
+    done <<< "$base"
+    rows=${rows%$'\n'}
+fi
 [ -n "$rows" ] || {
     printf 'SKIP  PR queue (%s answers no open pull requests)\n' "$REPO"
     exit 125
@@ -58,9 +93,15 @@ while IFS='|' read -r number sha mergeable checks branch; do
         continue
     fi
     if [ "$mergeable" = "UNKNOWN" ]; then
-        mergeable=$(gh pr view "$number" --repo "$REPO" --json mergeable \
-            --jq .mergeable 2>/dev/null)
-        [ -n "$mergeable" ] || mergeable=UNKNOWN
+        if [ "$rest" = 1 ]; then
+            re=$( "$gh_bin" api "repos/$REPO/pulls/$number" --jq \
+                'if .mergeable == null then "UNKNOWN" else (.mergeable|tostring) end' 2>/dev/null)
+        else
+            re=$("$gh_bin" pr view "$number" --repo "$REPO" --json mergeable \
+                --jq .mergeable 2>/dev/null)
+        fi
+        [ -n "$re" ] || re=UNKNOWN
+        mergeable=$re
     fi
     if [ "$mergeable" = "UNKNOWN" ]; then
         printf 'FAIL  PR queue: #%s still reads mergeable=UNKNOWN after the re-read\n' "$number"

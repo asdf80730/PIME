@@ -56,9 +56,19 @@ class VersionContractTests(unittest.TestCase):
             self.assertTrue(part.isdigit(), f"non-numeric version part {part!r}")
 
     def test_version_matches_the_latest_tag(self):
+        # The tag comes off the ref this run judges: mid-merge the staged
+        # version.txt is the merge's own, so `HEAD` alone (the first parent)
+        # answers the previous tag and the pair reads as a drift it never had.
+        rev = []
         try:
+            merge = subprocess.run(
+                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                cwd=ROOT, capture_output=True, text=True, timeout=30,
+            )
+            if merge.returncode == 0 and merge.stdout.strip():
+                rev = [merge.stdout.strip()]
             proc = subprocess.run(
-                ["git", "describe", "--tags", "--abbrev=0"],
+                ["git", "describe", "--tags", "--abbrev=0"] + rev,
                 cwd=ROOT, capture_output=True, text=True, timeout=30,
             )
         except (OSError, subprocess.SubprocessError) as exc:

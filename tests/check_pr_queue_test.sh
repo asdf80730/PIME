@@ -22,6 +22,8 @@ SANDBOX=$tmp
 cat >"$SANDBOX/gh" <<'STUB'
 #!/usr/bin/env bash
 verb=${2:-}
+# `gh pr list|view` puts the verb in $2; `gh api <path>` puts the path there.
+[ "${1:-}" = api ] && verb=api
 case "$verb" in
     list) [ -f "${STUB_LIST:-}" ] && cat "$STUB_LIST"; exit 0 ;;
     view)
@@ -29,6 +31,25 @@ case "$verb" in
         [ -f "${STUB_VIEW:-}" ] || exit 0
         awk -v n="$num" '$1 == n { print $2; found = 1; exit } END { if (!found) print "UNKNOWN" }' \
             "$STUB_VIEW"
+        exit 0 ;;
+    api)
+        path=${2:-}
+        case "$path" in
+            *pulls\?*) [ -f "${STUB_API_PULLS:-}" ] && cat "$STUB_API_PULLS" ;;
+            *pulls/*)
+                num=${path##*pulls/}; num=${num%%[!0-9]*}
+                if [ -f "${STUB_API_VIEW:-}" ]; then
+                    awk -v n="$num" '$1 == n { print $2; found = 1; exit } END { if (!found) print "UNKNOWN" }' \
+                        "$STUB_API_VIEW"
+                else
+                    [ -f "${STUB_API_PULLS:-}" ] || exit 0
+                    awk -F'|' -v n="$num" '$1 == n { print $3; exit }' "$STUB_API_PULLS"
+                fi ;;
+            *check-runs*)
+                rest=${path#*commits/}; sha=${rest%%/*}
+                [ -f "${STUB_API_CHECKS:-}" ] || exit 0
+                awk -F'|' -v s="$sha" '$1 == s { print $2; exit }' "$STUB_API_CHECKS" ;;
+        esac
         exit 0 ;;
 esac
 exit 0
@@ -50,7 +71,9 @@ check() { # name want got
 
 run_gate() {
     ( cd "$ROOT" && PATH="$SANDBOX:$PATH" GH_BIN="$SANDBOX/gh" STUB_LIST="$SANDBOX/list" \
-        STUB_VIEW="$SANDBOX/view" bash "$GATE" EasyIME/PIME ) >/dev/null 2>&1
+        STUB_VIEW="$SANDBOX/view" STUB_API_PULLS="$SANDBOX/api_pulls" \
+        STUB_API_CHECKS="$SANDBOX/api_checks" STUB_API_VIEW="$SANDBOX/api_view" \
+        bash "$GATE" EasyIME/PIME ) >/dev/null 2>&1
     printf '%s' "$?"
 }
 
@@ -100,6 +123,31 @@ check "no gh on PATH" 125 "$?"
 # 8. The repo answers nothing at all: not applicable, not red.
 : >"$SANDBOX/list"
 check "empty queue" 125 "$(run_gate)"
+
+# 9. The REST fallback a tokenless box lands on: `pr list` answers nothing, so
+#    the rows come from `api repos/<nwo>/pulls` plus one `check-runs` read per
+#    head. A null `mergeable` is the same unsettled state the enum's UNKNOWN is.
+: >"$SANDBOX/list"
+printf '1029|2cfae129abcd|MERGEABLE|nometa-rest-9\n881|948f8db0ffff|true|\n' \
+    >"$SANDBOX/api_pulls"
+printf '2cfae129abcd|SUCCESS,SUCCESS\n948f8db0ffff|\n' >"$SANDBOX/api_checks"
+check "REST rows assembled from the pulls and check-runs endpoints" 0 "$(run_gate)"
+
+# 10. A null `mergeable` the per-PR REST read settles: the same single re-read
+#     the GraphQL shape gets, so a tokenless snapshot is not a weaker one.
+printf '1029|2cfae129abcd|UNKNOWN|nometa-rest-9\n' >"$SANDBOX/api_pulls"
+printf '1029 MERGEABLE\n' >"$SANDBOX/api_view"
+check "REST null settled by the per-PR read" 0 "$(run_gate)"
+
+# 11. A null that survives the per-PR read is still no disposition.
+printf '1029 UNKNOWN\n' >"$SANDBOX/api_view"
+check "REST null after the re-read" 1 "$(run_gate)"
+
+# 12. The exhausted REST window a tokenless box hits: the limit body is not a
+#     row, and a snapshot that cannot be taken is 125 rather than a red.
+printf '{"message":"API rate limit exceeded for 10.0.0.1.","documentation_url":"https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting"}' \
+    >"$SANDBOX/api_pulls"
+check "REST limit body reads as not applicable" 125 "$(run_gate)"
 
 if [ "$failures" -ne 0 ]; then
     printf 'Self-test failed (%d case(s))\n' "$failures" >&2

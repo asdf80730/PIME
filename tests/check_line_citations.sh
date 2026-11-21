@@ -161,3 +161,8 @@ END {
     exit (bad ? 1 : 0)
 }
 ' "$all_list" "$scan_list" "${files[@]}"
+rc=$?
+# The two list files are this run's scratch; a stray pair in the tree reads as
+# an untracked change to every later `git status`.
+rm -f "$all_list" "$scan_list"
+exit "$rc"
