@@ -146,9 +146,16 @@ def apply_reply(overlay, echo, reply, debug=False):
     cursor = reply.get("candidateCursor") or 0
     if composition or candidates:
         echo.show(composition)
-        overlay.update(composition, candidates, cursor)
     else:
         echo.clear()
+    # The composition is already in the control the user types into: the
+    # overlay is there for the candidate list, and it has nothing to show
+    # when the backend sends no candidates.  The shell's search flyout is
+    # drawn above every ordinary window, so an empty overlay would only be
+    # a stray box in the corner of the screen.
+    if candidates:
+        overlay.update(composition, candidates, cursor)
+    else:
         overlay.hide()
 
 
