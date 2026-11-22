@@ -88,6 +88,8 @@ user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND,
 user32.GetWindowThreadProcessId.restype = wintypes.DWORD
 user32.GetWindowTextLengthW.argtypes = (wintypes.HWND,)
 user32.GetWindowTextLengthW.restype = ctypes.c_int
+user32.GetWindowTextW.argtypes = (wintypes.HWND, wintypes.LPWSTR, ctypes.c_int)
+user32.GetWindowTextW.restype = ctypes.c_int
 user32.GetClassNameW.argtypes = (wintypes.HWND, wintypes.LPWSTR, ctypes.c_int)
 user32.GetClassNameW.restype = ctypes.c_int
 user32.GetKeyboardState.argtypes = (ctypes.POINTER(wintypes.BYTE),)
@@ -134,7 +136,7 @@ class KBDLLHOOKSTRUCT(ctypes.Structure):
                 ("scanCode", wintypes.DWORD),
                 ("flags", wintypes.DWORD),
                 ("time", wintypes.DWORD),
-                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
+                ("dwExtraInfo", ctypes.c_size_t)]
 
 
 class MOUSEINPUT(ctypes.Structure):
@@ -143,7 +145,7 @@ class MOUSEINPUT(ctypes.Structure):
                 ("mouseData", wintypes.DWORD),
                 ("dwFlags", wintypes.DWORD),
                 ("time", wintypes.DWORD),
-                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
+                ("dwExtraInfo", ctypes.c_size_t)]
 
 
 class HARDWAREINPUT(ctypes.Structure):
@@ -157,7 +159,7 @@ class KEYBDINPUT(ctypes.Structure):
                 ("wScan", wintypes.WORD),
                 ("dwFlags", wintypes.DWORD),
                 ("time", wintypes.DWORD),
-                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong))]
+                ("dwExtraInfo", ctypes.c_size_t)]
 
 
 class _INPUTUNION(ctypes.Union):
@@ -224,8 +226,9 @@ def char_for_key(vk, scan, extended, modifiers=()):
         if user32.GetKeyState(toggle) & 1:
             state[toggle] |= 0x01
     buffer = ctypes.create_unicode_buffer(8)
-    flags = 1 if extended else 0
-    count = user32.ToUnicodeEx(vk, scan, state, buffer, 8, flags,
+    # Match libIME2/src/KeyEvent.cpp (ToAscii(..., 0)): flags=0 preserves
+    # dead-key state and avoids passing the menu-active bit (0x1).
+    count = user32.ToUnicodeEx(vk, scan, state, buffer, 8, 0,
                                 us_keyboard_layout())
     if count <= 0:
         return 0
@@ -284,6 +287,24 @@ def process_name_for_window(hwnd):
         kernel32.CloseHandle(handle)
 
 
+def window_info(hwnd):
+    """Return `(process_name, class_name, title)` for `hwnd`."""
+    if not hwnd:
+        return ("", "", "")
+    process = process_name_for_window(hwnd) or ""
+    class_buf = ctypes.create_unicode_buffer(256)
+    class_len = user32.GetClassNameW(hwnd, class_buf, len(class_buf))
+    class_name = class_buf.value[:class_len] if class_len > 0 else ""
+    title_len = user32.GetWindowTextLengthW(hwnd)
+    if title_len > 0:
+        title_buf = ctypes.create_unicode_buffer(title_len + 1)
+        copied = user32.GetWindowTextW(hwnd, title_buf, title_len + 1)
+        title = title_buf.value[:copied] if copied > 0 else ""
+    else:
+        title = ""
+    return (process, class_name, title)
+
+
 def inject_text(text):
     """Type `text` into the focused control as Unicode input.
 
@@ -292,13 +313,11 @@ def inject_text(text):
     """
     if not text:
         return 0
-    marker = ctypes.c_ulong(INJECT_MARKER)
-    extra = ctypes.pointer(marker)
     inputs = (INPUT * len(text))()
     for index, character in enumerate(text):
         inputs[index].type = INPUT_KEYBOARD
         inputs[index].ki = KEYBDINPUT(0, ord(character), KEYEVENTF_UNICODE, 0,
-                                      extra)
+                                      INJECT_MARKER)
     sent = user32.SendInput(len(text), inputs, ctypes.sizeof(INPUT))
     return sent
 
@@ -311,15 +330,14 @@ def inject_backspaces(count):
     """
     if count <= 0:
         return 0
-    marker = ctypes.c_ulong(INJECT_MARKER)
-    extra = ctypes.pointer(marker)
     inputs = (INPUT * (2 * count))()
     for index in range(count):
         down = 2 * index
         inputs[down].type = INPUT_KEYBOARD
-        inputs[down].ki = KEYBDINPUT(VK_BACK, 0, 0, 0, extra)
+        inputs[down].ki = KEYBDINPUT(VK_BACK, 0, 0, 0, INJECT_MARKER)
         inputs[down + 1].type = INPUT_KEYBOARD
-        inputs[down + 1].ki = KEYBDINPUT(VK_BACK, 0, KEYEVENTF_KEYUP, 0, extra)
+        inputs[down + 1].ki = KEYBDINPUT(VK_BACK, 0, KEYEVENTF_KEYUP, 0,
+                                         INJECT_MARKER)
     sent = user32.SendInput(2 * count, inputs, ctypes.sizeof(INPUT))
     return sent
 
@@ -386,7 +404,7 @@ class KeyboardHook(threading.Thread):
         """
         if struct.vkCode == VK_PACKET:
             return True
-        if struct.dwExtraInfo and struct.dwExtraInfo[0] == INJECT_MARKER:
+        if struct.dwExtraInfo == INJECT_MARKER:
             return True
         return False
 

@@ -24,6 +24,7 @@ from . import overlay as overlay_module
 from . import protocol
 from . import win32
 from .echo import EchoWriter
+from .focus import FocusTracker, ForegroundChangeTracker
 from .keyevent import KeyEvent, Swallowed
 from .mode import is_toggle, mode_command_id, mode_from_reply
 
@@ -69,9 +70,11 @@ class ForegroundFilter:
     goes to the application untouched.
     """
 
-    def __init__(self, targets):
+    def __init__(self, targets, debug=False):
         self._targets = set(target.lower() for target in targets)
         self._names = {}
+        self._debug = debug
+        self._changes = ForegroundChangeTracker()
 
     @property
     def targets(self):
@@ -80,9 +83,24 @@ class ForegroundFilter:
     def matches(self):
         hwnd = win32.user32.GetForegroundWindow()
         if not hwnd:
+            if self._debug:
+                changed = self._changes.observe("", "", "")
+                if changed is not None:
+                    print(stamp() + " foreground: none matched=False",
+                          flush=True)
             return False
         name = self._name_of(hwnd)
-        return name is not None and name.lower() in self._targets
+        matched = name is not None and name.lower() in self._targets
+        if self._debug:
+            process, class_name, title = win32.window_info(hwnd)
+            changed = self._changes.observe(process or name or "", class_name,
+                                            title)
+            if changed is not None:
+                print(stamp() +
+                      " foreground: process=%s class=%s title=%r matched=%s" %
+                      (changed[0], changed[1], changed[2], matched),
+                      flush=True)
+        return matched
 
     def _name_of(self, hwnd):
         """The executable that owns `hwnd`, cached per window."""
@@ -153,7 +171,7 @@ def run(args):
     """Run the bridge until it is interrupted."""
     targets = args.target or list(DEFAULT_TARGETS)
     events = queue.Queue(maxsize=256)
-    foreground = ForegroundFilter(targets)
+    foreground = ForegroundFilter(targets, debug=args.debug)
     swallowed = Swallowed()
     broken = threading.Event()
 
@@ -224,7 +242,7 @@ def run(args):
 
     hook = win32.KeyboardHook(on_key)
     hook.start()
-    in_target = True
+    focus = FocusTracker(in_target=True)
     try:
         while True:
             try:
@@ -234,13 +252,13 @@ def run(args):
             if request is None:
                 # Nothing was typed: the focus may have left the target, and
                 # a composition that outlives its focus has to end.
-                if in_target and not foreground.matches():
-                    in_target = False
+                if focus.check_left(foreground.matches()):
                     pipe.terminate_composition()
                     echo.clear()
                     overlay.hide()
                     swallowed.clear()
                 continue
+            focus.mark_in_target()
             reply = None
             try:
                 if request.toggle:

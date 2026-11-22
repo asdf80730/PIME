@@ -18,6 +18,7 @@ if PYTHON_DIR not in sys.path:
     sys.path.insert(0, PYTHON_DIR)
 
 from keybridge.echo import CompositionEcho, EchoWriter
+from keybridge.focus import FocusTracker, ForegroundChangeTracker
 from keybridge.keyevent import KeyEvent, Swallowed
 from keybridge.mode import (CHINESE, ENGLISH, is_toggle, mode_command_id,
                             mode_from_reply)
@@ -203,6 +204,43 @@ class ModeTest(unittest.TestCase):
         self.assertIsNone(mode_from_reply({}))
         self.assertIsNone(mode_from_reply(
             {"changeButton": [{"id": "windows-mode-icon"}]}))
+
+
+class FocusTrackerTest(unittest.TestCase):
+    """Focus transitions that clear in-flight composition state."""
+
+    def test_leaving_target_fires_once_until_focus_returns(self):
+        tracker = FocusTracker(in_target=True)
+        self.assertFalse(tracker.check_left(True))
+        self.assertTrue(tracker.check_left(False))
+        # Staying outside the target does not re-fire.
+        self.assertFalse(tracker.check_left(False))
+
+    def test_returning_to_target_rearms_focus_loss_detection(self):
+        tracker = FocusTracker(in_target=True)
+        self.assertTrue(tracker.check_left(False))
+        # A key handled in the target re-arms in_target.
+        tracker.mark_in_target()
+        self.assertFalse(tracker.check_left(True))
+        self.assertTrue(tracker.check_left(False))
+
+
+class ForegroundChangeTrackerTest(unittest.TestCase):
+    """Foreground debug logging only fires when window metadata changes."""
+
+    def test_reports_initial_and_changed_windows_only(self):
+        tracker = ForegroundChangeTracker()
+        first = tracker.observe("SearchHost.exe", "Windows.UI.Core.CoreWindow",
+                                "Search")
+        self.assertEqual(
+            first, ("SearchHost.exe", "Windows.UI.Core.CoreWindow", "Search"))
+        # Same window again -> no output.
+        self.assertIsNone(
+            tracker.observe("SearchHost.exe", "Windows.UI.Core.CoreWindow",
+                            "Search"))
+        # Switching to taskbar -> reported.
+        second = tracker.observe("explorer.exe", "Shell_TrayWnd", "")
+        self.assertEqual(second, ("explorer.exe", "Shell_TrayWnd", ""))
 
 
 if __name__ == "__main__":
