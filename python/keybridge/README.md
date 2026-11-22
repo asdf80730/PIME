@@ -36,10 +36,12 @@ Options:
 
 ## What it does
 
-- a low-level keyboard hook swallows the keys of the target processes only;
+- a low-level keyboard hook watches the keys of the target processes only;
   every other key reaches its application untouched;
-- the swallowed keys go to the backend as the same JSON the C++ client sends,
-  so the backend composes as it does for a host it owns;
+- the keys go to the backend as the same JSON the C++ client sends, and the
+  backend answers for each of them, so the backend composes as it does for
+  a host it owns — and the keys the backend refuses (`Ctrl+C`, the arrow
+  keys, `Escape`) reach the application;
 - the composition is typed into the control that has the focus, and the
   committed text replaces it — what an IME does in a host it owns;
 - a small window of the bridge's own shows the composition and the candidate
@@ -50,6 +52,11 @@ Options:
 The backend decides what the keys mean, so the same keys work as in any
 other host: with the chewing module, `ji5` composes ㄓㄨㄛ, Space selects
 桌 and Enter commits it.
+
+The input mode is the backend's too, the way the language bar button of the
+C++ client owns it. `Ctrl+Space` asks the backend to switch between
+Chinese and English, and the English letters then reach the application
+untouched.
 
 ## Not a service
 

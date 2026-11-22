@@ -22,6 +22,11 @@ DEFAULT_PROFILE = "{f80736aa-28db-423a-92c9-5540f501c939}"
 
 PIPE_TEMPLATE = r"\\.\pipe\{user}\PIME\Launcher"
 
+# The command types the backend knows, as the language bar button sends them.
+COMMAND_LEFT_CLICK = 0
+COMMAND_RIGHT_CLICK = 1
+COMMAND_MENU = 2
+
 
 class PipeError(RuntimeError):
     """The launcher pipe is gone, or answered something unusable."""
@@ -132,6 +137,10 @@ class LauncherPipe:
     def terminate_composition(self, forced=True):
         """Tell the backend the composition ended, as a lost focus does."""
         return self.request("onCompositionTerminated", forced=forced)
+
+    def command(self, command_id, command_type=COMMAND_LEFT_CLICK):
+        """Send a command to the backend, as a button of its own UI does."""
+        return self.request("onCommand", id=command_id, type=command_type)
 
     def key_down(self, event):
         """Send a key press; the reply carries the new composition."""

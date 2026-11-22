@@ -15,6 +15,7 @@ from ctypes import wintypes
 import os
 import threading
 
+from . import keyevent
 from .keyevent import KeyEvent
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -56,6 +57,28 @@ VK_PACKET = 0xE7
 
 # The virtual key of the backspace key.
 VK_BACK = 0x08
+
+# The logical modifier keys the backend reads, and the physical ones.
+VK_SHIFT = keyevent.VK_SHIFT
+VK_CONTROL = keyevent.VK_CONTROL
+VK_MENU = keyevent.VK_MENU
+VK_LCONTROL = keyevent.VK_LCONTROL
+VK_RCONTROL = keyevent.VK_RCONTROL
+
+# The physical modifier keys, and the logical key each one stands for.
+# A driver may report a modifier under its logical code, so those are in
+# the table as well.
+MODIFIER_OF = keyevent.MODIFIER_OF
+
+# The keys that make a combination the application's own.
+VK_LWIN = keyevent.VK_LWIN
+VK_RWIN = keyevent.VK_RWIN
+
+# The keys the bridge keeps track of: the modifiers and the windows keys.
+TRACKED_KEYS = keyevent.TRACKED_KEYS
+
+# The keys that have a toggled state of their own.
+TOGGLE_KEYS = (keyevent.VK_CAPITAL, 0x90, 0x91)
 
 # --- the prototypes that matter on a 64-bit build ---------------------------
 
@@ -180,15 +203,30 @@ def us_keyboard_layout():
     return layout
 
 
-def char_for_key(vk, scan, extended):
-    """The character a key press produces, or 0 when it produces none."""
+def char_for_key(vk, scan, extended, modifiers=()):
+    """The character a key press produces, or 0 when it produces none.
+
+    The state is built from the modifiers that are down, the way the C++
+    client builds it.  The control key is left out of it, so `Ctrl` and a
+    letter still spell the letter: the backend sees the control key in the
+    key states and decides what the combination means.
+    """
     state = (wintypes.BYTE * 256)()
-    if not user32.GetKeyboardState(state):
-        return 0
+    for code in modifiers:
+        if code in (VK_CONTROL, VK_LCONTROL, VK_RCONTROL):
+            continue  # the control key does not change the character
+        if 0 <= code < 256:
+            state[code] |= 0x80
+        logical = MODIFIER_OF.get(code)
+        if logical is not None:
+            state[logical] |= 0x80
+    for toggle in TOGGLE_KEYS:
+        if user32.GetKeyState(toggle) & 1:
+            state[toggle] |= 0x01
     buffer = ctypes.create_unicode_buffer(8)
     flags = 1 if extended else 0
     count = user32.ToUnicodeEx(vk, scan, state, buffer, 8, flags,
-                               us_keyboard_layout())
+                                us_keyboard_layout())
     if count <= 0:
         return 0
     if count > 1:
@@ -198,16 +236,26 @@ def char_for_key(vk, scan, extended):
     return ord(buffer[0])
 
 
-def key_state_array(pressed_vk=None):
+def key_state_array(pressed_vk=None, modifiers=()):
     """The 256-entry key state array, in the TSF convention.
 
     Bit 7 marks a key that is down, bit 0 a key that is toggled; the array is
     indexed by the virtual key code.
+
+    The modifiers come from the hook's own event stream: `GetKeyboardState`
+    and `GetAsyncKeyState` answer for the thread that asks, and the thread
+    that owns the hook is not the one that receives the keys.
     """
-    state = (wintypes.BYTE * 256)()
-    if not user32.GetKeyboardState(state):
-        return [0] * 256
-    states = list(state)
+    states = [0] * 256
+    for code in modifiers:
+        if 0 <= code < 256:
+            states[code] |= 0x80
+        logical = MODIFIER_OF.get(code)
+        if logical is not None:
+            states[logical] |= 0x80
+    for toggle in TOGGLE_KEYS:
+        if user32.GetKeyState(toggle) & 1:
+            states[toggle] |= 0x01
     if pressed_vk is not None and 0 <= pressed_vk < 256:
         states[pressed_vk] |= 0x80
     return states
@@ -287,6 +335,7 @@ class KeyboardHook(threading.Thread):
     def __init__(self, on_key):
         super().__init__(name="pime-keybridge-hook", daemon=True)
         self._on_key = on_key
+        self._modifiers = set()
         self._ready = threading.Event()
         self._error = None
         self._hook = None
@@ -350,8 +399,24 @@ class KeyboardHook(threading.Thread):
             return None  # the text the bridge put into the control itself
         key_up = bool(w_param in (WM_KEYUP, WM_SYSKEYUP))
         extended = bool(struct.flags & LLKHF_EXTENDED)
+        modifiers = self._modifiers_for(struct.vkCode, key_up)
         char_code = 0 if key_up else char_for_key(struct.vkCode, struct.scanCode,
-                                                 extended)
-        states = key_state_array(None if key_up else struct.vkCode)
+                                                 extended, modifiers)
+        states = key_state_array(None if key_up else struct.vkCode, modifiers)
         return KeyEvent(struct.vkCode, struct.scanCode, extended, key_up,
                         char_code, states)
+
+    def _modifiers_for(self, vk, key_up):
+        """The modifiers that are down, as the hook's own events report them.
+
+        The hook sees every key the system delivers, so it is the only place
+        that knows which modifiers are down: `GetKeyboardState` and
+        `GetAsyncKeyState` answer for the thread that asks, and this thread
+        receives no keyboard input of its own.
+        """
+        if vk in TRACKED_KEYS:
+            if key_up:
+                self._modifiers.discard(vk)
+            else:
+                self._modifiers.add(vk)
+        return frozenset(self._modifiers)
