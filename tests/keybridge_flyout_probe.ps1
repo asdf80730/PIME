@@ -118,6 +118,12 @@ $bridge = Start-Process -FilePath $PythonExe `
   -RedirectStandardError $errPath `
   -PassThru -NoNewWindow
 
+$AE = [System.Windows.Automation.AutomationElement]
+$TC = [System.Windows.Automation.TreeScope]
+$VP = [System.Windows.Automation.ValuePattern]::Pattern
+function Cond($prop, $val) { return New-Object System.Windows.Automation.PropertyCondition($prop, $val) }
+function And2($a, $b) { return New-Object System.Windows.Automation.AndCondition($a, $b) }
+
 try {
   # Wait for the bridge banner.
   $ready = $false
@@ -133,10 +139,6 @@ try {
   }
 
   # Focus the taskbar search flyout's RichEditBox.
-  $AE = [System.Windows.Automation.AutomationElement]
-  $TC = [System.Windows.Automation.TreeScope]
-  function Cond($prop, $val) { return New-Object System.Windows.Automation.PropertyCondition($prop, $val) }
-  function And2($a, $b) { return New-Object System.Windows.Automation.AndCondition($a, $b) }
   $root = $AE::RootElement
   $foc = $AE::FocusedElement
   if ($null -eq $foc -or $foc.Current.ClassName -ne 'RichEditBox') {
@@ -175,6 +177,14 @@ try {
   Start-Sleep -Milliseconds 500
 }
 finally {
+  # Leave the search box as the probe found it: the composition the probe
+  # left open in it would be the next reader's text.
+  try {
+    if ($null -ne $foc -and $foc.Current.ClassName -eq 'RichEditBox') {
+      $valuePattern = $foc.GetCurrentPattern($VP)
+      $valuePattern.SetValue('')
+    }
+  } catch {}
   if ($bridge -and -not $bridge.HasExited) {
     Stop-Process -Id $bridge.Id -Force -ErrorAction SilentlyContinue
   }
