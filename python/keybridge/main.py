@@ -186,11 +186,14 @@ def run(args):
 
     pipe = protocol.LauncherPipe().connect()
     pipe.handshake(args.profile)
-    command_id = mode_command_id(pipe.activate())
+    activate_reply = pipe.activate()
+    command_id = mode_command_id(activate_reply)
     overlay = overlay_module.CandidateOverlay().start()
     echo = EchoWriter(win32.inject_text, win32.inject_backspaces)
     log("PIME key bridge: profile %s, targets %s" %
         (args.profile, ", ".join(foreground.targets)))
+    log("PIME key bridge: %s mode" %
+        (mode_from_reply(activate_reply) or "unknown"))
     if command_id is None:
         log("PIME key bridge: the backend offers no mode switch; "
             "Ctrl+Space belongs to the application")
