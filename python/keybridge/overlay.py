@@ -28,11 +28,14 @@ WS_EX_NOACTIVATE = 0x08000000
 
 SW_HIDE = 0
 SW_SHOWNOACTIVATE = 4
+SWP_NOSIZE = 0x0001
+SWP_NOMOVE = 0x0002
 SWP_NOACTIVATE = 0x0010
 SWP_SHOWWINDOW = 0x0040
 
 HTRANSPARENT = -1
 HWND_TOPMOST = -1
+HWND_NOTOPMOST = -2
 
 TRANSPARENT = 1
 DT_CALCRECT = 0x0400
@@ -139,6 +142,7 @@ class CandidateOverlay:
         self._cursor = 0
         self._visible = False
         self._hwnd = None
+        self._geometry = None
         self._thread = None
         self._ready = threading.Event()
         self._error = None
@@ -276,6 +280,23 @@ class CandidateOverlay:
             y = work.top
         if x + width > work.right:
             x = max(work.left, work.right - width)
+        self._geometry = (x, y, width, height)
+        self._raise()
+
+    def _raise(self):
+        """Put the window above every other topmost window.
+
+        The shell's search flyout is a topmost window too, and it is raised
+        again every time it takes the text the bridge injects, which is
+        after the bridge put this window there.  A window that is already
+        topmost keeps its place in the band, so taking the window out of
+        the band and putting it back is what puts it above the flyout.
+        """
+        if not self._geometry:
+            return
+        x, y, width, height = self._geometry
+        win32.user32.SetWindowPos(self._hwnd, HWND_NOTOPMOST, x, y, width, height,
+                                   SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE)
         win32.user32.SetWindowPos(self._hwnd, HWND_TOPMOST, x, y, width, height,
                                    SWP_NOACTIVATE | SWP_SHOWWINDOW)
 
