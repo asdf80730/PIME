@@ -48,6 +48,18 @@ def stamp():
     return "[%7.3f]" % (time.time() - T0)
 
 
+# The hook thread and the worker thread both write to the trace, so a line
+# has to go out in one write: two threads that print in parts cut each
+# other's lines in half.
+_trace_lock = threading.Lock()
+
+
+def log(message):
+    """Write one line of trace output, whole."""
+    with _trace_lock:
+        print(message, flush=True)
+
+
 class Request:
     """One key on its way to the backend, and the answer that comes back.
 
@@ -86,8 +98,7 @@ class ForegroundFilter:
             if self._debug:
                 changed = self._changes.observe("", "", "")
                 if changed is not None:
-                    print(stamp() + " foreground: none matched=False",
-                          flush=True)
+                    log(stamp() + " foreground: none matched=False")
             return False
         name = self._name_of(hwnd)
         matched = name is not None and name.lower() in self._targets
@@ -96,10 +107,9 @@ class ForegroundFilter:
             changed = self._changes.observe(process or name or "", class_name,
                                             title)
             if changed is not None:
-                print(stamp() +
-                      " foreground: process=%s class=%s title=%r matched=%s" %
-                      (changed[0], changed[1], changed[2], matched),
-                      flush=True)
+                log(stamp() +
+                    " foreground: process=%s class=%s title=%r matched=%s" %
+                    (changed[0], changed[1], changed[2], matched))
         return matched
 
     def _name_of(self, hwnd):
@@ -123,7 +133,7 @@ def synthetic_event(character):
 def apply_reply(overlay, echo, reply, debug=False):
     """Show what the backend composed, and commit what it finished."""
     if debug:
-        print("reply:", reply, flush=True)
+        log("reply: %s" % (reply,))
     if "commitString" not in reply and "compositionString" not in reply:
         return  # a key release, or a reply that says nothing
     commit = reply.get("commitString")
@@ -147,23 +157,22 @@ def run_probe(args):
     with protocol.LauncherPipe().connect() as pipe:
         pipe.handshake(args.profile)
         command_id = mode_command_id(pipe.activate())
-        print("mode command: %s" % command_id, flush=True)
+        log("mode command: %s" % command_id)
         for character in "ji5 \r":
             reply = pipe.key_down(synthetic_event(character))
-            print("%r -> %s" % (character, "the backend's" if reply is not None
-                               else "the application's"), flush=True)
-            print("    %s" % reply, flush=True)
+            log("%r -> %s" % (character, "the backend's" if reply is not None
+                             else "the application's"))
+            log("    %s" % (reply,))
         if command_id is None:
-            print("the backend offers no mode switch", flush=True)
+            log("the backend offers no mode switch")
             return 0
         reply = pipe.command(command_id)
-        print("toggle -> %s" % mode_from_reply(reply), flush=True)
-        print("    %s" % reply, flush=True)
+        log("toggle -> %s" % mode_from_reply(reply))
+        log("    %s" % (reply,))
         pipe.terminate_composition()
         after = pipe.key_down(synthetic_event("j"))
-        print("'j' after the toggle -> %s" %
-              ("the backend's" if after is not None else "the application's"),
-              flush=True)
+        log("'j' after the toggle -> %s" %
+            ("the backend's" if after is not None else "the application's"))
     return 0
 
 
@@ -180,11 +189,11 @@ def run(args):
     command_id = mode_command_id(pipe.activate())
     overlay = overlay_module.CandidateOverlay().start()
     echo = EchoWriter(win32.inject_text, win32.inject_backspaces)
-    print("PIME key bridge: profile %s, targets %s" %
-          (args.profile, ", ".join(foreground.targets)), flush=True)
+    log("PIME key bridge: profile %s, targets %s" %
+        (args.profile, ", ".join(foreground.targets)))
     if command_id is None:
-        print("PIME key bridge: the backend offers no mode switch; "
-              "Ctrl+Space belongs to the application", flush=True)
+        log("PIME key bridge: the backend offers no mode switch; "
+            "Ctrl+Space belongs to the application")
 
     def handle_key(event):
         """Ask the backend about the key.
@@ -198,13 +207,13 @@ def run(args):
             # The release of a key the bridge took goes with the press.
             taken = swallowed.release(event.vk)
             if args.debug:
-                print(stamp() + " backend: %s in %.1f ms" %
-                      (event, (time.time() - start) * 1000), flush=True)
+                log(stamp() + " backend: %s in %.1f ms" %
+                    (event, (time.time() - start) * 1000))
             return taken or reply is not None, None
         reply = pipe.key_down(event)
         if args.debug:
-            print(stamp() + " backend: %s in %.1f ms" %
-                  (event, (time.time() - start) * 1000), flush=True)
+            log(stamp() + " backend: %s in %.1f ms" %
+                (event, (time.time() - start) * 1000))
         if reply is None:
             return False, None  # the key belongs to the application
         swallowed.take(event.vk)
@@ -215,8 +224,7 @@ def run(args):
         swallowed.take(event.vk)
         pipe.terminate_composition()
         reply = pipe.command(command_id)
-        print("PIME key bridge: %s mode" % (mode_from_reply(reply) or "switched"),
-              flush=True)
+        log("PIME key bridge: %s mode" % (mode_from_reply(reply) or "switched"))
         return True
 
     def on_key(event):
@@ -232,12 +240,12 @@ def run(args):
         start = time.time()
         if not request.done.wait(ANSWER_TIMEOUT):
             broken.set()
-            print("PIME key bridge: the backend did not answer; the keys of "
-                  "the target reach the application from now on", flush=True)
+            log("PIME key bridge: the backend did not answer; the keys of "
+                "the target reach the application from now on")
             return False
         if args.debug:
-            print(stamp() + " hook: %s answered in %.1f ms" %
-                  (event, (time.time() - start) * 1000), flush=True)
+            log(stamp() + " hook: %s answered in %.1f ms" %
+                (event, (time.time() - start) * 1000))
         return request.swallow
 
     hook = win32.KeyboardHook(on_key)
@@ -278,7 +286,7 @@ def run(args):
                 # the input system hundreds of milliseconds.
                 apply_reply(overlay, echo, reply, args.debug)
     except KeyboardInterrupt:
-        print("", flush=True)
+        log("")
     finally:
         hook.stop()
         overlay.stop()
