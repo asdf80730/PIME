@@ -97,6 +97,11 @@ class CinBaseTextService(TextService):
         self.jsondir = self.cfg.getJsonDir()
         self.cindir = self.cfg.getCinDir()
         self.ignorePrivateUseArea = self.cfg.ignorePrivateUseArea
+        # 碼表的綁定：引擎每個 request 都會讀它（checkConfigChange），而載入
+        # 執行緒只在載入成功時才把它寫回來。表還沒載到（或載入失敗）時這裡
+        # 必須已經是 None，否則引擎的讀取會丟 AttributeError，整個 request
+        # 失敗，按鍵被吞掉——沒有組字、沒有候選、也沒有提示。
+        self.cin = None
         self.cinbase.initCinBaseContext(self)
         self.initContextState()
 

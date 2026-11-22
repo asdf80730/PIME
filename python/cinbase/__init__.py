@@ -3437,7 +3437,7 @@ class CinBase:
             loadCinFile = LoadCinTable(cbTS, CinTable)
             loadCinFile.start()
         else:
-            if not cbTS.cin == CinTable.cin:
+            if not getattr(cbTS, 'cin', None) == CinTable.cin:
                 cbTS.cin = CinTable.cin
 
         if DEBUG_MODE:
@@ -3495,11 +3495,11 @@ class LoadCinTable:
         selCinFile = self.cbTS.cinFileList[self.cbTS.cfg.selCinType]
         jsonPath = os.path.join(self.cbTS.jsondir, selCinFile)
 
-        if not self.cbTS.reLoadCinTable and hasattr(self.cbTS, 'cin'):
+        if not self.cbTS.reLoadCinTable and getattr(self.cbTS, 'cin', None) is not None:
             return self.CinTable.future
 
         self.cbTS.reLoadCinTable = False
-        if hasattr(self.cbTS, 'cin') and hasattr(self.cbTS.cin, '__del__'):
+        if getattr(self.cbTS, 'cin', None) is not None and hasattr(self.cbTS.cin, '__del__'):
             self.cbTS.cin.__del__()
 
         self.CinTable.curCinType = self.cbTS.cfg.selCinType
